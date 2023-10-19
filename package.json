@@ -1,0 +1,35 @@
+{
+  "name": "video-ui",
+  "version": "0.0.0",
+  "license": "MIT",
+  "author": "Kerry Shetline <kerry@shetline.com>",
+  "scripts": {
+    "lint": "eslint '**/*.ts' '**/*.js'"
+  },
+  "private": true,
+  "dependencies": {
+    "@tubular/math": "^3.3.1",
+    "@tubular/time": "^3.8.14",
+    "@tubular/util": "^4.13.1",
+    "compare-versions": "^4.1.3",
+    "jquery": "^3.6.0",
+    "js-cookie": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/copyfiles": "^2.4.2",
+    "@types/follow-redirects": "^1.14.2",
+    "@types/js-cookie": "^3.0.4",
+    "@types/node": "^18.15.3",
+    "@typescript-eslint/eslint-plugin": "^6.8.0",
+    "@typescript-eslint/parser": "^6.8.0",
+    "copyfiles": "^2.4.1",
+    "eslint": "^8.51.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-chai-friendly": "^0.7.2",
+    "eslint-plugin-import": "^2.28.1",
+    "eslint-plugin-jasmine": "^4.1.3",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^6.1.1",
+    "typescript": "^5.2.2"
+  }
+}
