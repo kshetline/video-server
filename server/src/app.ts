@@ -24,11 +24,13 @@ import express, { Express } from 'express';
 import * as http from 'http';
 import { asLines, isString, toBoolean, toInt, toNumber } from '@tubular/util';
 import logger from 'morgan';
-import * as path from 'path';
+import * as paths from 'path';
 import { jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
 import { requestJson } from 'by-request';
 import { Aggregation, CollectionItem, CollectionStatus, MediaInfo, MediaInfoTrack, Track, VType } from './shared-types';
 import { abs } from '@tubular/math';
+import { lstat, readdir } from 'fs/promises';
+import { Stats } from 'fs';
 
 const debug = require('debug')('express:server');
 
@@ -49,6 +51,7 @@ process.on('unhandledRejection', err => console.error(`${timeStamp()} -- Unhandl
 
 createAndStartServer();
 
+const comparator = new Intl.Collator('en', { caseFirst: 'upper' }).compare;
 let cachedCollection = { status: CollectionStatus.NOT_STARTED } as Aggregation;
 let pendingCollection: Aggregation;
 
@@ -130,7 +133,7 @@ function filter(item: CollectionItem): void {
   }
 }
 
-async function getChildren(parents: CollectionItem[]): Promise<void> {
+async function getChildren(parents: CollectionItem[], directoryMap: Map<string, string[]>): Promise<void> {
   for (const parent of parents) {
     if (parent.videoinfo) {
       parent.duration = parent.videoinfo.duration;
@@ -144,7 +147,16 @@ async function getChildren(parents: CollectionItem[]): Promise<void> {
       const url = process.env.VS_ZIDOO_CONNECT + `ZidooPoster/getCollection?id=${parent.id}`;
 
       parent.data = (await requestJson(url) as CollectionItem).data;
-      await getChildren(parent.data);
+      await getChildren(parent.data, directoryMap);
+    }
+
+    if (parent.data && parent.data.length > 0 && parent.data[0].uri &&
+        (parent.type === VType.MOVIE || parent.type === VType.TV_SHOW || parent.type === VType.TV_SEASON)) {
+      const basePath = paths.dirname(paths.join(process.env.VS_VIDEO_SOURCE, parent.data[0].uri));
+      const checkPath = paths.join(basePath, '-Extras-');
+
+      if (directoryMap.has(checkPath))
+        parent.extras = directoryMap.get(checkPath).map(file => paths.join(checkPath, file));
     }
   }
 }
@@ -194,6 +206,42 @@ async function getMediaInfo(parents: CollectionItem[]): Promise<void> {
   }
 }
 
+async function safeLstat(path: string): Promise<Stats | null> {
+  try {
+    return await lstat(path);
+  }
+  catch (e) {
+    if (e.code !== 'ENOENT')
+      throw e;
+  }
+
+  return null;
+}
+
+async function getDirectories(dir: string, map?: Map<string, string[]>): Promise<Map<string, string[]>> {
+  if (!map)
+    map = new Map();
+
+  const files = (await readdir(dir)).sort(comparator);
+
+  for (const file of files) {
+    const path = paths.join(dir, file);
+    const stat = await safeLstat(path);
+
+    if (file === '.' || file === '..' || stat.isSymbolicLink() || file.endsWith('~')) {}
+    else if (stat.isDirectory())
+      await getDirectories(path, map);
+    else {
+      if (!map.has(dir))
+        map.set(dir, []);
+
+      map.get(dir).push(file);
+    }
+  }
+
+  return map;
+}
+
 async function updateCollection(): Promise<void> {
   const url = process.env.VS_ZIDOO_CONNECT + 'Poster/v2/getFilterAggregations?type=0&start=0';
 
@@ -204,11 +252,14 @@ async function updateCollection(): Promise<void> {
   if (cachedCollection.status === CollectionStatus.NOT_STARTED)
     cachedCollection = pendingCollection;
 
-  await getChildren(pendingCollection.array);
+  const directoryMap = await getDirectories(process.env.VS_VIDEO_SOURCE);
+
   console.log('point B');
+  await getChildren(pendingCollection.array, directoryMap);
+  console.log('point C');
   pendingCollection.status = CollectionStatus.ALL_VIDEOS;
   await getMediaInfo(pendingCollection.array);
-  console.log('point C');
+  console.log('point D');
   pendingCollection.status = CollectionStatus.ALL_DETAILS;
   pendingCollection.lastUpdate = Date.now();
   cachedCollection = pendingCollection;
@@ -299,7 +350,7 @@ function getApp(): Express {
   theApp.use(express.urlencoded({ extended: false }));
   theApp.use(cookieParser());
 
-  theApp.use(express.static(path.join(__dirname, 'public')));
+  theApp.use(express.static(paths.join(__dirname, 'public')));
   theApp.get('/', (_req, res) => {
     res.send('Static home file not found');
   });

@@ -1,5 +1,5 @@
-export enum VType {FILE, MOVIE, COLLECTION, TV_SHOW, TV_SEASON, TV_EPISODE}
-export enum CollectionStatus {NOT_STARTED, INITIALIZED, ALL_VIDEOS, ALL_DETAILS }
+export enum VType { FILE, MOVIE, COLLECTION, TV_SHOW, TV_SEASON, TV_EPISODE }
+export enum CollectionStatus { NOT_STARTED, INITIALIZED, ALL_VIDEOS, ALL_DETAILS, ALL_EXTRAS }
 
 export interface Track {
   channels?: string;
@@ -32,6 +32,7 @@ export interface CollectionItem {
   audio?: Track[];
   codec: string;
   duration?: number;
+  extras?: string[];
   frameRate?: number;
   is2k?: boolean;
   is3d?: boolean;
