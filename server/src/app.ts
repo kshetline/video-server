@@ -22,12 +22,13 @@ import { execSync } from 'child_process';
 import cookieParser from 'cookie-parser';
 import express, { Express } from 'express';
 import * as http from 'http';
-import { asLines, isString, toBoolean } from '@tubular/util';
+import { asLines, isString, toBoolean, toInt, toNumber } from '@tubular/util';
 import logger from 'morgan';
 import * as path from 'path';
 import { jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
 import { requestJson } from 'by-request';
-import { Aggregation, Aggregations, Collection, CollectionItem } from './shared-types';
+import { Aggregation, CollectionItem, CollectionStatus, MediaInfo, MediaInfoTrack, Track, VType } from './shared-types';
+import { abs } from '@tubular/math';
 
 const debug = require('debug')('express:server');
 
@@ -48,11 +49,178 @@ process.on('unhandledRejection', err => console.error(`${timeStamp()} -- Unhandl
 
 createAndStartServer();
 
+let cachedCollection = { status: CollectionStatus.NOT_STARTED } as Aggregation;
+let pendingCollection: Aggregation;
+
+function formatAspectRatio(track: MediaInfoTrack): string {
+  if (!track)
+    return '';
+
+  let ratio: number;
+
+  if (track.DisplayAspectRatio)
+    ratio = toNumber(track.DisplayAspectRatio);
+  else {
+    const w = toInt(track.Width);
+    const h = toInt(track.Height);
+
+    ratio = w / h;
+  }
+
+  if (abs(ratio - 1.33) < 0.02)
+    return '4:3';
+  else if (abs(ratio - 1.78) < 0.02)
+    return '16:9';
+  else if (abs(ratio - 1.85) < 0.02)
+    return 'Wide';
+  else
+    return ratio.toFixed(2) + ':1';
+}
+
+function formatResolution(track: MediaInfoTrack): string {
+  if (!track)
+    return '';
+
+  const w = toInt(track.Width);
+  const h = toInt(track.Height);
+
+  if (w >= 2000 || h >= 1100)
+    return 'UHD';
+  else if (w >= 1300 || h >= 700)
+    return 'FHD';
+  else if (w >= 750 || h >= 500)
+    return 'HD';
+  else
+    return 'SD';
+}
+
+function channelString(track: MediaInfoTrack): string {
+  const $ = /\b(mono|stereo|(\d\d?\.\d))\b/i.exec(track.Title || '');
+
+  if ($)
+    return $[1];
+
+  // The code below is a bit iffy. It's working for me for now, but there's some stuff I don't
+  // fully understand about channel info, particularly how the `XXX_Original` variants are
+  // supposed to work. No answers from the mediainfo forum yet!
+  const channels = toInt(track.Channels);
+  const sub = (channels > 4) || /\bLFE\b/.test(track.ChannelLayout);
+
+  if (channels === 1 && !sub)
+    return 'Mono';
+  else if (channels === 2 && !sub)
+    return 'Stereo';
+  else if (!sub)
+    return channels + '.0';
+  else
+    return (channels - 1) + '.1';
+}
+
+const fieldsToKeep = new Set(['id', 'parentId', 'collectionId', 'aggregationId', 'type', 'voteAverage', 'name', 'is3d',
+  'is4k', 'isHdr', 'isFHD', 'is2k', 'isHD', 'year', 'duration', 'watched', 'data', 'duration', 'uri']);
+
+function filter(item: CollectionItem): void {
+  if (item) {
+    const keys = Object.keys(item);
+
+    for (const key of keys) {
+      if (!fieldsToKeep.has(key))
+        delete (item as any)[key];
+    }
+  }
+}
+
+async function getChildren(parents: CollectionItem[]): Promise<void> {
+  for (const parent of parents) {
+    if (parent.videoinfo) {
+      parent.duration = parent.videoinfo.duration;
+      parent.uri = parent.videoinfo.uri;
+      delete parent.videoinfo;
+    }
+
+    filter(parent);
+
+    if (parent.type > VType.FILE) {
+      const url = process.env.VS_ZIDOO_CONNECT + `ZidooPoster/getCollection?id=${parent.id}`;
+
+      parent.data = (await requestJson(url) as CollectionItem).data;
+      await getChildren(parent.data);
+    }
+  }
+}
+
+async function getMediaInfo(parents: CollectionItem[]): Promise<void> {
+  for (const parent of parents) {
+    if (parent.type === VType.FILE) {
+      const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getVideoInfo?id=${parent.aggregationId}`;
+      const data: any = await requestJson(url);
+      const mediaInfo: MediaInfo = JSON.parse(data.mediaJson || 'null');
+
+      if (mediaInfo?.media?.track) {
+        for (const track of mediaInfo.media.track) {
+          const t = {} as Track;
+
+          if (track.Title)
+            t.name = track.Title;
+
+          if (track.Language && track.Language !== 'und')
+            t.language = track.Language;
+
+          switch (track['@type']) {
+            case 'General':
+              parent.title = track.Title || track.Movie;
+              break;
+            case 'Video':
+              parent.aspectRatio = formatAspectRatio(track);
+              parent.resolution = formatResolution(track);
+              parent.video = parent.video ?? [];
+              parent.video.push(t);
+              break;
+            case 'Audio':
+              t.channels = channelString(track);
+              parent.audio = parent.audio ?? [];
+              parent.audio.push(t);
+              break;
+            case 'Text':
+              parent.subtitle = parent.subtitle ?? [];
+              parent.subtitle.push(t);
+              break;
+          }
+        }
+      }
+    }
+    else
+      await getMediaInfo(parent.data);
+  }
+}
+
+async function updateCollection(): Promise<void> {
+  const url = process.env.VS_ZIDOO_CONNECT + 'Poster/v2/getFilterAggregations?type=0&start=0';
+
+  pendingCollection = await requestJson(url) as Aggregation;
+  console.log('point A');
+  pendingCollection.status = CollectionStatus.INITIALIZED;
+
+  if (cachedCollection.status === CollectionStatus.NOT_STARTED)
+    cachedCollection = pendingCollection;
+
+  await getChildren(pendingCollection.array);
+  console.log('point B');
+  pendingCollection.status = CollectionStatus.ALL_VIDEOS;
+  await getMediaInfo(pendingCollection.array);
+  console.log('point C');
+  pendingCollection.status = CollectionStatus.ALL_DETAILS;
+  pendingCollection.lastUpdate = Date.now();
+  cachedCollection = pendingCollection;
+  pendingCollection = undefined;
+}
+
 function createAndStartServer(): void {
   console.log(`*** Starting server on port ${httpPort} at ${timeStamp()} ***`);
   httpServer = http.createServer(app);
   httpServer.on('error', onError);
   httpServer.on('listening', onListening);
+  updateCollection().finally();
   httpServer.listen(httpPort);
 }
 
@@ -67,7 +235,7 @@ function onError(error: any): void {
     case 'EACCES':
       console.error(bind + ' requires elevated privileges');
       process.exit(1);
-      break;
+    // eslint-disable-next-line no-fallthrough
     case 'EADDRINUSE':
       console.error(bind + ' is already in use');
 
@@ -132,7 +300,7 @@ function getApp(): Express {
   theApp.use(cookieParser());
 
   theApp.use(express.static(path.join(__dirname, 'public')));
-  theApp.get('/', (req, res) => {
+  theApp.get('/', (_req, res) => {
     res.send('Static home file not found');
   });
 
@@ -152,26 +320,9 @@ function getApp(): Express {
     });
   }
 
-  const getChildren = async (parents: (Aggregation | CollectionItem)[]): Promise<void> => {
-    for (const parent of parents) {
-      if (parent.type >= 1) {
-        const url = process.env.VS_ZIDOO_CONNECT + `ZidooPoster/getCollection?id=${parent.id}`;
-
-        parent.children = (await requestJson(url) as Collection).data;
-        await getChildren(parent.children);
-      }
-    }
-  };
-
   theApp.get('/api/aggregations', async (req, res) => {
     noCache(res);
-
-    const url = process.env.VS_ZIDOO_CONNECT + 'Poster/v2/getFilterAggregations?type=0&start=0';
-    const result = await requestJson(url) as Aggregations;
-
-    await getChildren(result.array);
-
-    jsonOrJsonp(req, res, result);
+    jsonOrJsonp(req, res, cachedCollection);
   });
 
   return theApp;
