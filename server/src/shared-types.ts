@@ -66,15 +66,19 @@ export interface CollectionItem {
   year?: number;
 }
 
-export interface Aggregation {
+export interface Collection {
   status?: CollectionStatus;
+  progress?: number;
   lastUpdate?: string;
+  mainFileCount?: number;
+  bonusFileCount: number;
 
   start?: number;
   count?: number;
   total?: number;
   array?: CollectionItem[];
 }
+
 export interface MediaInfoTrack {
   '@type': string;
   VideoCount: string;

@@ -27,10 +27,10 @@ import logger from 'morgan';
 import * as paths from 'path';
 import { jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
 import { requestJson } from 'by-request';
-import { Aggregation, CollectionItem, CollectionStatus, MediaInfo, MediaInfoTrack, ShowInfo, Track, VType } from './shared-types';
-import { abs } from '@tubular/math';
-import { lstat, readdir } from 'fs/promises';
-import { Stats } from 'fs';
+import { Collection, CollectionItem, CollectionStatus, MediaInfo, MediaInfoTrack, ShowInfo, Track, VType } from './shared-types';
+import { abs, min } from '@tubular/math';
+import { lstat, readdir, writeFile } from 'fs/promises';
+import { existsSync, mkdirSync, readFileSync, Stats } from 'fs';
 
 const debug = require('debug')('express:server');
 
@@ -39,10 +39,18 @@ const devMode = process.argv.includes('-d');
 const allowCors = toBoolean(process.env.VC_ALLOW_CORS) || devMode;
 const defaultPort = devMode ? 4201 : 8080;
 const httpPort = normalizePort(process.env.VC_PORT || defaultPort);
+const cacheDir = paths.join(process.cwd(), 'cache');
 const app = getApp();
 let httpServer: http.Server;
 const MAX_START_ATTEMPTS = 3;
 let startAttempts = 0;
+
+if (!existsSync(cacheDir))
+  mkdirSync(cacheDir);
+
+const collectionFile = paths.join(cacheDir, 'collection.json');
+let cachedCollection = { status: CollectionStatus.NOT_STARTED, progress: -1 } as Collection;
+let pendingCollection: Collection;
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
@@ -52,8 +60,6 @@ process.on('unhandledRejection', err => console.error(`${timeStamp()} -- Unhandl
 createAndStartServer();
 
 const comparator = new Intl.Collator('en', { caseFirst: 'upper' }).compare;
-let cachedCollection = { status: CollectionStatus.NOT_STARTED } as Aggregation;
-let pendingCollection: Aggregation;
 const SEASON_EPISODE = /\bS(\d{1,2})E(\d{1,3})\b/i;
 const SPECIAL_EPISODE = /-M(\d\d?)-/;
 
@@ -217,6 +223,9 @@ async function getChildren(parents: CollectionItem[], bonusDirs: Set<string>, di
           parent.extras = directoryMap.get(checkPath).map(file => paths.join(checkPath, file));
       }
     }
+
+    if (parents === pendingCollection.array)
+      pendingCollection.progress = min(pendingCollection.progress + 44 / 2.89 / pendingCollection.total, 39.7);
   }
 }
 
@@ -265,6 +274,9 @@ async function getMediaInfo(parents: CollectionItem[]): Promise<void> {
     }
     else
       await getMediaInfo(parent.data);
+
+    if (parents === pendingCollection.array)
+      pendingCollection.progress = min(pendingCollection.progress + 110 / 2.89 / pendingCollection.total, 77.8);
   }
 }
 
@@ -280,11 +292,9 @@ async function safeLstat(path: string): Promise<Stats | null> {
   return null;
 }
 
-async function getDirectories(dir: string, bonusDirs: Set<string>, map?: Map<string, string[]>): Promise<Map<string, string[]>> {
-  if (!map)
-    map = new Map();
-
+async function getDirectories(dir: string, bonusDirs: Set<string>, map: Map<string, string[]>): Promise<number> {
   const files = (await readdir(dir)).sort(comparator);
+  let count = 0;
 
   for (const file of files) {
     const path = paths.join(dir, file);
@@ -295,17 +305,32 @@ async function getDirectories(dir: string, bonusDirs: Set<string>, map?: Map<str
       if (/\bBonus Disc\b/i.test(file))
         bonusDirs.add(file);
 
-      await getDirectories(path, bonusDirs, map);
+      const subCount = await getDirectories(path, bonusDirs, map);
+      const isBonusDir = bonusDirs.has(file);
+
+      if (isBonusDir)
+        pendingCollection.bonusFileCount += subCount;
+      else {
+        pendingCollection.mainFileCount += subCount;
+      }
+
+      const specialDir = /[•§]/.test(path) || /§.*\bSeason 0?1\b/.test(path);
+
+      if (!isBonusDir && (specialDir && subCount === 0 || !specialDir && subCount > 0))
+        pendingCollection.progress = min(pendingCollection.progress + 71 / 2.89 / pendingCollection.total, 24.5);
     }
     else {
       if (!map.has(dir))
         map.set(dir, []);
 
       map.get(dir).push(file);
+
+      if (file.endsWith('.mkv'))
+        ++count;
     }
   }
 
-  return map;
+  return count;
 }
 
 const MOVIE_DETAILS = new Set(['certification', 'homepage', 'logo', 'overview', 'releaseDate', 'tagLine']);
@@ -363,6 +388,9 @@ async function getShowInfo(parents: CollectionItem[]): Promise<void> {
     }
     else
       await getShowInfo(parent.data);
+
+    if (parents === pendingCollection.array)
+      pendingCollection.progress = min(pendingCollection.progress + 64 / 2.89 / pendingCollection.total, 99.4);
   }
 }
 
@@ -407,28 +435,40 @@ function fixVideoFlags(parents: CollectionItem[]): void {
 }
 
 async function updateCollection(): Promise<void> {
+  if (pendingCollection)
+    return;
+
   const url = process.env.VS_ZIDOO_CONNECT + 'Poster/v2/getFilterAggregations?type=0&start=0';
   const bonusDirs = new Set(['-Extras-']);
 
-  pendingCollection = await requestJson(url) as Aggregation;
+  pendingCollection = await requestJson(url) as Collection;
   pendingCollection.status = CollectionStatus.INITIALIZED;
+  pendingCollection.progress = 0;
+  pendingCollection.mainFileCount = 0;
+  pendingCollection.bonusFileCount = 0;
 
   if (cachedCollection.status === CollectionStatus.NOT_STARTED)
     cachedCollection = pendingCollection;
 
-  const directoryMap = await getDirectories(process.env.VS_VIDEO_SOURCE, bonusDirs);
-
+  const directoryMap = new Map<string, string[]>();
+  await getDirectories(process.env.VS_VIDEO_SOURCE, bonusDirs, directoryMap);
+  pendingCollection.progress = 24.5;
   pendingCollection.status = CollectionStatus.BONUS_MATERIAL_LINKED;
   await getChildren(pendingCollection.array, bonusDirs, directoryMap);
+  pendingCollection.progress = 39.7;
   pendingCollection.status = CollectionStatus.ALL_VIDEOS;
   await getMediaInfo(pendingCollection.array);
   fixVideoFlags(pendingCollection.array);
+  pendingCollection.progress = 77.8;
   pendingCollection.status = CollectionStatus.MEDIA_DETAILS;
   await getShowInfo(pendingCollection.array);
   pendingCollection.status = CollectionStatus.DONE;
   pendingCollection.lastUpdate = new Date().toISOString();
+  pendingCollection.progress = 100;
   cachedCollection = pendingCollection;
   pendingCollection = undefined;
+
+  await writeFile(collectionFile, JSON.stringify(cachedCollection), 'utf8');
 }
 
 function createAndStartServer(): void {
@@ -436,7 +476,12 @@ function createAndStartServer(): void {
   httpServer = http.createServer(app);
   httpServer.on('error', onError);
   httpServer.on('listening', onListening);
-  updateCollection().finally();
+
+  if (existsSync(collectionFile))
+    cachedCollection = JSON.parse(readFileSync(collectionFile).toString('utf8'));
+  else
+    updateCollection().finally();
+
   httpServer.listen(httpPort);
 }
 
@@ -536,7 +581,7 @@ function getApp(): Express {
     });
   }
 
-  theApp.get('/api/aggregations', async (req, res) => {
+  theApp.get('/api/collection', async (req, res) => {
     noCache(res);
     jsonOrJsonp(req, res, cachedCollection);
   });
