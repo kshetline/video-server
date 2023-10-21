@@ -1,5 +1,5 @@
 export enum VType { FILE, MOVIE, COLLECTION, TV_SHOW, TV_SEASON, TV_EPISODE }
-export enum CollectionStatus { NOT_STARTED, INITIALIZED, ALL_VIDEOS, ALL_DETAILS, ALL_EXTRAS }
+export enum CollectionStatus { NOT_STARTED, INITIALIZED, BONUS_MATERIAL_LINKED, ALL_VIDEOS, MEDIA_DETAILS, DONE = 100 }
 
 export interface Track {
   channels?: string;
@@ -28,19 +28,33 @@ export interface CollectionItem {
   name: string;
   data?: CollectionItem[];
 
+  actors: [{
+    character: string;
+    name: string;
+    profilePath: string;
+  }];
   aspectRatio?: string;
   audio?: Track[];
   codec: string;
+  directors: [{
+    name: string;
+    profilePath: string;
+  }];
   duration?: number;
+  episode?: number;
   extras?: string[];
   frameRate?: number;
+  genres?: string[];
   is2k?: boolean;
   is3d?: boolean;
   is4k?: boolean;
   isFHD?: boolean;
   isHD?: boolean;
   isHdr?: boolean;
+  overview: string;
+  releaseDate: string;
   resolution?: string;
+  season?: number;
   subtitle?: Track[];
   title?: string;
   uri?: string;
@@ -53,7 +67,7 @@ export interface CollectionItem {
 
 export interface Aggregation {
   status?: CollectionStatus;
-  lastUpdate?: number;
+  lastUpdate?: string;
 
   start?: number;
   count?: number;
@@ -86,4 +100,59 @@ export interface MediaInfo {
   media: {
     track: MediaInfoTrack[];
   };
+}
+
+export interface ShowInfo {
+  aggregation: {
+    name: string;
+    aggregation: {
+      airDate: string;
+      backdropPath: string;
+      certification: string;
+      episodeCount: number;
+      homepage: string;
+      logo: string; // URL
+      name: string;
+      overview: string;
+      posterPath: string;
+      ratingTomatoes: string;
+      releaseDate: string;
+      seasonNumber: number;
+      tagLine: string;
+      tvName: string;
+      voteAverage: number;
+    },
+    aggregations: [{
+      id: number;
+      name: string;
+      aggregation: {
+        airDate: string;
+        episodeNumber: number;
+        name: string;
+        overview: string;
+        seasonNumber: number;
+        stillPath: string;
+        voteAverage: number;
+        uri: string;
+      }
+    }];
+  },
+  directors: [{
+    name: string;
+    profilePath: string;
+  }],
+  actors: [{
+    character: string;
+    name: string;
+    profilePath: string;
+  }],
+  genres: [{
+    name: string;
+  }],
+  tv: {
+    certification: string;
+    homepage: string;
+    overview: string;
+    posterPath: string;
+  }
 }

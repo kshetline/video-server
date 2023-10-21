@@ -22,12 +22,12 @@ import { execSync } from 'child_process';
 import cookieParser from 'cookie-parser';
 import express, { Express } from 'express';
 import * as http from 'http';
-import { asLines, isString, toBoolean, toInt, toNumber } from '@tubular/util';
+import { asLines, forEach, isString, toBoolean, toInt, toNumber } from '@tubular/util';
 import logger from 'morgan';
 import * as paths from 'path';
 import { jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
 import { requestJson } from 'by-request';
-import { Aggregation, CollectionItem, CollectionStatus, MediaInfo, MediaInfoTrack, Track, VType } from './shared-types';
+import { Aggregation, CollectionItem, CollectionStatus, MediaInfo, MediaInfoTrack, ShowInfo, Track, VType } from './shared-types';
 import { abs } from '@tubular/math';
 import { lstat, readdir } from 'fs/promises';
 import { Stats } from 'fs';
@@ -54,6 +54,8 @@ createAndStartServer();
 const comparator = new Intl.Collator('en', { caseFirst: 'upper' }).compare;
 let cachedCollection = { status: CollectionStatus.NOT_STARTED } as Aggregation;
 let pendingCollection: Aggregation;
+const SEASON_EPISODE = /\bS(\d{1,2})E(\d{1,3})\b/i;
+const SPECIAL_EPISODE = /-M(\d\d?)-/;
 
 function formatAspectRatio(track: MediaInfoTrack): string {
   if (!track)
@@ -119,22 +121,22 @@ function channelString(track: MediaInfoTrack): string {
     return (channels - 1) + '.1';
 }
 
-const fieldsToKeep = new Set(['id', 'parentId', 'collectionId', 'aggregationId', 'type', 'voteAverage', 'name', 'is3d',
-  'is4k', 'isHdr', 'isFHD', 'is2k', 'isHD', 'year', 'duration', 'watched', 'data', 'duration', 'uri']);
+const FIELDS_TO_KEEP = new Set(['id', 'parentId', 'collectionId', 'aggregationId', 'type', 'voteAverage', 'name', 'is3d',
+  'is4k', 'isHdr', 'isFHD', 'is2k', 'isHD', 'year', 'duration', 'watched', 'data', 'duration', 'uri', 'season', 'episode']);
 
 function filter(item: CollectionItem): void {
   if (item) {
     const keys = Object.keys(item);
 
     for (const key of keys) {
-      if (!fieldsToKeep.has(key))
+      if (!FIELDS_TO_KEEP.has(key))
         delete (item as any)[key];
     }
   }
 }
 
 async function getChildren(parents: CollectionItem[], directoryMap: Map<string, string[]>): Promise<void> {
-  for (const parent of parents) {
+  for (const parent of (parents || [])) {
     if (parent.videoinfo) {
       parent.duration = parent.videoinfo.duration;
       parent.uri = parent.videoinfo.uri;
@@ -145,15 +147,35 @@ async function getChildren(parents: CollectionItem[], directoryMap: Map<string, 
 
     if (parent.type > VType.FILE) {
       const url = process.env.VS_ZIDOO_CONNECT + `ZidooPoster/getCollection?id=${parent.id}`;
+      const data = (await requestJson(url) as CollectionItem).data;
 
-      parent.data = (await requestJson(url) as CollectionItem).data;
-      await getChildren(parent.data, directoryMap);
+      if (data) {
+        parent.data = data;
+        await getChildren(parent.data, directoryMap);
+      }
     }
 
-    if (parent.data && parent.data.length > 0 && parent.data[0].uri &&
+    if (parent.type === VType.TV_EPISODE && parent.data?.length > 0) {
+      const video = parent.data[0];
+      let $ = SEASON_EPISODE.exec(video.title) || SEASON_EPISODE.exec(video.name) || SEASON_EPISODE.exec(video.uri);
+
+      if ($) {
+        parent.season = toInt($[1]);
+        parent.episode = toInt($[2]);
+      }
+      else if (($ = SPECIAL_EPISODE.exec(video.name)) || ($ = SPECIAL_EPISODE.exec(video.title))) {
+        parent.season = 0;
+        parent.episode = toInt($[1]);
+      }
+    }
+
+    if (parent.data?.length > 0 && parent.type === VType.TV_SEASON)
+      parent.data.sort((a, b) => (a.episode || 0) - (b.episode || 0));
+
+    if (parent.data?.length > 0 && parent.data[0].uri &&
         (parent.type === VType.MOVIE || parent.type === VType.TV_SHOW || parent.type === VType.TV_SEASON)) {
       const basePath = paths.dirname(paths.join(process.env.VS_VIDEO_SOURCE, parent.data[0].uri));
-      const checkPath = paths.join(basePath, '-Extras-');
+      const checkPath = paths.join(basePath, '-Extras-'); // TODO: Also bonus disc folders
 
       if (directoryMap.has(checkPath))
         parent.extras = directoryMap.get(checkPath).map(file => paths.join(checkPath, file));
@@ -242,11 +264,59 @@ async function getDirectories(dir: string, map?: Map<string, string[]>): Promise
   return map;
 }
 
+const MOVIE_DETAILS = new Set(['certification', 'homepage', 'logo', 'overview', 'releaseDate', 'tagLine']);
+const SEASON_DETAILS = new Set(['episodeCount', 'overview', 'posterPath', 'seasonNumber']);
+const EPISODE_DETAILS = new Set(['episodeCount', 'overview', 'posterPath', 'seasonNumber']);
+
+async function getShowInfo(parents: CollectionItem[]): Promise<void> {
+  for (const parent of parents) {
+    if (parent.type === VType.MOVIE || parent.type === VType.TV_SEASON) {
+      const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getDetail?id=${parent.id}`;
+      const showInfo: ShowInfo = await requestJson(url);
+      const topInfo = showInfo.aggregation?.aggregation;
+
+      if (parent.type === VType.MOVIE) {
+        if (topInfo) {
+          forEach(topInfo, (key, value) => {
+            if (MOVIE_DETAILS.has(key) && value)
+              (parent as any)[key] = value;
+          });
+        }
+      }
+      else {
+        if (topInfo) {
+          forEach(topInfo, (key, value) => {
+            if (SEASON_DETAILS.has(key) && value)
+              (parent as any)[key] = value;
+          });
+        }
+
+        const episodeInfo = showInfo.aggregation?.aggregations;
+
+        if (episodeInfo?.length > 0 && parent.data?.length > 0) {
+          for (const info of episodeInfo) {
+            const inner = info.aggregation;
+            const match = inner?.episodeNumber != null && parent.data.find(d => d.episode === inner.episodeNumber);
+
+            if (match) {
+              forEach(inner, (key, value) => {
+                if (EPISODE_DETAILS.has(key) && value != null && value !== '')
+                  (match as any)[key] = value;
+              });
+            }
+          }
+        }
+      }
+    }
+    else
+      await getShowInfo(parent.data);
+  }
+}
+
 async function updateCollection(): Promise<void> {
   const url = process.env.VS_ZIDOO_CONNECT + 'Poster/v2/getFilterAggregations?type=0&start=0';
 
   pendingCollection = await requestJson(url) as Aggregation;
-  console.log('point A');
   pendingCollection.status = CollectionStatus.INITIALIZED;
 
   if (cachedCollection.status === CollectionStatus.NOT_STARTED)
@@ -254,14 +324,14 @@ async function updateCollection(): Promise<void> {
 
   const directoryMap = await getDirectories(process.env.VS_VIDEO_SOURCE);
 
-  console.log('point B');
+  pendingCollection.status = CollectionStatus.BONUS_MATERIAL_LINKED;
   await getChildren(pendingCollection.array, directoryMap);
-  console.log('point C');
   pendingCollection.status = CollectionStatus.ALL_VIDEOS;
   await getMediaInfo(pendingCollection.array);
-  console.log('point D');
-  pendingCollection.status = CollectionStatus.ALL_DETAILS;
-  pendingCollection.lastUpdate = Date.now();
+  pendingCollection.status = CollectionStatus.MEDIA_DETAILS;
+  await getShowInfo(pendingCollection.array);
+  pendingCollection.status = CollectionStatus.DONE;
+  pendingCollection.lastUpdate = new Date().toISOString();
   cachedCollection = pendingCollection;
   pendingCollection = undefined;
 }
