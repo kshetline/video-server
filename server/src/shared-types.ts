@@ -28,18 +28,19 @@ export interface CollectionItem {
   name: string;
   data?: CollectionItem[];
 
-  actors: [{
+  actors: {
     character: string;
     name: string;
     profilePath: string;
-  }];
+  }[];
+  airDate: string;
   aspectRatio?: string;
   audio?: Track[];
   codec: string;
-  directors: [{
+  directors: {
     name: string;
     profilePath: string;
-  }];
+  }[];
   duration?: number;
   episode?: number;
   extras?: string[];
@@ -82,8 +83,9 @@ export interface MediaInfoTrack {
   Title: string;
   Movie: string;
   Format: string;
+  HDR_Format: string;
   HDR_Format_Compatibility: string;
-  CodeID: string;
+  CodecID: string;
   Width: string;
   Height: string;
   DisplayAspectRatio: string;

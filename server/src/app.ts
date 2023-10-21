@@ -121,6 +121,32 @@ function channelString(track: MediaInfoTrack): string {
     return (channels - 1) + '.1';
 }
 
+function getCodec(track: MediaInfoTrack): string {
+  if (!track)
+    return '';
+
+  let codec = track.Format || '';
+
+  if (track.CodecID === 'A_TRUEHD')
+    codec = 'TrueHD';
+  else if (codec === 'E-AC-3')
+    codec = 'E-AC3';
+  else if (codec === 'AVC')
+    codec = 'H.264';
+  else if (codec === 'HEVC')
+    codec = 'H.265';
+
+  if (track['@type'] === 'Video') {
+    if (toInt(track.BitDepth) > 8)
+      codec += ' ' + track.BitDepth + '-bit';
+
+    if (track.HDR_Format_Compatibility)
+      codec += ' HDR';
+  }
+
+  return codec;
+}
+
 const FIELDS_TO_KEEP = new Set(['id', 'parentId', 'collectionId', 'aggregationId', 'type', 'voteAverage', 'name', 'is3d',
   'is4k', 'isHdr', 'isFHD', 'is2k', 'isHD', 'year', 'duration', 'watched', 'data', 'duration', 'uri', 'season', 'episode']);
 
@@ -135,7 +161,7 @@ function filter(item: CollectionItem): void {
   }
 }
 
-async function getChildren(parents: CollectionItem[], directoryMap: Map<string, string[]>): Promise<void> {
+async function getChildren(parents: CollectionItem[], bonusDirs: Set<string>, directoryMap: Map<string, string[]>): Promise<void> {
   for (const parent of (parents || [])) {
     if (parent.videoinfo) {
       parent.duration = parent.videoinfo.duration;
@@ -151,7 +177,7 @@ async function getChildren(parents: CollectionItem[], directoryMap: Map<string, 
 
       if (data) {
         parent.data = data;
-        await getChildren(parent.data, directoryMap);
+        await getChildren(parent.data, bonusDirs, directoryMap);
       }
     }
 
@@ -172,13 +198,24 @@ async function getChildren(parents: CollectionItem[], directoryMap: Map<string, 
     if (parent.data?.length > 0 && parent.type === VType.TV_SEASON)
       parent.data.sort((a, b) => (a.episode || 0) - (b.episode || 0));
 
-    if (parent.data?.length > 0 && parent.data[0].uri &&
-        (parent.type === VType.MOVIE || parent.type === VType.TV_SHOW || parent.type === VType.TV_SEASON)) {
-      const basePath = paths.dirname(paths.join(process.env.VS_VIDEO_SOURCE, parent.data[0].uri));
-      const checkPath = paths.join(basePath, '-Extras-'); // TODO: Also bonus disc folders
+    let uri: string;
 
-      if (directoryMap.has(checkPath))
-        parent.extras = directoryMap.get(checkPath).map(file => paths.join(checkPath, file));
+    if (parent.data?.length > 0) {
+      if (parent.type === VType.TV_SHOW)
+        uri = paths.dirname(parent.data[0]?.data[0]?.data[0]?.uri);
+      else
+        uri = parent.data[0].uri;
+    }
+
+    if (uri && (parent.type === VType.MOVIE || parent.type === VType.TV_SHOW || parent.type === VType.TV_SEASON)) {
+      const basePath = paths.dirname(paths.join(process.env.VS_VIDEO_SOURCE, uri));
+
+      for (const bonusDir of Array.from(bonusDirs)) {
+        const checkPath = paths.join(basePath, bonusDir);
+
+        if (directoryMap.has(checkPath))
+          parent.extras = directoryMap.get(checkPath).map(file => paths.join(checkPath, file));
+      }
     }
   }
 }
@@ -199,6 +236,9 @@ async function getMediaInfo(parents: CollectionItem[]): Promise<void> {
 
           if (track.Language && track.Language !== 'und')
             t.language = track.Language;
+
+          if (track.Format)
+            t.codec = getCodec(track);
 
           switch (track['@type']) {
             case 'General':
@@ -240,7 +280,7 @@ async function safeLstat(path: string): Promise<Stats | null> {
   return null;
 }
 
-async function getDirectories(dir: string, map?: Map<string, string[]>): Promise<Map<string, string[]>> {
+async function getDirectories(dir: string, bonusDirs: Set<string>, map?: Map<string, string[]>): Promise<Map<string, string[]>> {
   if (!map)
     map = new Map();
 
@@ -251,8 +291,12 @@ async function getDirectories(dir: string, map?: Map<string, string[]>): Promise
     const stat = await safeLstat(path);
 
     if (file === '.' || file === '..' || stat.isSymbolicLink() || file.endsWith('~')) {}
-    else if (stat.isDirectory())
-      await getDirectories(path, map);
+    else if (stat.isDirectory()) {
+      if (/\bBonus Disc\b/i.test(file))
+        bonusDirs.add(file);
+
+      await getDirectories(path, bonusDirs, map);
+    }
     else {
       if (!map.has(dir))
         map.set(dir, []);
@@ -266,7 +310,7 @@ async function getDirectories(dir: string, map?: Map<string, string[]>): Promise
 
 const MOVIE_DETAILS = new Set(['certification', 'homepage', 'logo', 'overview', 'releaseDate', 'tagLine']);
 const SEASON_DETAILS = new Set(['episodeCount', 'overview', 'posterPath', 'seasonNumber']);
-const EPISODE_DETAILS = new Set(['episodeCount', 'overview', 'posterPath', 'seasonNumber']);
+const EPISODE_DETAILS = new Set(['airDate', 'episodeCount', 'overview', 'posterPath', 'seasonNumber']);
 
 async function getShowInfo(parents: CollectionItem[]): Promise<void> {
   for (const parent of parents) {
@@ -307,14 +351,64 @@ async function getShowInfo(parents: CollectionItem[]): Promise<void> {
           }
         }
       }
+
+      if (showInfo.directors)
+        parent.directors = showInfo.directors.map(d => ({ name: d.name, profilePath: d.profilePath }));
+
+      if (showInfo.actors)
+        parent.actors = showInfo.actors.map(a => ({ character: a.character, name: a.name, profilePath: a.profilePath }));
+
+      if (showInfo.genres)
+        parent.genres = showInfo.genres.map(g => g.name);
     }
     else
       await getShowInfo(parent.data);
   }
 }
 
+function fixVideoFlags(parents: CollectionItem[]): void {
+  for (const parent of parents) {
+    if (parent.data?.length > 0)
+      fixVideoFlags(parent.data);
+  }
+
+  for (const parent of parents) {
+    delete parent.is2k;
+
+    if (parent.type === VType.FILE) {
+      if (!parent.is3d)
+        delete parent.is3d;
+
+      delete parent.isHD;
+      delete parent.isFHD;
+      delete parent.is4k;
+      delete parent.isHdr;
+
+      switch (parent.resolution) {
+        case 'HD': parent.isHD = true; break;
+        case 'FHD': parent.isFHD = true; break;
+        case 'UHD': parent.is4k = true; break;
+      }
+
+      if (/\bHDR/.test((parent.video || [])[0]?.codec || ''))
+        parent.isHdr = true;
+    }
+    else {
+      const data: any[] = parent.data || [];
+
+      for (const flag of ['is3d', 'isHD', 'isFHD', 'is4k', 'isHdr']) {
+        if (data.find(v => v[flag]))
+          (parent as any)[flag] = true;
+        else
+          delete (parent as any)[flag];
+      }
+    }
+  }
+}
+
 async function updateCollection(): Promise<void> {
   const url = process.env.VS_ZIDOO_CONNECT + 'Poster/v2/getFilterAggregations?type=0&start=0';
+  const bonusDirs = new Set(['-Extras-']);
 
   pendingCollection = await requestJson(url) as Aggregation;
   pendingCollection.status = CollectionStatus.INITIALIZED;
@@ -322,12 +416,13 @@ async function updateCollection(): Promise<void> {
   if (cachedCollection.status === CollectionStatus.NOT_STARTED)
     cachedCollection = pendingCollection;
 
-  const directoryMap = await getDirectories(process.env.VS_VIDEO_SOURCE);
+  const directoryMap = await getDirectories(process.env.VS_VIDEO_SOURCE, bonusDirs);
 
   pendingCollection.status = CollectionStatus.BONUS_MATERIAL_LINKED;
-  await getChildren(pendingCollection.array, directoryMap);
+  await getChildren(pendingCollection.array, bonusDirs, directoryMap);
   pendingCollection.status = CollectionStatus.ALL_VIDEOS;
   await getMediaInfo(pendingCollection.array);
+  fixVideoFlags(pendingCollection.array);
   pendingCollection.status = CollectionStatus.MEDIA_DETAILS;
   await getShowInfo(pendingCollection.array);
   pendingCollection.status = CollectionStatus.DONE;
