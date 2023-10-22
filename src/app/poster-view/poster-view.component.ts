@@ -31,7 +31,7 @@ export class PosterViewComponent implements OnInit {
           const name = div.getAttribute('data-name');
           const img = document.createElement('img');
 
-          img.src = `/api/poster?id=${id}&cs=${checksum53(name)}&w=150&h=225`;
+          img.src = `/api/poster?id=${id}&cs=${checksum53(name)}&w=300&h=450`;
           img.width = 150;
           img.height = 225;
           img.alt = name;
