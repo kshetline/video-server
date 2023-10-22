@@ -1,5 +1,6 @@
 import { AfterViewInit, Component } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Collection, CollectionItem } from '../../server/src/shared-types';
 
 @Component({
   selector: 'app-root',
@@ -7,13 +8,15 @@ import { HttpClient } from '@angular/common/http';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements AfterViewInit {
-  count = 0;
+  collection: Collection;
+  items: CollectionItem[];
 
   constructor(private httpClient: HttpClient) {}
 
   ngAfterViewInit(): void {
-    this.httpClient.get('/api/collection').subscribe((collection: any) => {
-      this.count = collection.mainFileCount + collection.bonusFileCount;
+    this.httpClient.get('/api/collection').subscribe((collection: Collection) => {
+      this.collection = collection;
+      this.items = collection.array;
     });
   }
 }

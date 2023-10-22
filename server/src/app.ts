@@ -26,6 +26,7 @@ import { asLines, forEach, isString, toBoolean, toInt, toNumber } from '@tubular
 import logger from 'morgan';
 import * as paths from 'path';
 import { jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
+import request from 'request';
 import { requestJson } from 'by-request';
 import { Collection, CollectionItem, CollectionStatus, MediaInfo, MediaInfoTrack, ShowInfo, Track, VType } from './shared-types';
 import { abs, min } from '@tubular/math';
@@ -584,6 +585,24 @@ function getApp(): Express {
   theApp.get('/api/collection', async (req, res) => {
     noCache(res);
     jsonOrJsonp(req, res, cachedCollection);
+  });
+
+  theApp.get('/api/poster', async (req, res) => {
+    let url = `${process.env.VS_ZIDOO_CONNECT}Poster/v2/getPoster?id=${req.query.id}`;
+
+    if (req.query.w)
+      url += '&w=' + req.query.w;
+
+    if (req.query.h)
+      url += '&h=' + req.query.h;
+
+    request(url).pipe(res);
+  });
+
+  theApp.get('/api/profile-image/:image', async (req, res) => {
+    const url = process.env.VS_PROFILE_IMAGE_BASE + req.params.image;
+
+    request(url).pipe(res);
   });
 
   return theApp;

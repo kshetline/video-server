@@ -22,7 +22,7 @@
     "jasmine",
     "chai-friendly"
   ],
-  "ignorePatterns": ["dist/**/*", "build.js"],
+  "ignorePatterns": ["**/*.html"],
   "rules": {
     "brace-style": [
       "error",
