@@ -1,13 +1,8 @@
 .DS_Store
-.first-time-install
 /coverage
-/dist
-/e2e/*.js
-/e2e/*.map
 node_modules
 /server/dist
 /server/tsc-out
-/src/assets/audio/user
 Thumbs.db
 tmp
 tsc-out
@@ -16,3 +11,4 @@ tsc-out
 !/.vscode/settings.json
 /.idea/*
 /server/cache/
+/.angular/
