@@ -609,7 +609,7 @@ function getApp(): Express {
     if (req.query.h)
       cachePath += '-' + req.query.h;
 
-    cachePath += '.png';
+    cachePath += (req.query.w || req.query.h ? '.png' : '.jpg');
 
     if (await existsAsync(cachePath))
       res.sendFile(cachePath);

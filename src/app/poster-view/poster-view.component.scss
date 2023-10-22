@@ -1,0 +1,24 @@
+:host {
+  background-color: #333;
+  color: white;
+  display: grid;
+  gap: 3em;
+  grid-template-columns: repeat(auto-fit, minmax(10em, 1fr));
+  padding: 0.5em;
+}
+
+.collection-item {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+
+  .title {
+    text-align: center;
+  }
+}
+
+.poster-thumbnail-wrapper {
+  height: 225px;
+  width: 150px;
+}
