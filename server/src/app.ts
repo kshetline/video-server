@@ -30,7 +30,7 @@ import request from 'request';
 import { requestJson } from 'by-request';
 import { Collection, CollectionItem, CollectionStatus, MediaInfo, MediaInfoTrack, ShowInfo, Track, VType } from './shared-types';
 import { abs, min } from '@tubular/math';
-import { lstat, readdir, writeFile } from 'fs/promises';
+import { lstat, mkdir, readdir, writeFile } from 'fs/promises';
 import { existsSync, mkdirSync, readFileSync, Stats } from 'fs';
 
 const debug = require('debug')('express:server');
@@ -291,6 +291,19 @@ async function safeLstat(path: string): Promise<Stats | null> {
   }
 
   return null;
+}
+
+async function existsAsync(path: string): Promise<boolean> {
+  try {
+    await lstat(path);
+    return true;
+  }
+  catch (e) {
+    if (e.code !== 'ENOENT')
+      throw e;
+  }
+
+  return false;
 }
 
 async function getDirectories(dir: string, bonusDirs: Set<string>, map: Map<string, string[]>): Promise<number> {
@@ -588,15 +601,37 @@ function getApp(): Express {
   });
 
   theApp.get('/api/poster', async (req, res) => {
-    let url = `${process.env.VS_ZIDOO_CONNECT}Poster/v2/getPoster?id=${req.query.id}`;
+    let cachePath = paths.join(cacheDir, 'poster', req.query.cs as string);
 
     if (req.query.w)
-      url += '&w=' + req.query.w;
+      cachePath += '-' + req.query.w;
 
     if (req.query.h)
-      url += '&h=' + req.query.h;
+      cachePath += '-' + req.query.h;
 
-    request(url).pipe(res);
+    cachePath += '.png';
+
+    if (await existsAsync(cachePath))
+      res.sendFile(cachePath);
+    else {
+      let url = `${process.env.VS_ZIDOO_CONNECT}Poster/v2/getPoster?id=${req.query.id}`;
+
+      if (req.query.w)
+        url += '&w=' + req.query.w;
+
+      if (req.query.h)
+        url += '&h=' + req.query.h;
+
+      request(url, { encoding: 'binary' }, async (error, _response, body) => {
+        if (error)
+          return;
+
+        if (!await existsAsync(paths.dirname(cachePath)))
+          await mkdir(paths.dirname(cachePath));
+
+        await writeFile(cachePath, body, 'binary');
+      }).pipe(res);
+    }
   });
 
   theApp.get('/api/profile-image/:image', async (req, res) => {

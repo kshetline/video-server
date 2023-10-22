@@ -1,1 +1,3 @@
-<div *ngFor="let item of items">{{item.name}}</div>
+<div *ngFor="let item of items" class="collection-item">{{item.name}}<br>
+  <div [attr.data-id]="item.id" [attr.data-name]="item.name" class="poster-thumbnail-wrapper"></div><br><br>
+</div>
