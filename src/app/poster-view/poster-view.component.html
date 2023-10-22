@@ -1,4 +1,11 @@
 <div *ngFor="let item of items" class="collection-item">
+  <ng-container *ngIf="item.type === COLLECTION">
+    <div *ngIf="item.data?.length > 1" [attr.data-id]="item.data[1].id"
+         [attr.data-name]="item.data[1].name" class="poster-thumbnail-wrapper offset2"></div>
+    <div *ngIf="item.data?.length > 0"
+         [attr.data-id]="item.data[0].id" [attr.data-name]="item.data[0].name" class="poster-thumbnail-wrapper offset"></div>
+  </ng-container>
+
   <div [attr.data-id]="item.id" [attr.data-name]="item.name" class="poster-thumbnail-wrapper"></div>
   <div class="title">{{item.name}}</div>
 </div>

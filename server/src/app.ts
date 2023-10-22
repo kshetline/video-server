@@ -601,7 +601,7 @@ function getApp(): Express {
   });
 
   theApp.get('/api/poster', async (req, res) => {
-    let cachePath = paths.join(cacheDir, 'poster', req.query.cs as string);
+    let cachePath = paths.join(cacheDir, 'poster', req.query.id + '.' + req.query.cs);
 
     if (req.query.w)
       cachePath += '-' + req.query.w;

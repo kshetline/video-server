@@ -1,5 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { Collection, CollectionItem } from '../../../server/src/shared-types';
+import { Collection, CollectionItem, VType } from '../../../server/src/shared-types';
 import { checksum53 } from '../video-ui-utils';
 
 @Component({
@@ -8,6 +8,8 @@ import { checksum53 } from '../video-ui-utils';
   styleUrls: ['./poster-view.component.scss']
 })
 export class PosterViewComponent implements OnInit {
+  COLLECTION = VType.COLLECTION;
+
   private _collection: Collection;
 
   intersectionObserver: IntersectionObserver;
@@ -44,17 +46,17 @@ export class PosterViewComponent implements OnInit {
       mutationList.forEach(mr => {
         if (mr.type === 'childList') {
           mr.addedNodes.forEach(node => {
-            const imageWrapper = (node as HTMLElement).querySelector('.poster-thumbnail-wrapper');
+            const imageWrappers = (node as HTMLElement).querySelectorAll('.poster-thumbnail-wrapper');
 
-            if (imageWrapper)
-              this.intersectionObserver.observe(imageWrapper);
+            if (imageWrappers)
+              imageWrappers.forEach(iw => this.intersectionObserver.observe(iw));
           });
 
           mr.removedNodes.forEach(node => {
-            const imageWrapper = (node as HTMLElement).querySelector('.poster-thumbnail-wrapper');
+            const imageWrappers = (node as HTMLElement).querySelectorAll('.poster-thumbnail-wrapper');
 
-            if (imageWrapper)
-              this.intersectionObserver.unobserve(imageWrapper);
+            if (imageWrappers)
+              imageWrappers.forEach(iw => this.intersectionObserver.unobserve(iw));
           });
         }
       });
