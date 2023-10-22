@@ -37,7 +37,7 @@ export class AppComponent implements AfterViewInit, OnInit {
         if (entry.isIntersecting && !entry.target.querySelector('img')) {
           const div = entry.target as HTMLDivElement;
           const id = div.getAttribute('data-id');
-          const name = div.getAttribute('data-id');
+          const name = div.getAttribute('data-name');
           const img = document.createElement('img');
 
           img.src = `/api/poster?id=${id}&cs=${checksum53(name)}&w=150&h=225`;
