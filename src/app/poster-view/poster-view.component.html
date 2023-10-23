@@ -1,3 +1,4 @@
+<div *ngIf="overview" class="overview">{{overview}}</div>
 <div *ngFor="let item of items" class="collection-item">
   <ng-container *ngIf="item.type === COLLECTION">
     <div *ngIf="item.data?.length > 1" [attr.data-id]="item.data[1].id"
@@ -7,5 +8,8 @@
   </ng-container>
 
   <div [attr.data-id]="item.id" [attr.data-name]="item.name" class="poster-thumbnail-wrapper"></div>
+  <p-rating *ngIf="item.voteAverage" [ngModel]="item.voteAverage / 2 - 0.5" [readonly]="true" [cancel]="false"></p-rating>
   <div class="title">{{item.name}}</div>
+
+  <div class="clicker" (mouseenter)="overview = item.overview" (mouseleave)="overview = ''"></div>
 </div>

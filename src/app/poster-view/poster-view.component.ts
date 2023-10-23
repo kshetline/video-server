@@ -15,6 +15,7 @@ export class PosterViewComponent implements OnInit {
   intersectionObserver: IntersectionObserver;
   items: CollectionItem[];
   mutationObserver: MutationObserver;
+  overview = '';
 
   @Input() get collection(): Collection { return this._collection; }
   set collection(newValue : Collection) {
@@ -46,14 +47,16 @@ export class PosterViewComponent implements OnInit {
       mutationList.forEach(mr => {
         if (mr.type === 'childList') {
           mr.addedNodes.forEach(node => {
-            const imageWrappers = (node as HTMLElement).querySelectorAll('.poster-thumbnail-wrapper');
+            const imageWrappers = (node as HTMLElement).querySelectorAll &&
+              (node as HTMLElement).querySelectorAll('.poster-thumbnail-wrapper');
 
             if (imageWrappers)
               imageWrappers.forEach(iw => this.intersectionObserver.observe(iw));
           });
 
           mr.removedNodes.forEach(node => {
-            const imageWrappers = (node as HTMLElement).querySelectorAll('.poster-thumbnail-wrapper');
+            const imageWrappers = (node as HTMLElement).querySelectorAll &&
+              (node as HTMLElement).querySelectorAll('.poster-thumbnail-wrapper');
 
             if (imageWrappers)
               imageWrappers.forEach(iw => this.intersectionObserver.unobserve(iw));
