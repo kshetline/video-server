@@ -37,6 +37,17 @@
   height: 225px;
   width: 150px;
   z-index: 1;
+
+  .loading {
+    font-style: italic;
+    left: 0;
+    line-height: 225px;
+    position: absolute;
+    right: 0;
+    text-align: center;
+    top: 0;
+    z-index: -1;
+  }
 }
 
 .clicker {

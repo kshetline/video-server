@@ -27,11 +27,12 @@ import logger from 'morgan';
 import * as paths from 'path';
 import { jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
 import request from 'request';
-import { requestJson } from 'by-request';
+import { requestBinary, requestJson } from 'by-request';
 import { Collection, CollectionItem, CollectionStatus, MediaInfo, MediaInfoTrack, ShowInfo, Track, VType } from './shared-types';
 import { abs, min } from '@tubular/math';
-import { lstat, mkdir, readdir, writeFile } from 'fs/promises';
+import { lstat, readdir, writeFile } from 'fs/promises';
 import { existsSync, mkdirSync, readFileSync, Stats } from 'fs';
+import Jimp from 'jimp';
 
 const debug = require('debug')('express:server');
 
@@ -41,6 +42,8 @@ const allowCors = toBoolean(process.env.VC_ALLOW_CORS) || devMode;
 const defaultPort = devMode ? 4201 : 8080;
 const httpPort = normalizePort(process.env.VC_PORT || defaultPort);
 const cacheDir = paths.join(process.cwd(), 'cache');
+const posterDir = paths.join(cacheDir, 'poster');
+const thumbnailDir = paths.join(cacheDir, 'thumbnail');
 const app = getApp();
 let httpServer: http.Server;
 const MAX_START_ATTEMPTS = 3;
@@ -48,6 +51,12 @@ let startAttempts = 0;
 
 if (!existsSync(cacheDir))
   mkdirSync(cacheDir);
+
+if (!existsSync(posterDir))
+  mkdirSync(posterDir);
+
+if (!existsSync(thumbnailDir))
+  mkdirSync(thumbnailDir);
 
 const collectionFile = paths.join(cacheDir, 'collection.json');
 let cachedCollection = { status: CollectionStatus.NOT_STARTED, progress: -1 } as Collection;
@@ -601,37 +610,30 @@ function getApp(): Express {
   });
 
   theApp.get('/api/poster', async (req, res) => {
-    let cachePath = paths.join(cacheDir, 'poster', req.query.id + '.' + req.query.cs);
+    const posterPath = paths.join(posterDir, `${req.query.id}-${req.query.cs}.jpg`);
+    let fullSize: Buffer;
 
-    if (req.query.w)
-      cachePath += '-' + req.query.w;
+    if (!await existsAsync(posterPath)) {
+      const url = `${process.env.VS_ZIDOO_CONNECT}Poster/v2/getPoster?id=${req.query.id}`;
 
-    if (req.query.h)
-      cachePath += '-' + req.query.h;
-
-    cachePath += (req.query.w || req.query.h ? '.png' : '.jpg');
-
-    if (await existsAsync(cachePath))
-      res.sendFile(cachePath);
-    else {
-      let url = `${process.env.VS_ZIDOO_CONNECT}Poster/v2/getPoster?id=${req.query.id}`;
-
-      if (req.query.w)
-        url += '&w=' + req.query.w;
-
-      if (req.query.h)
-        url += '&h=' + req.query.h;
-
-      request(url, { encoding: 'binary' }, async (error, _response, body) => {
-        if (error)
-          return;
-
-        if (!await existsAsync(paths.dirname(cachePath)))
-          await mkdir(paths.dirname(cachePath));
-
-        await writeFile(cachePath, body, 'binary');
-      }).pipe(res);
+      fullSize = await requestBinary(url);
+      await writeFile(posterPath, fullSize, 'binary');
     }
+
+    if (!req.query.w || !req.query.h) {
+      res.sendFile(posterPath);
+      return;
+    }
+
+    const thumbnailPath = paths.join(thumbnailDir, `${req.query.id}-${req.query.cs}-${req.query.w}-${req.query.h}.jpg`);
+
+    if (!await existsAsync(thumbnailPath)) {
+      Jimp.read((fullSize || posterPath) as any).then(image =>
+        image.resize(toInt(req.query.w), toInt(req.query.h)).quality(80).write(thumbnailPath,
+          () => res.sendFile(thumbnailPath)));
+    }
+    else
+      res.sendFile(thumbnailPath);
   });
 
   theApp.get('/api/profile-image/:image', async (req, res) => {
