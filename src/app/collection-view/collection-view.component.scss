@@ -24,7 +24,7 @@
 
   .collection-title {
     font-size: 2em;
-    padding: 0.5em 0 1em 0;
+    padding: 0.5em 0;
   }
 
   .item-list {
@@ -33,9 +33,10 @@
     flex-wrap: wrap;
     gap: 5em;
     justify-content: center;
-    margin-top: 1em;
+    max-height: calc(100vh - 6em);
     min-height: calc(75vh - 3.5em);
     overflow: auto;
+    padding: 1.5em 0 4em;
 
     .library-item {
       align-items: center;

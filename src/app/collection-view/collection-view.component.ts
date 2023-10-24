@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { LibraryItem } from '../../../server/src/shared-types';
 import { checksum53 } from '../video-ui-utils';
 
@@ -23,4 +23,9 @@ export class CollectionViewComponent {
   }
 
   @Output() goBack: EventEmitter<void> = new EventEmitter();
+
+  @HostListener('window:keydown', ['$event']) onKeyDown(event:KeyboardEvent): void {
+    if (this.collection && event.key === 'Escape')
+      this.goBack.emit();
+  }
 }
