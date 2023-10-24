@@ -21,7 +21,10 @@
     <div [attr.data-id]="item.id" [attr.data-name]="item.name" class="poster-thumbnail-wrapper">
       <div class="loading">Loading...</div>
     </div>
-    <p-rating *ngIf="item.voteAverage" [ngModel]="item.voteAverage / 2 - 0.5" [readonly]="true" [cancel]="false"></p-rating>
+    <div class="rating-wrapper">
+      <p-rating *ngIf="item.voteAverage" [ngModel]="item.voteAverage / 2 - 0.5"
+                [readonly]="true" [cancel]="false"></p-rating>
+    </div>
     <div class="title">{{item.name}}</div>
 
     <div class="clicker" (mouseenter)="overview = item.overview" (mouseleave)="overview = ''"></div>
