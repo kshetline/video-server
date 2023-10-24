@@ -10,6 +10,8 @@
            width=150 height=250 alt="{{item.name}}">
       <div class="title">{{item.name}}</div>
       <div class="year">{{item.year ? item.year : ''}}</div>
+
+      <div class="clicker" (click)="onClick(item)"></div>
     </div>
   </div>
 </div>

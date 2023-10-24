@@ -18,14 +18,19 @@ export class CollectionViewComponent {
   set collection(value: LibraryItem) {
     if (this._collection !== value) {
       this._collection = value;
-      this.items = value.data;
+      this.items = value?.data;
     }
   }
 
   @Output() goBack: EventEmitter<void> = new EventEmitter();
+  @Output() showSelected: EventEmitter<LibraryItem> = new EventEmitter();
 
   @HostListener('window:keydown', ['$event']) onKeyDown(event:KeyboardEvent): void {
     if (this.collection && event.key === 'Escape')
       this.goBack.emit();
+  }
+
+  onClick(item: LibraryItem): void {
+    this.showSelected.emit(item);
   }
 }

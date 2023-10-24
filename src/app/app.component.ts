@@ -11,6 +11,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   private canPoll = false;
 
   currentCollection: LibraryItem;
+  currentShow: LibraryItem;
   library: VideoLibrary;
   status: ServerStatus;
 
@@ -36,9 +37,10 @@ export class AppComponent implements AfterViewInit, OnInit {
   }
 
   itemClicked(item: LibraryItem): void {
-    console.log(item.name);
     if (item?.type === VType.COLLECTION || item?.type === VType.TV_SHOW)
       this.currentCollection = item;
+    else if (item?.type === VType.MOVIE || item?.type === VType.TV_SEASON)
+      this.currentShow = item;
   }
 
   private pollStatus = (): void => {

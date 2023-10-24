@@ -12,12 +12,14 @@ import { PosterViewComponent } from './poster-view/poster-view.component';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { RatingModule } from 'primeng/rating';
 import { TooltipModule } from 'primeng/tooltip';
+import { ShowViewComponent } from './show-view/show-view.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     PosterViewComponent,
-    CollectionViewComponent
+    CollectionViewComponent,
+    ShowViewComponent
   ],
   imports: [
     AppRoutingModule,

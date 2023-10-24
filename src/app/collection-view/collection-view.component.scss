@@ -62,4 +62,16 @@
       }
     }
   }
+
+  .clicker {
+    background-color: transparent;
+    bottom: 0;
+    cursor: pointer;
+    left: 0;
+    pointer-events: all;
+    position: absolute;
+    right: 0;
+    top: 0;
+    z-index: 102;
+  }
 }
