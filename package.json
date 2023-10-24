@@ -5,7 +5,8 @@
   "author": "Kerry Shetline <kerry@shetline.com>",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --proxy-config proxy.conf.json --ssl --ssl-key .\\cert\\localhost.key --ssl-cert .\\cert\\localhost.crt",
+    "start": "ng serve --proxy-config proxy.conf.json --ssl --ssl-key ./cert/localhost.key --ssl-cert ./cert/localhost.crt",
+    "start-win": "ng serve --proxy-config proxy.conf.json --ssl --ssl-key .\\cert\\localhost.key --ssl-cert .\\cert\\localhost.crt",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",

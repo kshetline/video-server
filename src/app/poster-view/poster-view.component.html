@@ -1,17 +1,25 @@
-<div *ngIf="overview" class="overview">{{overview}}</div>
-<div *ngFor="let item of items" class="collection-item">
-  <ng-container *ngIf="item.type === COLLECTION">
-    <div *ngIf="item.data?.length > 1" [attr.data-id]="item.data[1].id"
-         [attr.data-name]="item.data[1].name" class="poster-thumbnail-wrapper offset2"></div>
-    <div *ngIf="item.data?.length > 0"
-         [attr.data-id]="item.data[0].id" [attr.data-name]="item.data[0].name" class="poster-thumbnail-wrapper offset"></div>
-  </ng-container>
-
-  <div [attr.data-id]="item.id" [attr.data-name]="item.name" class="poster-thumbnail-wrapper">
-    <div class="loading">Loading...</div>
+<div class='filter-panel'>
+  <div class="filter-buttons">
+    <p-radioButton *ngFor="let choice of filterChoices" [label]="choice" [value]="choice"
+                   [(ngModel)]="filter" class="filter-button"></p-radioButton>
   </div>
-  <p-rating *ngIf="item.voteAverage" [ngModel]="item.voteAverage / 2 - 0.5" [readonly]="true" [cancel]="false"></p-rating>
-  <div class="title">{{item.name}}</div>
+</div>
+<div class='poster-grid'>
+  <div *ngIf="overview" class="overview">{{overview}}</div>
+  <div *ngFor="let item of items" class="collection-item">
+    <ng-container *ngIf="item.type === COLLECTION">
+      <div *ngIf="item.data?.length > 1" [attr.data-id]="item.data[1].id"
+           [attr.data-name]="item.data[1].name" class="poster-thumbnail-wrapper offset2"></div>
+      <div *ngIf="item.data?.length > 0"
+           [attr.data-id]="item.data[0].id" [attr.data-name]="item.data[0].name" class="poster-thumbnail-wrapper offset"></div>
+    </ng-container>
 
-  <div class="clicker" (mouseenter)="overview = item.overview" (mouseleave)="overview = ''"></div>
+    <div [attr.data-id]="item.id" [attr.data-name]="item.name" class="poster-thumbnail-wrapper">
+      <div class="loading">Loading...</div>
+    </div>
+    <p-rating *ngIf="item.voteAverage" [ngModel]="item.voteAverage / 2 - 0.5" [readonly]="true" [cancel]="false"></p-rating>
+    <div class="title">{{item.name}}</div>
+
+    <div class="clicker" (mouseenter)="overview = item.overview" (mouseleave)="overview = ''"></div>
+  </div>
 </div>

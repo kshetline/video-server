@@ -6,6 +6,7 @@ import { HttpClientJsonpModule, HttpClientModule } from '@angular/common/http';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { PosterViewComponent } from './poster-view/poster-view.component';
+import { RadioButtonModule } from 'primeng/radiobutton';
 import { RatingModule } from 'primeng/rating';
 import { TooltipModule } from 'primeng/tooltip';
 
@@ -20,6 +21,7 @@ import { TooltipModule } from 'primeng/tooltip';
     FormsModule,
     HttpClientModule,
     HttpClientJsonpModule,
+    RadioButtonModule,
     RatingModule,
     TooltipModule
   ],

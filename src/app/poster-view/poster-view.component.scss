@@ -1,10 +1,40 @@
 :host {
   background-color: #333;
   color: white;
+  display: block;
+  position: relative;
+}
+
+.filter-panel {
+  background-color: black;
+  color: white;
+  height: 3em;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 10;
+
+  .filter-buttons {
+    align-items: center;
+    display: flex;
+    gap: 2em;
+    height: 100%;
+    padding-left: 2em;
+
+    .filter-button {
+      align-items: center;
+      display: flex;
+    }
+  }
+}
+
+.poster-grid {
   display: grid;
   gap: 3em;
   grid-template-columns: repeat(auto-fit, minmax(10em, 1fr));
-  padding: 0.5em;
+  height: calc(100vh - 3em);
+  overflow: auto;
+  padding: 0.5em 1.5em;
   position: relative;
 }
 
