@@ -2,6 +2,10 @@
   <div class="filter-buttons">
     <p-radioButton *ngFor="let choice of filterChoices" [label]="choice" [value]="choice"
                    [(ngModel)]="filter" class="filter-button"></p-radioButton>
+    <span class="p-input-icon-left">
+        <i class="pi pi-search"></i>
+        <input type="text" pInputText [(ngModel)]="searchText" />
+    </span>
   </div>
 </div>
 <div class='poster-grid'>

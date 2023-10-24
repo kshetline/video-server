@@ -1,6 +1,7 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { Collection, CollectionItem, VType } from '../../../server/src/shared-types';
 import { checksum53 } from '../video-ui-utils';
+import { stripDiacriticals_lc } from '@tubular/util';
 
 function isMovie(item: CollectionItem): boolean {
   return item.type === VType.MOVIE ||
@@ -22,6 +23,7 @@ export class PosterViewComponent implements OnInit {
 
   private _collection: Collection;
   private _filter = 'All';
+  private _searchText = '';
 
   filterChoices = ['All', 'Movies', 'TV', '4K', '3D'];
 
@@ -42,24 +44,15 @@ export class PosterViewComponent implements OnInit {
   set filter(value: string) {
     if (this._filter !== value) {
       this._filter = value;
+      this.refilter();
+    }
+  }
 
-      switch (value) {
-        case 'All':
-          this.items = this.collection.array;
-          break;
-        case 'Movies':
-          this.items = this.collection.array.filter(item => isMovie(item));
-          break;
-        case 'TV':
-          this.items = this.collection.array.filter(item => isTV(item));
-          break;
-        case '4K':
-          this.items = this.collection.array.filter(item => item.is4k);
-          break;
-        case '3D':
-          this.items = this.collection.array.filter(item => item.is3d);
-          break;
-      }
+  get searchText(): string { return this._searchText; }
+  set searchText(value: string) {
+    if (this._searchText !== value) {
+      this._searchText = value;
+      this.refilter();
     }
   }
 
@@ -104,5 +97,44 @@ export class PosterViewComponent implements OnInit {
     });
 
     this.mutationObserver.observe(document.body, { childList: true, subtree: true });
+  }
+
+  private refilter(): void {
+    switch (this.filter) {
+      case 'All':
+        this.items = this.collection.array.filter(item => this.matchesSearch(item));
+        break;
+      case 'Movies':
+        this.items = this.collection.array.filter(item => this.matchesSearch(item) && isMovie(item));
+        break;
+      case 'TV':
+        this.items = this.collection.array.filter(item => this.matchesSearch(item) && isTV(item));
+        break;
+      case '4K':
+        this.items = this.collection.array.filter(item => this.matchesSearch(item) && item.is4k);
+        break;
+      case '3D':
+        this.items = this.collection.array.filter(item => this.matchesSearch(item) && item.is3d);
+        break;
+    }
+  }
+
+  private matchesSearch(item: CollectionItem): boolean {
+    if (!this.searchText)
+      return true;
+    else if (!item.name || item.type === VType.TV_EPISODE || item.type === VType.TV_SEASON || item.type === VType.FILE)
+      return false;
+
+    const text = stripDiacriticals_lc(this.searchText);
+
+    if (stripDiacriticals_lc(item.name).includes(text))
+      return true;
+
+    for (const child of (item.data || [])) {
+      if (this.matchesSearch(child))
+        return true;
+    }
+
+    return false;
   }
 }

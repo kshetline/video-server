@@ -8,7 +8,7 @@
 .filter-panel {
   background-color: black;
   color: white;
-  height: 3em;
+  height: 3.5em;
   left: 0;
   right: 0;
   top: 0;
@@ -34,7 +34,7 @@
   grid-template-columns: repeat(auto-fit, minmax(10em, 1fr));
   height: calc(100vh - 3em);
   overflow: auto;
-  padding: 0.5em 2em;
+  padding: 1em 2em;
   position: relative;
 }
 
