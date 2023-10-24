@@ -1,1 +1,3 @@
-<app-poster-view [collection]="collection"></app-poster-view>
+<app-poster-view [collection]="collection" (itemClicked)="itemClicked($event)"></app-poster-view>
+<app-collection-view [class.active]="currentCollection" [collection]=currentCollection
+  (goBack)="currentCollection = null"></app-collection-view>

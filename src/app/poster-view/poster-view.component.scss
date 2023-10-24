@@ -20,19 +20,15 @@
     gap: 2em;
     height: 100%;
     padding-left: 2em;
-
-    .filter-button {
-      align-items: center;
-      display: flex;
-    }
   }
 }
 
 .poster-grid {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: 3em;
-  grid-template-columns: repeat(auto-fit, minmax(10em, 1fr));
   height: calc(100vh - 3em);
+  justify-content: center;
   overflow: auto;
   padding: 1em 2em;
   position: relative;
@@ -106,4 +102,9 @@
   position: fixed;
   right: 0;
   z-index: 3;
+}
+
+.dummy-item {
+  height: 1px;
+  width: 150px;
 }

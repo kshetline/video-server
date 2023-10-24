@@ -1,7 +1,7 @@
 <div class='filter-panel'>
   <div class="filter-buttons">
     <p-radioButton *ngFor="let choice of filterChoices" [label]="choice" [value]="choice"
-                   [(ngModel)]="filter" class="filter-button"></p-radioButton>
+                   [(ngModel)]="filter"></p-radioButton>
     <span class="p-input-icon-left">
         <i class="pi pi-search"></i>
         <input type="text" pInputText [(ngModel)]="searchText" />
@@ -27,6 +27,7 @@
     </div>
     <div class="title">{{item.name}}</div>
 
-    <div class="clicker" (mouseenter)="overview = item.overview" (mouseleave)="overview = ''"></div>
+    <div class="clicker" (mouseenter)="overview = item.overview" (mouseleave)="overview = ''" (click)="onClick(item)"></div>
   </div>
+  <div *ngFor="let item of [1, 2, 3, 4, 5, 6, 7, 8]" class="dummy-item"></div>
 </div>

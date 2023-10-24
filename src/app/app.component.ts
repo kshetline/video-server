@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Collection, ServerStatus } from '../../server/src/shared-types';
+import { Collection, CollectionItem, ServerStatus, VType } from '../../server/src/shared-types';
 
 @Component({
   selector: 'app-root',
@@ -11,6 +11,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   private canPoll = false;
 
   collection: Collection;
+  currentCollection: CollectionItem;
   status: ServerStatus;
 
   constructor(private httpClient: HttpClient) {}
@@ -32,6 +33,12 @@ export class AppComponent implements AfterViewInit, OnInit {
       next: (status: ServerStatus) => this.status = status,
       complete: () => this.canPoll = true
     });
+  }
+
+  itemClicked(item: CollectionItem): void {
+    console.log(item.name);
+    if (item?.type === VType.COLLECTION)
+      this.currentCollection = item;
   }
 
   private pollStatus = (): void => {

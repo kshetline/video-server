@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { Collection, CollectionItem, VType } from '../../../server/src/shared-types';
 import { checksum53 } from '../video-ui-utils';
 import { stripDiacriticals_lc } from '@tubular/util';
@@ -39,6 +39,8 @@ export class PosterViewComponent implements OnInit {
       this.items = value?.array;
     }
   }
+
+  @Output() itemClicked: EventEmitter<CollectionItem> = new EventEmitter();
 
   get filter(): string { return this._filter; }
   set filter(value: string) {
@@ -97,6 +99,10 @@ export class PosterViewComponent implements OnInit {
     });
 
     this.mutationObserver.observe(document.body, { childList: true, subtree: true });
+  }
+
+  onClick(item: CollectionItem): void {
+    this.itemClicked.emit(item);
   }
 
   private refilter(): void {
