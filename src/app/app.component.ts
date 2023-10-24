@@ -37,7 +37,7 @@ export class AppComponent implements AfterViewInit, OnInit {
 
   itemClicked(item: LibraryItem): void {
     console.log(item.name);
-    if (item?.type === VType.COLLECTION)
+    if (item?.type === VType.COLLECTION || item?.type === VType.TV_SHOW)
       this.currentCollection = item;
   }
 

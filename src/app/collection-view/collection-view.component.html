@@ -2,5 +2,14 @@
   <p-button label="Back" icon="pi pi-chevron-left" (click)="goBack.emit()"/>
 </div>
 <div class="content">
-  <div class="title">{{collection?.name}}</div>
+  <div class="collection-title">{{collection?.name}}</div>
+  <div class="item-list">
+    <div *ngFor="let item of items" class="library-item">
+      <div class="loading">Loading...</div>
+      <img src="/api/poster?id={{item.id}}&cs={{checksum53(item.name)}}&w=300&h=450"
+           width=150 height=250 alt="{{item.name}}">
+      <div class="title">{{item.name}}</div>
+      <div class="year">{{item.year ? item.year : ''}}</div>
+    </div>
+  </div>
 </div>

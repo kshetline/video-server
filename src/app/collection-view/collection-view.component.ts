@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { LibraryItem } from '../../../server/src/shared-types';
+import { checksum53 } from '../video-ui-utils';
 
 @Component({
   selector: 'app-collection-view',
@@ -7,6 +8,19 @@ import { LibraryItem } from '../../../server/src/shared-types';
   styleUrls: ['./collection-view.component.scss']
 })
 export class CollectionViewComponent {
-  @Input() collection: LibraryItem;
+  checksum53 = checksum53;
+
+  private _collection: LibraryItem;
+
+  items: LibraryItem[];
+
+  @Input() get collection(): LibraryItem { return this._collection; }
+  set collection(value: LibraryItem) {
+    if (this._collection !== value) {
+      this._collection = value;
+      this.items = value.data;
+    }
+  }
+
   @Output() goBack: EventEmitter<void> = new EventEmitter();
 }

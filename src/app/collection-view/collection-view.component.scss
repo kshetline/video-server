@@ -22,8 +22,43 @@
   display: flex;
   flex-direction: column;
 
-  .title {
+  .collection-title {
     font-size: 2em;
-    padding-top: 1em;
+    padding: 0.5em 0 1em 0;
+  }
+
+  .item-list {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5em;
+    justify-content: center;
+    margin-top: 1em;
+    min-height: calc(75vh - 3.5em);
+    overflow: auto;
+
+    .library-item {
+      align-items: center;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5em;
+      position: relative;
+      width: calc(150px + 2em);
+
+      .loading {
+        font-style: italic;
+        left: 0;
+        line-height: 225px;
+        position: absolute;
+        right: 0;
+        text-align: center;
+        top: 0;
+        z-index: -1;
+      }
+
+      .title, .year {
+        text-align: center;
+      }
+    }
   }
 }
