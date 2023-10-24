@@ -1,6 +1,11 @@
 export enum VType { FILE, MOVIE, COLLECTION, TV_SHOW, TV_SEASON, TV_EPISODE }
 export enum CollectionStatus { NOT_STARTED, INITIALIZED, BONUS_MATERIAL_LINKED, ALL_VIDEOS, MEDIA_DETAILS, DONE = 100 }
 
+export interface ServerStatus {
+  ready: boolean;
+  updateProgress: number;
+}
+
 export interface Track {
   channels?: string;
   codec?: string;

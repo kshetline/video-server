@@ -12,3 +12,4 @@ tsc-out
 /.idea/*
 /server/cache/
 /.angular/
+/cert/

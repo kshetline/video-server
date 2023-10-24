@@ -21,18 +21,19 @@
 import { execSync } from 'child_process';
 import cookieParser from 'cookie-parser';
 import express, { Express } from 'express';
-import * as http from 'http';
+import * as https from 'https';
 import { asLines, forEach, isString, toBoolean, toInt, toNumber } from '@tubular/util';
 import logger from 'morgan';
 import * as paths from 'path';
 import { jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
 import request from 'request';
 import { requestBinary, requestJson } from 'by-request';
-import { Collection, CollectionItem, CollectionStatus, MediaInfo, MediaInfoTrack, ShowInfo, Track, VType } from './shared-types';
+import { Collection, CollectionItem, CollectionStatus, MediaInfo, MediaInfoTrack, ServerStatus, ShowInfo, Track, VType } from './shared-types';
 import { abs, min } from '@tubular/math';
 import { lstat, readdir, writeFile } from 'fs/promises';
 import { existsSync, mkdirSync, readFileSync, Stats } from 'fs';
 import Jimp from 'jimp';
+import * as fs from 'fs';
 
 const debug = require('debug')('express:server');
 
@@ -45,7 +46,7 @@ const cacheDir = paths.join(process.cwd(), 'cache');
 const posterDir = paths.join(cacheDir, 'poster');
 const thumbnailDir = paths.join(cacheDir, 'thumbnail');
 const app = getApp();
-let httpServer: http.Server;
+let httpsServer: https.Server;
 const MAX_START_ATTEMPTS = 3;
 let startAttempts = 0;
 
@@ -496,16 +497,19 @@ async function updateCollection(): Promise<void> {
 
 function createAndStartServer(): void {
   console.log(`*** Starting server on port ${httpPort} at ${timeStamp()} ***`);
-  httpServer = http.createServer(app);
-  httpServer.on('error', onError);
-  httpServer.on('listening', onListening);
+  httpsServer = https.createServer({
+    key: fs.readFileSync(process.env.VS_KEY),
+    cert: fs.readFileSync(process.env.VS_CERT)
+  }, app);
+  httpsServer.on('error', onError);
+  httpsServer.on('listening', onListening);
 
   if (existsSync(collectionFile))
     cachedCollection = JSON.parse(readFileSync(collectionFile).toString('utf8'));
   else
     updateCollection().finally();
 
-  httpServer.listen(httpPort);
+  httpsServer.listen(httpPort);
 }
 
 function onError(error: any): void {
@@ -533,7 +537,7 @@ function onError(error: any): void {
 }
 
 function onListening(): void {
-  const addr = httpServer.address();
+  const addr = httpsServer.address();
   const bind = isString(addr) ? 'pipe ' + addr : 'port ' + addr.port;
 
   debug('Listening on ' + bind);
@@ -572,7 +576,7 @@ function shutdown(signal?: string): void {
 
   console.log(`\n*** ${signal ? signal + ': ' : ''}closing server at ${timeStamp()} ***`);
   // Make sure that if the orderly clean-up gets stuck, shutdown still happens.
-  httpServer.close(() => process.exit(0));
+  httpsServer.close(() => process.exit(0));
 }
 
 function getApp(): Express {
@@ -603,6 +607,17 @@ function getApp(): Express {
       }
     });
   }
+
+  theApp.get('/api/status', async (req, res) => {
+    noCache(res);
+
+    const status: ServerStatus = { ready: cachedCollection?.status === CollectionStatus.DONE, updateProgress: -1 };
+
+    if (pendingCollection)
+      status.updateProgress = pendingCollection.progress;
+
+    jsonOrJsonp(req, res, status);
+  });
 
   theApp.get('/api/collection', async (req, res) => {
     noCache(res);
