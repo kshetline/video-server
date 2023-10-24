@@ -28,7 +28,7 @@ import * as paths from 'path';
 import { jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
 import request from 'request';
 import { requestBinary, requestJson } from 'by-request';
-import { Collection, CollectionItem, CollectionStatus, MediaInfo, MediaInfoTrack, ServerStatus, ShowInfo, Track, VType } from './shared-types';
+import { VideoLibrary, LibraryItem, LibraryStatus, MediaInfo, MediaInfoTrack, ServerStatus, ShowInfo, Track, VType } from './shared-types';
 import { abs, min } from '@tubular/math';
 import { lstat, readdir, writeFile } from 'fs/promises';
 import { existsSync, mkdirSync, readFileSync, Stats } from 'fs';
@@ -59,9 +59,9 @@ if (!existsSync(posterDir))
 if (!existsSync(thumbnailDir))
   mkdirSync(thumbnailDir);
 
-const collectionFile = paths.join(cacheDir, 'collection.json');
-let cachedCollection = { status: CollectionStatus.NOT_STARTED, progress: -1 } as Collection;
-let pendingCollection: Collection;
+const libraryFile = paths.join(cacheDir, 'library.json');
+let cachedLibrary = { status: LibraryStatus.NOT_STARTED, progress: -1 } as VideoLibrary;
+let pendingLibrary: VideoLibrary;
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
@@ -167,7 +167,7 @@ function getCodec(track: MediaInfoTrack): string {
 const FIELDS_TO_KEEP = new Set(['id', 'parentId', 'collectionId', 'aggregationId', 'type', 'voteAverage', 'name', 'is3d',
   'is4k', 'isHdr', 'isFHD', 'is2k', 'isHD', 'year', 'duration', 'watched', 'data', 'duration', 'uri', 'season', 'episode']);
 
-function filter(item: CollectionItem): void {
+function filter(item: LibraryItem): void {
   if (item) {
     const keys = Object.keys(item);
 
@@ -178,7 +178,7 @@ function filter(item: CollectionItem): void {
   }
 }
 
-async function getChildren(parents: CollectionItem[], bonusDirs: Set<string>, directoryMap: Map<string, string[]>): Promise<void> {
+async function getChildren(parents: LibraryItem[], bonusDirs: Set<string>, directoryMap: Map<string, string[]>): Promise<void> {
   for (const parent of (parents || [])) {
     if (parent.videoinfo) {
       parent.duration = parent.videoinfo.duration;
@@ -190,7 +190,7 @@ async function getChildren(parents: CollectionItem[], bonusDirs: Set<string>, di
 
     if (parent.type > VType.FILE) {
       const url = process.env.VS_ZIDOO_CONNECT + `ZidooPoster/getCollection?id=${parent.id}`;
-      const data = (await requestJson(url) as CollectionItem).data;
+      const data = (await requestJson(url) as LibraryItem).data;
 
       if (data) {
         parent.data = data;
@@ -235,12 +235,12 @@ async function getChildren(parents: CollectionItem[], bonusDirs: Set<string>, di
       }
     }
 
-    if (parents === pendingCollection.array)
-      pendingCollection.progress = min(pendingCollection.progress + 44 / 2.89 / pendingCollection.total, 39.7);
+    if (parents === pendingLibrary.array)
+      pendingLibrary.progress = min(pendingLibrary.progress + 44 / 2.89 / pendingLibrary.total, 39.7);
   }
 }
 
-async function getMediaInfo(parents: CollectionItem[]): Promise<void> {
+async function getMediaInfo(parents: LibraryItem[]): Promise<void> {
   for (const parent of parents) {
     if (parent.type === VType.FILE) {
       const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getVideoInfo?id=${parent.aggregationId}`;
@@ -286,8 +286,8 @@ async function getMediaInfo(parents: CollectionItem[]): Promise<void> {
     else
       await getMediaInfo(parent.data);
 
-    if (parents === pendingCollection.array)
-      pendingCollection.progress = min(pendingCollection.progress + 110 / 2.89 / pendingCollection.total, 77.8);
+    if (parents === pendingLibrary.array)
+      pendingLibrary.progress = min(pendingLibrary.progress + 110 / 2.89 / pendingLibrary.total, 77.8);
   }
 }
 
@@ -333,15 +333,15 @@ async function getDirectories(dir: string, bonusDirs: Set<string>, map: Map<stri
       const isBonusDir = bonusDirs.has(file);
 
       if (isBonusDir)
-        pendingCollection.bonusFileCount += subCount;
+        pendingLibrary.bonusFileCount += subCount;
       else {
-        pendingCollection.mainFileCount += subCount;
+        pendingLibrary.mainFileCount += subCount;
       }
 
       const specialDir = /[•§]/.test(path) || /§.*\bSeason 0?1\b/.test(path);
 
       if (!isBonusDir && (specialDir && subCount === 0 || !specialDir && subCount > 0))
-        pendingCollection.progress = min(pendingCollection.progress + 71 / 2.89 / pendingCollection.total, 24.5);
+        pendingLibrary.progress = min(pendingLibrary.progress + 71 / 2.89 / pendingLibrary.total, 24.5);
     }
     else {
       if (!map.has(dir))
@@ -361,7 +361,7 @@ const MOVIE_DETAILS = new Set(['certification', 'homepage', 'logo', 'overview', 
 const SEASON_DETAILS = new Set(['episodeCount', 'overview', 'posterPath', 'seasonNumber']);
 const EPISODE_DETAILS = new Set(['airDate', 'episodeCount', 'overview', 'posterPath', 'seasonNumber']);
 
-async function getShowInfo(parents: CollectionItem[]): Promise<void> {
+async function getShowInfo(parents: LibraryItem[]): Promise<void> {
   for (const parent of parents) {
     if (parent.type === VType.MOVIE || parent.type === VType.TV_SEASON) {
       const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getDetail?id=${parent.id}`;
@@ -413,12 +413,12 @@ async function getShowInfo(parents: CollectionItem[]): Promise<void> {
     else
       await getShowInfo(parent.data);
 
-    if (parents === pendingCollection.array)
-      pendingCollection.progress = min(pendingCollection.progress + 64 / 2.89 / pendingCollection.total, 99.4);
+    if (parents === pendingLibrary.array)
+      pendingLibrary.progress = min(pendingLibrary.progress + 64 / 2.89 / pendingLibrary.total, 99.4);
   }
 }
 
-function fixVideoFlags(parents: CollectionItem[]): void {
+function fixVideoFlags(parents: LibraryItem[]): void {
   for (const parent of parents) {
     if (parent.data?.length > 0)
       fixVideoFlags(parent.data);
@@ -458,41 +458,41 @@ function fixVideoFlags(parents: CollectionItem[]): void {
   }
 }
 
-async function updateCollection(): Promise<void> {
-  if (pendingCollection)
+async function updateLibrary(): Promise<void> {
+  if (pendingLibrary)
     return;
 
   const url = process.env.VS_ZIDOO_CONNECT + 'Poster/v2/getFilterAggregations?type=0&start=0';
   const bonusDirs = new Set(['-Extras-']);
 
-  pendingCollection = await requestJson(url) as Collection;
-  pendingCollection.status = CollectionStatus.INITIALIZED;
-  pendingCollection.progress = 0;
-  pendingCollection.mainFileCount = 0;
-  pendingCollection.bonusFileCount = 0;
+  pendingLibrary = await requestJson(url) as VideoLibrary;
+  pendingLibrary.status = LibraryStatus.INITIALIZED;
+  pendingLibrary.progress = 0;
+  pendingLibrary.mainFileCount = 0;
+  pendingLibrary.bonusFileCount = 0;
 
-  if (cachedCollection.status === CollectionStatus.NOT_STARTED)
-    cachedCollection = pendingCollection;
+  if (cachedLibrary.status === LibraryStatus.NOT_STARTED)
+    cachedLibrary = pendingLibrary;
 
   const directoryMap = new Map<string, string[]>();
   await getDirectories(process.env.VS_VIDEO_SOURCE, bonusDirs, directoryMap);
-  pendingCollection.progress = 24.5;
-  pendingCollection.status = CollectionStatus.BONUS_MATERIAL_LINKED;
-  await getChildren(pendingCollection.array, bonusDirs, directoryMap);
-  pendingCollection.progress = 39.7;
-  pendingCollection.status = CollectionStatus.ALL_VIDEOS;
-  await getMediaInfo(pendingCollection.array);
-  fixVideoFlags(pendingCollection.array);
-  pendingCollection.progress = 77.8;
-  pendingCollection.status = CollectionStatus.MEDIA_DETAILS;
-  await getShowInfo(pendingCollection.array);
-  pendingCollection.status = CollectionStatus.DONE;
-  pendingCollection.lastUpdate = new Date().toISOString();
-  pendingCollection.progress = 100;
-  cachedCollection = pendingCollection;
-  pendingCollection = undefined;
+  pendingLibrary.progress = 24.5;
+  pendingLibrary.status = LibraryStatus.BONUS_MATERIAL_LINKED;
+  await getChildren(pendingLibrary.array, bonusDirs, directoryMap);
+  pendingLibrary.progress = 39.7;
+  pendingLibrary.status = LibraryStatus.ALL_VIDEOS;
+  await getMediaInfo(pendingLibrary.array);
+  fixVideoFlags(pendingLibrary.array);
+  pendingLibrary.progress = 77.8;
+  pendingLibrary.status = LibraryStatus.MEDIA_DETAILS;
+  await getShowInfo(pendingLibrary.array);
+  pendingLibrary.status = LibraryStatus.DONE;
+  pendingLibrary.lastUpdate = new Date().toISOString();
+  pendingLibrary.progress = 100;
+  cachedLibrary = pendingLibrary;
+  pendingLibrary = undefined;
 
-  await writeFile(collectionFile, JSON.stringify(cachedCollection), 'utf8');
+  await writeFile(libraryFile, JSON.stringify(cachedLibrary), 'utf8');
 }
 
 function createAndStartServer(): void {
@@ -504,10 +504,10 @@ function createAndStartServer(): void {
   httpsServer.on('error', onError);
   httpsServer.on('listening', onListening);
 
-  if (existsSync(collectionFile))
-    cachedCollection = JSON.parse(readFileSync(collectionFile).toString('utf8'));
+  if (existsSync(libraryFile))
+    cachedLibrary = JSON.parse(readFileSync(libraryFile).toString('utf8'));
   else
-    updateCollection().finally();
+    updateLibrary().finally();
 
   httpsServer.listen(httpPort);
 }
@@ -611,17 +611,17 @@ function getApp(): Express {
   theApp.get('/api/status', async (req, res) => {
     noCache(res);
 
-    const status: ServerStatus = { ready: cachedCollection?.status === CollectionStatus.DONE, updateProgress: -1 };
+    const status: ServerStatus = { ready: cachedLibrary?.status === LibraryStatus.DONE, updateProgress: -1 };
 
-    if (pendingCollection)
-      status.updateProgress = pendingCollection.progress;
+    if (pendingLibrary)
+      status.updateProgress = pendingLibrary.progress;
 
     jsonOrJsonp(req, res, status);
   });
 
-  theApp.get('/api/collection', async (req, res) => {
+  theApp.get('/api/library', async (req, res) => {
     noCache(res);
-    jsonOrJsonp(req, res, cachedCollection);
+    jsonOrJsonp(req, res, cachedLibrary);
   });
 
   theApp.get('/api/poster', async (req, res) => {

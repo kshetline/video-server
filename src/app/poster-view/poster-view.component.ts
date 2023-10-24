@@ -1,14 +1,14 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { Collection, CollectionItem, VType } from '../../../server/src/shared-types';
+import { VideoLibrary, LibraryItem, VType } from '../../../server/src/shared-types';
 import { checksum53 } from '../video-ui-utils';
 import { stripDiacriticals_lc } from '@tubular/util';
 
-function isMovie(item: CollectionItem): boolean {
+function isMovie(item: LibraryItem): boolean {
   return item.type === VType.MOVIE ||
     (item.type === VType.COLLECTION && item.data?.length > 0 && item.data[0].type === VType.MOVIE);
 }
 
-function isTV(item: CollectionItem): boolean {
+function isTV(item: LibraryItem): boolean {
   return item.type === VType.TV_SHOW || item.type === VType.TV_SEASON || item.type === VType.TV_EPISODE ||
       (item.type === VType.COLLECTION && item.data?.length > 0 && isTV(item.data[0]));
 }
@@ -21,26 +21,26 @@ function isTV(item: CollectionItem): boolean {
 export class PosterViewComponent implements OnInit {
   COLLECTION = VType.COLLECTION;
 
-  private _collection: Collection;
+  private _library: VideoLibrary;
   private _filter = 'All';
   private _searchText = '';
 
   filterChoices = ['All', 'Movies', 'TV', '4K', '3D'];
 
   intersectionObserver: IntersectionObserver;
-  items: CollectionItem[];
+  items: LibraryItem[];
   mutationObserver: MutationObserver;
   overview = '';
 
-  @Input() get collection(): Collection { return this._collection; }
-  set collection(value : Collection) {
-    if (this._collection !== value) {
-      this._collection = value;
+  @Input() get library(): VideoLibrary { return this._library; }
+  set library(value : VideoLibrary) {
+    if (this._library !== value) {
+      this._library = value;
       this.items = value?.array;
     }
   }
 
-  @Output() itemClicked: EventEmitter<CollectionItem> = new EventEmitter();
+  @Output() itemClicked: EventEmitter<LibraryItem> = new EventEmitter();
 
   get filter(): string { return this._filter; }
   set filter(value: string) {
@@ -101,31 +101,31 @@ export class PosterViewComponent implements OnInit {
     this.mutationObserver.observe(document.body, { childList: true, subtree: true });
   }
 
-  onClick(item: CollectionItem): void {
+  onClick(item: LibraryItem): void {
     this.itemClicked.emit(item);
   }
 
   private refilter(): void {
     switch (this.filter) {
       case 'All':
-        this.items = this.collection.array.filter(item => this.matchesSearch(item));
+        this.items = this.library.array.filter(item => this.matchesSearch(item));
         break;
       case 'Movies':
-        this.items = this.collection.array.filter(item => this.matchesSearch(item) && isMovie(item));
+        this.items = this.library.array.filter(item => this.matchesSearch(item) && isMovie(item));
         break;
       case 'TV':
-        this.items = this.collection.array.filter(item => this.matchesSearch(item) && isTV(item));
+        this.items = this.library.array.filter(item => this.matchesSearch(item) && isTV(item));
         break;
       case '4K':
-        this.items = this.collection.array.filter(item => this.matchesSearch(item) && item.is4k);
+        this.items = this.library.array.filter(item => this.matchesSearch(item) && item.is4k);
         break;
       case '3D':
-        this.items = this.collection.array.filter(item => this.matchesSearch(item) && item.is3d);
+        this.items = this.library.array.filter(item => this.matchesSearch(item) && item.is3d);
         break;
     }
   }
 
-  private matchesSearch(item: CollectionItem): boolean {
+  private matchesSearch(item: LibraryItem): boolean {
     if (!this.searchText)
       return true;
     else if (!item.name || item.type === VType.TV_EPISODE || item.type === VType.TV_SEASON || item.type === VType.FILE)

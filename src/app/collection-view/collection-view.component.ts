@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CollectionItem } from '../../../server/src/shared-types';
+import { LibraryItem } from '../../../server/src/shared-types';
 
 @Component({
   selector: 'app-collection-view',
@@ -7,6 +7,6 @@ import { CollectionItem } from '../../../server/src/shared-types';
   styleUrls: ['./collection-view.component.scss']
 })
 export class CollectionViewComponent {
-  @Input() collection: CollectionItem;
+  @Input() collection: LibraryItem;
   @Output() goBack: EventEmitter<void> = new EventEmitter();
 }

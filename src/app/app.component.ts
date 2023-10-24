@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Collection, CollectionItem, ServerStatus, VType } from '../../server/src/shared-types';
+import { VideoLibrary, LibraryItem, ServerStatus, VType } from '../../server/src/shared-types';
 
 @Component({
   selector: 'app-root',
@@ -10,8 +10,8 @@ import { Collection, CollectionItem, ServerStatus, VType } from '../../server/sr
 export class AppComponent implements AfterViewInit, OnInit {
   private canPoll = false;
 
-  collection: Collection;
-  currentCollection: CollectionItem;
+  currentCollection: LibraryItem;
+  library: VideoLibrary;
   status: ServerStatus;
 
   constructor(private httpClient: HttpClient) {}
@@ -26,8 +26,8 @@ export class AppComponent implements AfterViewInit, OnInit {
   }
 
   ngAfterViewInit(): void {
-    this.httpClient.get('/api/collection').subscribe((collection: Collection) => {
-      this.collection = collection;
+    this.httpClient.get('/api/library').subscribe((library: VideoLibrary) => {
+      this.library = library;
     });
     this.httpClient.get('/api/status').subscribe({
       next: (status: ServerStatus) => this.status = status,
@@ -35,7 +35,7 @@ export class AppComponent implements AfterViewInit, OnInit {
     });
   }
 
-  itemClicked(item: CollectionItem): void {
+  itemClicked(item: LibraryItem): void {
     console.log(item.name);
     if (item?.type === VType.COLLECTION)
       this.currentCollection = item;

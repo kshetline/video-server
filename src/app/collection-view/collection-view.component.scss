@@ -1,5 +1,5 @@
 :host {
-  background-color: #00A;
+  background-color: #222;
   color: white;
   display: block;
 }
@@ -15,4 +15,15 @@
   right: 0;
   top: 0;
   z-index: 110;
+}
+
+.content {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+
+  .title {
+    font-size: 2em;
+    padding-top: 1em;
+  }
 }

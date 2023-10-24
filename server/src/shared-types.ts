@@ -1,5 +1,5 @@
 export enum VType { FILE, MOVIE, COLLECTION, TV_SHOW, TV_SEASON, TV_EPISODE }
-export enum CollectionStatus { NOT_STARTED, INITIALIZED, BONUS_MATERIAL_LINKED, ALL_VIDEOS, MEDIA_DETAILS, DONE = 100 }
+export enum LibraryStatus { NOT_STARTED, INITIALIZED, BONUS_MATERIAL_LINKED, ALL_VIDEOS, MEDIA_DETAILS, DONE = 100 }
 
 export interface ServerStatus {
   ready: boolean;
@@ -24,14 +24,14 @@ export interface VideoInfo {
   uri: string;
 }
 
-export interface CollectionItem {
+export interface LibraryItem {
   id: number;
   parentId: number;
   collectionId: number;
   aggregationId: number;
   type: VType;
   name: string;
-  data?: CollectionItem[];
+  data?: LibraryItem[];
 
   actors: {
     character: string;
@@ -71,8 +71,8 @@ export interface CollectionItem {
   year?: number;
 }
 
-export interface Collection {
-  status?: CollectionStatus;
+export interface VideoLibrary {
+  status?: LibraryStatus;
   progress?: number;
   lastUpdate?: string;
   mainFileCount?: number;
@@ -81,7 +81,7 @@ export interface Collection {
   start?: number;
   count?: number;
   total?: number;
-  array?: CollectionItem[];
+  array?: LibraryItem[];
 }
 
 export interface MediaInfoTrack {
