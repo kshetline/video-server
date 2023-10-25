@@ -1,5 +1,5 @@
 :host {
-  background-color: #222;
+  background-color: #444;
   color: white;
   display: block;
 }
@@ -18,17 +18,40 @@
 }
 
 .content {
-  align-items: center;
-  display: flex;
-  flex-direction: column;
+  align-content: center;
+  display: grid;
+  grid-template-columns: min-content 1fr;
+  gap: 4em;
+  height: calc(100vh - 3.5em);
+  padding: 1em;
 
-  .show-title {
-    font-size: 2em;
-    padding: 0.5em 0;
+  .poster-area {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 2em;
+    justify-content: center;
+
+    .poster {
+      height: 36vw;
+      width: 24vw;
+    }
   }
 
-  .poster {
-    height: 60vh;
-    width: 40vh;
+  .show-info-wrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: end;
+
+    .show-info {
+      .show-title {
+        font-size: 2em;
+      }
+
+      .tag-line {
+        font-weight: bold;
+        padding: 0.5em 0;
+      }
+    }
   }
 }

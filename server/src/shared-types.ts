@@ -64,6 +64,7 @@ export interface LibraryItem {
   resolution?: string;
   season?: number;
   subtitle?: Track[];
+  tagLine?: string;
   title?: string;
   uri?: string;
   video?: Track[];
