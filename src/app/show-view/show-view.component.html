@@ -2,7 +2,14 @@
   <p-button label="Back" icon="pi pi-chevron-left" (click)="goBack.emit()"/>
 </div>
 <div *ngIf="show" class="content">
-  <div class="show-title">{{getSeasonTitle(show)}}</div>
-  <img src="/api/poster?id={{show.id}}&cs={{checksum53(show.name)}}" alt="{{show.name}}" class="poster">
-  <div>{{show.overview}}</div>
+  <div class="poster-area">
+    <img src="/api/poster?id={{show.id}}&cs={{checksum53(show.name)}}" alt="{{show.name}}" class="poster">
+  </div>
+  <div class="show-info-wrapper">
+    <div class="show-info">
+      <div class="show-title">{{getSeasonTitle(show)}}</div>
+      <div *ngIf="show.tagLine" class="tag-line">{{show.tagLine}}</div>
+      <div>{{show.overview}}</div>
+    </div>
+  </div>
 </div>

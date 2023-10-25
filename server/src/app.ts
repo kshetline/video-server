@@ -241,7 +241,7 @@ async function getChildren(parents: LibraryItem[], bonusDirs: Set<string>, direc
 }
 
 async function getMediaInfo(parents: LibraryItem[]): Promise<void> {
-  for (const parent of parents) {
+  for (const parent of (parents || [])) {
     if (parent.type === VType.FILE) {
       const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getVideoInfo?id=${parent.aggregationId}`;
       const data: any = await requestJson(url);
