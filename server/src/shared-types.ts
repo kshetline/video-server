@@ -59,6 +59,7 @@ export interface LibraryItem {
   isHdr?: boolean;
   overview: string;
   parent?: LibraryItem;
+  ratingTomatoes: string;
   releaseDate: string;
   resolution?: string;
   season?: number;

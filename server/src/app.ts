@@ -22,7 +22,7 @@ import { execSync } from 'child_process';
 import cookieParser from 'cookie-parser';
 import express, { Express } from 'express';
 import * as https from 'https';
-import { asLines, forEach, isString, toBoolean, toInt, toNumber } from '@tubular/util';
+import { asLines, forEach, isNumber, isString, toBoolean, toInt, toNumber } from '@tubular/util';
 import logger from 'morgan';
 import * as paths from 'path';
 import { jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
@@ -357,12 +357,17 @@ async function getDirectories(dir: string, bonusDirs: Set<string>, map: Map<stri
   return count;
 }
 
-const MOVIE_DETAILS = new Set(['certification', 'homepage', 'logo', 'overview', 'releaseDate', 'tagLine']);
+const MOVIE_DETAILS = new Set(['certification', 'homepage', 'logo', 'overview', 'ratingTomatoes', 'releaseDate', 'tagLine']);
 const SEASON_DETAILS = new Set(['episodeCount', 'overview', 'posterPath', 'seasonNumber']);
 const EPISODE_DETAILS = new Set(['airDate', 'episodeCount', 'overview', 'posterPath', 'seasonNumber']);
 
 async function getShowInfo(parents: LibraryItem[]): Promise<void> {
   for (const parent of parents) {
+    if (isNumber((parent as any).seasonNumber)) {
+      parent.season = (parent as any).seasonNumber;
+      delete (parent as any).seasonNumber;
+    }
+
     if (parent.type === VType.MOVIE || parent.type === VType.TV_SEASON) {
       const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getDetail?id=${parent.id}`;
       const showInfo: ShowInfo = await requestJson(url);
@@ -379,7 +384,9 @@ async function getShowInfo(parents: LibraryItem[]): Promise<void> {
       else {
         if (topInfo) {
           forEach(topInfo, (key, value) => {
-            if (SEASON_DETAILS.has(key) && value)
+            if (key === 'seasonNumber' && isNumber(value))
+              parent.season = value;
+            else if (SEASON_DETAILS.has(key) && value)
               (parent as any)[key] = value;
           });
         }

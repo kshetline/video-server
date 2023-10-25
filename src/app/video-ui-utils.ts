@@ -1,4 +1,5 @@
 import { LibraryItem, VType } from '../../server/src/shared-types';
+import { stripDiacriticals_lc } from '@tubular/util';
 
 export function checksum53(s: string, seed = 0): string {
   let h1 = 0xdeadbeef ^ seed;
@@ -33,8 +34,30 @@ export function getTitle(item: LibraryItem, baseItem?: LibraryItem): string {
     return item.name;
   else if (item.parent)
     return getTitle(item.parent, baseItem ?? item);
-  else if (baseItem)
+  else if (baseItem && baseItem.type !== VType.COLLECTION)
     return baseItem.name;
   else
     return '';
+}
+
+export function getSeasonTitle(item: LibraryItem): string {
+  if (!item)
+    return '';
+  else if (item?.type === VType.MOVIE)
+    return item.name;
+
+  let title = getTitle(item);
+  const season = item.name.trim();
+  const innerTitle = item.data && item.data[0] && item.data[0].data && item.data[0].data[0] && item.data[0].data[0].title;
+  const $ = /^([^•]+)/.exec(innerTitle);
+
+  if ($ && !$[1].includes('/'))
+    title = $[1].trim();
+
+  if (title && season && stripDiacriticals_lc(title) !== stripDiacriticals_lc(season))
+    return `${title} • ${season}`;
+  else if (title)
+    return title;
+  else
+    return season || '';
 }
