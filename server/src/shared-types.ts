@@ -58,6 +58,7 @@ export interface LibraryItem {
   isHD?: boolean;
   isHdr?: boolean;
   overview: string;
+  parent?: LibraryItem;
   releaseDate: string;
   resolution?: string;
   season?: number;

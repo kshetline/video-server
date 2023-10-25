@@ -1,5 +1,6 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { LibraryItem } from '../../../server/src/shared-types';
+import { getTitle } from '../video-ui-utils';
 
 @Component({
   selector: 'app-show-view',
@@ -7,6 +8,8 @@ import { LibraryItem } from '../../../server/src/shared-types';
   styleUrls: ['./show-view.component.scss']
 })
 export class ShowViewComponent {
+  getTitle = getTitle;
+
   private _show: LibraryItem;
 
   @Input() get show(): LibraryItem { return this._show; }

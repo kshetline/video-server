@@ -1,6 +1,7 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { VideoLibrary, LibraryItem, ServerStatus, VType } from '../../server/src/shared-types';
+import { addBackLinks } from './video-ui-utils';
 
 @Component({
   selector: 'app-root',
@@ -28,6 +29,7 @@ export class AppComponent implements AfterViewInit, OnInit {
 
   ngAfterViewInit(): void {
     this.httpClient.get('/api/library').subscribe((library: VideoLibrary) => {
+      addBackLinks(library.array);
       this.library = library;
     });
     this.httpClient.get('/api/status').subscribe({

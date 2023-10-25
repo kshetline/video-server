@@ -2,5 +2,5 @@
   <p-button label="Back" icon="pi pi-chevron-left" (click)="goBack.emit()"/>
 </div>
 <div class="content">
-  <div class="show-title">{{show?.name}}</div>
+  <div class="show-title">{{getTitle(show) ? getTitle(show) + (show?.name ? ' • ' : '') : ''}}{{show?.name}}</div>
 </div>
