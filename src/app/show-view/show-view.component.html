@@ -1,6 +1,8 @@
 <div class="go-back-panel">
   <p-button label="Back" icon="pi pi-chevron-left" (click)="goBack.emit()"/>
 </div>
-<div class="content">
+<div *ngIf="show" class="content">
   <div class="show-title">{{getSeasonTitle(show)}}</div>
+  <img src="/api/poster?id={{show.id}}&cs={{checksum53(show.name)}}" alt="{{show.name}}" class="poster">
+  <div>{{show.overview}}</div>
 </div>
