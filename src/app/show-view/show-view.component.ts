@@ -1,6 +1,6 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { LibraryItem } from '../../../server/src/shared-types';
-import { getSeasonTitle } from '../video-ui-utils';
+import { checksum53, getSeasonTitle } from '../video-ui-utils';
 
 @Component({
   selector: 'app-show-view',
@@ -8,6 +8,7 @@ import { getSeasonTitle } from '../video-ui-utils';
   styleUrls: ['./show-view.component.scss']
 })
 export class ShowViewComponent {
+  checksum53 = checksum53;
   getSeasonTitle = getSeasonTitle;
 
   private _show: LibraryItem;
