@@ -7,7 +7,7 @@
     <div *ngFor="let item of items" class="library-item">
       <div class="loading">Loading...</div>
       <img [ngSrc]="'/api/poster?id=' + item.id + '&cs=' + checksum53(item.name) + '&w=300&h=450'"
-           width=150 height=250 alt="{{item.name}}" priority>
+           width=150 height=225 alt="{{item.name}}" priority>
       <div class="title">{{item.name}}</div>
       <div class="year">{{item.year ? item.year : ''}}</div>
 

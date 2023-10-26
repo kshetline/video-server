@@ -74,19 +74,19 @@
 
 .poster-thumbnail-wrapper {
   border: #333 1px solid;
-  height: 225px;
-  width: 150px;
+  height: 227px;
+  width: 152px;
   z-index: 1;
 
   .loading {
     background-color: rgba(blue, 0.25);
     font-style: italic;
-    left: 0;
-    line-height: 225px;
+    left: 1px;
+    line-height: 223px;
     position: absolute;
-    right: 0;
+    right: 1px;
     text-align: center;
-    top: 0;
+    top: 1px;
     z-index: -1;
   }
 }
