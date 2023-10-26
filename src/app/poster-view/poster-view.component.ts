@@ -20,6 +20,7 @@ function isTV(item: LibraryItem): boolean {
   styleUrls: ['./poster-view.component.scss']
 })
 export class PosterViewComponent implements OnInit {
+  checksum53 = checksum53;
   readonly COLLECTION = VType.COLLECTION;
 
   private _library: VideoLibrary;
@@ -32,12 +33,14 @@ export class PosterViewComponent implements OnInit {
   items: LibraryItem[];
   mutationObserver: MutationObserver;
   overview = '';
+  showThumbnail: Record<string, boolean> = {};
 
   @Input() get library(): VideoLibrary { return this._library; }
   set library(value : VideoLibrary) {
     if (this._library !== value) {
       this._library = value;
       this.items = value?.array;
+      this.showThumbnail = {};
     }
   }
 
@@ -62,18 +65,8 @@ export class PosterViewComponent implements OnInit {
   ngOnInit(): void {
     this.intersectionObserver = new IntersectionObserver(entries => {
       entries.forEach(entry => {
-        if (entry.isIntersecting && !entry.target.querySelector('img')) {
-          const div = entry.target as HTMLDivElement;
-          const id = div.getAttribute('data-id');
-          const name = div.getAttribute('data-name');
-          const img = document.createElement('img');
-
-          img.src = `/api/poster?id=${id}&cs=${checksum53(name)}&w=300&h=450`;
-          img.width = 150;
-          img.height = 225;
-          img.alt = name;
-          div.appendChild(img);
-        }
+        if (entry.isIntersecting && entry.target.hasAttribute('data-thumbnail'))
+          this.showThumbnail[entry.target.getAttribute('data-thumbnail')] = true;
       });
     });
 
@@ -107,6 +100,8 @@ export class PosterViewComponent implements OnInit {
   }
 
   private refilter(): void {
+    this.showThumbnail = {};
+
     switch (this.filter) {
       case 'All':
         this.items = this.library.array.filter(item => this.matchesSearch(item));

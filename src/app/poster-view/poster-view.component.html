@@ -12,16 +12,25 @@
 </div>
 <div class='poster-grid'>
   <div *ngIf="overview" class="overview">{{overview}}</div>
-  <div *ngFor="let item of items" class="library-item">
+  <div *ngFor="let item of items; index as i" class="library-item">
     <ng-container *ngIf="item.type === COLLECTION">
-      <div *ngIf="item.data?.length > 1" [attr.data-id]="item.data[1].id"
-           [attr.data-name]="item.data[1].name" class="poster-thumbnail-wrapper offset2"></div>
-      <div *ngIf="item.data?.length > 0"
-           [attr.data-id]="item.data[0].id" [attr.data-name]="item.data[0].name" class="poster-thumbnail-wrapper offset"></div>
+      <div *ngIf="item.data?.length > 1" [attr.data-thumbnail]="'t2-' + i" class="poster-thumbnail-wrapper offset2">
+        <img *ngIf="i < 100 || showThumbnail['t2-' + i]"
+             [ngSrc]="'/api/poster?id=' + item.data[1].id + '&cs=' + checksum53(item.data[1].name) + '&w=300&h=450'"
+             width="150" height="225" alt="{{item.data[1].name}}" priority>
+      </div>
+      <div *ngIf="item.data?.length > 0" [attr.data-thumbnail]="'t1-' + i" class="poster-thumbnail-wrapper offset">
+        <img *ngIf="i < 100 || showThumbnail['t1-' + i]"
+             [ngSrc]="'/api/poster?id=' + item.data[0].id + '&cs=' + checksum53(item.data[0].name) + '&w=300&h=450'"
+             width="150" height="225" alt="{{item.data[0].name}}" priority>
+      </div>
     </ng-container>
 
-    <div [attr.data-id]="item.id" [attr.data-name]="item.name" class="poster-thumbnail-wrapper">
+    <div [attr.data-thumbnail]="'t-' + i" class="poster-thumbnail-wrapper">
       <div class="loading">Loading...</div>
+      <img *ngIf="i < 100 || showThumbnail['t-' + i]"
+           [ngSrc]="'/api/poster?id=' + item.id + '&cs=' + checksum53(item.name) + '&w=300&h=450'"
+           width="150" height="225" alt="{{item.id}}" priority>
     </div>
     <div class="rating-wrapper">
       <p-rating *ngIf="item.voteAverage" [ngModel]="item.voteAverage / 2 - 0.5"

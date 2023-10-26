@@ -47,13 +47,16 @@
       width: calc(150px + 2em);
 
       .loading {
+        background-color: rgba(blue, 0.25);
         font-style: italic;
         left: 0;
         line-height: 225px;
+        margin-left: 1em;
         position: absolute;
         right: 0;
         text-align: center;
         top: 0;
+        width: 150px;
         z-index: -1;
       }
 
