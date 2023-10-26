@@ -1,7 +1,8 @@
 <div class="go-back-panel">
   <p-button label="Back" icon="pi pi-chevron-left" (click)="goBack.emit()"/>
 </div>
-<div *ngIf="show" class="content">
+<div *ngIf="show" class="content"
+     [style.background-image]="'url(&quot;/api/backdrop?id=' + show.id + '&cs=' + checksum53(show.name) + '&quot;)'">
   <div class="poster-area">
     <img *ngIf="show.logo" src="/api/logo?url={{encodeForUri(show.logo)}}" alt="{{show.name}}" class="logo">
     <img src="/api/poster?id={{show.id}}&cs={{checksum53(show.name)}}" alt="{{show.name}}" class="poster">

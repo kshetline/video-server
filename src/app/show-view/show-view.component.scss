@@ -19,6 +19,7 @@
 
 .content {
   align-content: center;
+  background-size: cover;
   display: grid;
   grid-template-columns: min-content 1fr;
   gap: 4em;
@@ -39,6 +40,7 @@
     }
 
     .poster {
+      box-shadow: 8px 8px 3px 3px rgba(black, 40%);
       height: 36vw;
       width: 24vw;
     }
@@ -50,6 +52,9 @@
     justify-content: end;
 
     .show-info {
+      background-color: rgba(black, 60%);
+      padding: 1em;
+
       .show-title {
         font-size: 2em;
       }
