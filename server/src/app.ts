@@ -20,9 +20,9 @@
 
 import { execSync } from 'child_process';
 import cookieParser from 'cookie-parser';
-import express, { Express } from 'express';
+import express, { Express, Request, Response } from 'express';
 import * as https from 'https';
-import { asLines, forEach, isNumber, isString, toBoolean, toInt, toNumber } from '@tubular/util';
+import { asLines, forEach, isNumber, isString, isValidJson, toBoolean, toInt, toNumber } from '@tubular/util';
 import logger from 'morgan';
 import * as paths from 'path';
 import { jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
@@ -43,21 +43,20 @@ const allowCors = toBoolean(process.env.VC_ALLOW_CORS) || devMode;
 const defaultPort = devMode ? 4201 : 8080;
 const httpPort = normalizePort(process.env.VC_PORT || defaultPort);
 const cacheDir = paths.join(process.cwd(), 'cache');
-const posterDir = paths.join(cacheDir, 'poster');
 const thumbnailDir = paths.join(cacheDir, 'thumbnail');
 const app = getApp();
 let httpsServer: https.Server;
 const MAX_START_ATTEMPTS = 3;
 let startAttempts = 0;
 
-if (!existsSync(cacheDir))
-  mkdirSync(cacheDir);
-
-if (!existsSync(posterDir))
-  mkdirSync(posterDir);
-
-if (!existsSync(thumbnailDir))
-  mkdirSync(thumbnailDir);
+for (const dir of [
+  cacheDir, thumbnailDir,
+  paths.join(cacheDir, 'poster'), paths.join(thumbnailDir, 'poster'),
+  paths.join(cacheDir, 'backdrop'), paths.join(thumbnailDir, 'backdrop')
+]) {
+  if (!existsSync(dir))
+    mkdirSync(dir);
+}
 
 const libraryFile = paths.join(cacheDir, 'library.json');
 let cachedLibrary = { status: LibraryStatus.NOT_STARTED, progress: -1 } as VideoLibrary;
@@ -631,31 +630,49 @@ function getApp(): Express {
     jsonOrJsonp(req, res, cachedLibrary);
   });
 
-  theApp.get('/api/poster', async (req, res) => {
-    const posterPath = paths.join(posterDir, `${req.query.id}-${req.query.cs}.jpg`);
+  async function getImage(imageType: string, apiPath: string, req: Request, res: Response): Promise<void> {
+    const imagePath = paths.join(cacheDir, imageType, `${req.query.id}-${req.query.cs || 'x'}.jpg`);
     let fullSize: Buffer;
 
-    if (!await existsAsync(posterPath)) {
-      const url = `${process.env.VS_ZIDOO_CONNECT}Poster/v2/getPoster?id=${req.query.id}`;
+    if (!await existsAsync(imagePath)) {
+      const url = `${process.env.VS_ZIDOO_CONNECT}${apiPath}?id=${req.query.id}`;
 
       fullSize = await requestBinary(url);
-      await writeFile(posterPath, fullSize, 'binary');
+
+      if (fullSize.length < 200 && isValidJson(fullSize.toString())) {
+        const msg = JSON.parse(fullSize.toString());
+
+        res.statusCode = msg.status;
+        res.setHeader('Content-Type', 'text/plain');
+        res.send(msg.msg);
+        return;
+      }
+
+      await writeFile(imagePath, fullSize, 'binary');
     }
 
     if (!req.query.w || !req.query.h) {
-      res.sendFile(posterPath);
+      res.sendFile(imagePath);
       return;
     }
 
-    const thumbnailPath = paths.join(thumbnailDir, `${req.query.id}-${req.query.cs}-${req.query.w}-${req.query.h}.jpg`);
+    const thumbnailPath = paths.join(thumbnailDir, imageType, `${req.query.id}-${req.query.cs}-${req.query.w}-${req.query.h}.jpg`);
 
     if (!await existsAsync(thumbnailPath)) {
-      Jimp.read((fullSize || posterPath) as any).then(image =>
+      Jimp.read((fullSize || imagePath) as any).then(image =>
         image.resize(toInt(req.query.w), toInt(req.query.h)).quality(80).write(thumbnailPath,
           () => res.sendFile(thumbnailPath)));
     }
     else
       res.sendFile(thumbnailPath);
+  }
+
+  theApp.get('/api/poster', async (req, res) => {
+    await getImage('poster', 'Poster/v2/getPoster', req, res);
+  });
+
+  theApp.get('/api/backdrop', async (req, res) => {
+    await getImage('backdrop', 'Poster/v2/getBackdrop', req, res);
   });
 
   theApp.get('/api/profile-image/:image', async (req, res) => {
