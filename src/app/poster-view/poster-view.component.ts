@@ -19,7 +19,7 @@ function isTV(item: LibraryItem): boolean {
   styleUrls: ['./poster-view.component.scss']
 })
 export class PosterViewComponent implements OnInit {
-  COLLECTION = VType.COLLECTION;
+  readonly COLLECTION = VType.COLLECTION;
 
   private _library: VideoLibrary;
   private _filter = 'All';

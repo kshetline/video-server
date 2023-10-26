@@ -9,8 +9,9 @@ import { encodeForUri } from '@tubular/util';
   styleUrls: ['./show-view.component.scss']
 })
 export class ShowViewComponent {
-  checksum53 = checksum53;
-  getSeasonTitle = getSeasonTitle;
+  readonly checksum53 = checksum53;
+  readonly encodeForUri = encodeForUri;
+  readonly getSeasonTitle = getSeasonTitle;
 
   private _show: LibraryItem;
 
@@ -27,6 +28,4 @@ export class ShowViewComponent {
     if (this.show && event.key === 'Escape')
       this.goBack.emit();
   }
-
-  protected readonly encodeForUri = encodeForUri;
 }

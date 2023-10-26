@@ -8,7 +8,7 @@ import { checksum53 } from '../video-ui-utils';
   styleUrls: ['./collection-view.component.scss']
 })
 export class CollectionViewComponent {
-  checksum53 = checksum53;
+  readonly checksum53 = checksum53;
 
   private _collection: LibraryItem;
 
