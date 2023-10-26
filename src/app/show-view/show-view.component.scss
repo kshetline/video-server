@@ -37,6 +37,10 @@
       position: absolute;
       top: calc(-21% - 1em);
       width: min(20vw, 31.67vh);
+
+      img {
+        position: relative !important;
+      }
     }
 
     .poster {

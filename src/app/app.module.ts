@@ -2,8 +2,8 @@ import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { HttpClientJsonpModule, HttpClientModule } from '@angular/common/http';
+import { NgOptimizedImage } from '@angular/common';
 
-import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { ButtonModule } from 'primeng/button';
 import { CollectionViewComponent } from './collection-view/collection-view.component';
@@ -22,13 +22,13 @@ import { ShowViewComponent } from './show-view/show-view.component';
     ShowViewComponent
   ],
   imports: [
-    AppRoutingModule,
     BrowserModule,
     ButtonModule,
     FormsModule,
     HttpClientModule,
     HttpClientJsonpModule,
     InputTextModule,
+    NgOptimizedImage,
     RadioButtonModule,
     RatingModule,
     TooltipModule
