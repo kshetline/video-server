@@ -51,7 +51,8 @@ let startAttempts = 0;
 for (const dir of [
   cacheDir, thumbnailDir,
   paths.join(cacheDir, 'poster'), paths.join(thumbnailDir, 'poster'),
-  paths.join(cacheDir, 'backdrop'), paths.join(thumbnailDir, 'backdrop')
+  paths.join(cacheDir, 'backdrop'),
+  paths.join(cacheDir, 'logo')
 ]) {
   if (!existsSync(dir))
     mkdirSync(dir);

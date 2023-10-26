@@ -30,19 +30,19 @@
     align-items: center;
     display: flex;
     flex-direction: column;
-    gap: 1em;
     justify-content: center;
+    position: relative;
 
     .logo {
-      bottom: 56vw;
       position: absolute;
-      width: 20vw;
+      top: calc(-21% - 1em);
+      width: min(20vw, 31.67vh);
     }
 
     .poster {
       box-shadow: 8px 8px 3px 3px rgba(black, 40%);
-      height: 36vw;
-      width: 24vw;
+      height: calc(min(24vw, 38vh) * 1.5);
+      width: min(24vw, 38vh);
     }
   }
 

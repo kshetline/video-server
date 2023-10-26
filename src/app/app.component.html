@@ -1,5 +1,6 @@
 <app-poster-view [library]="library" (itemClicked)="itemClicked($event)"></app-poster-view>
 <app-collection-view [class.active]="currentCollection" [collection]=currentCollection
-  (goBack)="currentCollection = null" (showSelected)="currentShow = $event"></app-collection-view>
+  (goBack)="currentCollection = null" (showSelected)="currentShow = $event"
+  [currentShow]=currentShow></app-collection-view>
 <app-show-view [class.active]="currentShow" [show]=currentShow
                (goBack)="currentShow = null"></app-show-view>

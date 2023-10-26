@@ -24,7 +24,7 @@ export class ShowViewComponent {
 
   @Output() goBack: EventEmitter<void> = new EventEmitter();
 
-  @HostListener('window:keydown', ['$event']) onKeyDown(event:KeyboardEvent): void {
+  @HostListener('window:keydown', ['$event']) onKeyDown(event: KeyboardEvent): void {
     if (this.show && event.key === 'Escape')
       this.goBack.emit();
   }

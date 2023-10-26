@@ -22,11 +22,13 @@ export class CollectionViewComponent {
     }
   }
 
+  @Input() currentShow: LibraryItem;
+
   @Output() goBack: EventEmitter<void> = new EventEmitter();
   @Output() showSelected: EventEmitter<LibraryItem> = new EventEmitter();
 
   @HostListener('window:keydown', ['$event']) onKeyDown(event:KeyboardEvent): void {
-    if (this.collection && event.key === 'Escape')
+    if (this.collection && !this.currentShow && event.key === 'Escape')
       this.goBack.emit();
   }
 
