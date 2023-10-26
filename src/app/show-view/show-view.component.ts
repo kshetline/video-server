@@ -1,6 +1,7 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { LibraryItem } from '../../../server/src/shared-types';
 import { checksum53, getSeasonTitle } from '../video-ui-utils';
+import { encodeForUri } from '@tubular/util';
 
 @Component({
   selector: 'app-show-view',
@@ -26,4 +27,6 @@ export class ShowViewComponent {
     if (this.show && event.key === 'Escape')
       this.goBack.emit();
   }
+
+  protected readonly encodeForUri = encodeForUri;
 }

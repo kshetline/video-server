@@ -3,6 +3,7 @@
 </div>
 <div *ngIf="show" class="content">
   <div class="poster-area">
+    <img *ngIf="show.logo" src="/api/logo?url={{encodeForUri(show.logo)}}" alt="{{show.name}}" class="logo">
     <img src="/api/poster?id={{show.id}}&cs={{checksum53(show.name)}}" alt="{{show.name}}" class="poster">
   </div>
   <div class="show-info-wrapper">

@@ -25,8 +25,7 @@ import * as https from 'https';
 import { asLines, forEach, isNumber, isString, isValidJson, toBoolean, toInt, toNumber } from '@tubular/util';
 import logger from 'morgan';
 import * as paths from 'path';
-import { jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
-import request from 'request';
+import { checksum53, jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
 import { requestBinary, requestJson } from 'by-request';
 import { VideoLibrary, LibraryItem, LibraryStatus, MediaInfo, MediaInfoTrack, ServerStatus, ShowInfo, Track, VType } from './shared-types';
 import { abs, min } from '@tubular/math';
@@ -675,10 +674,16 @@ function getApp(): Express {
     await getImage('backdrop', 'Poster/v2/getBackdrop', req, res);
   });
 
-  theApp.get('/api/profile-image/:image', async (req, res) => {
-    const url = process.env.VS_PROFILE_IMAGE_BASE + req.params.image;
+  theApp.get('/api/logo', async (req, res) => {
+    const url = (req.query.url as string) || '';
+    const ext = (/(\.\w+)$/.exec(url) ?? [])[1] || '.png';
+    const cs = checksum53(url);
+    const imagePath = paths.join(cacheDir, 'logo', `${cs}${ext}`);
 
-    request(url).pipe(res);
+    if (!await existsAsync(imagePath))
+      await writeFile(imagePath, await requestBinary(url), 'binary');
+
+    res.sendFile(imagePath);
   });
 
   return theApp;
