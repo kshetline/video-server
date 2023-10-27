@@ -77,6 +77,27 @@
         }
       }
 
+      .genres {
+        font-size: 0.8em;
+      }
+
+      .video-choices {
+        display: flex;
+        flex-wrap: wrap;
+        font-size: 1.2em;
+        font-weight: bold;
+        gap: 0.5em;
+        margin: 0.25em 0;
+
+        span {
+          display: block;
+          background-color: rgba(white, 40%);
+          min-width: 1.75em;
+          padding: 0.25em;
+          text-align: center;
+        }
+      }
+
       .episode-title, .tag-line {
         font-weight: bold;
         margin: 0.75em 0;

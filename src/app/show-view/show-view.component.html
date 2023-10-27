@@ -23,8 +23,11 @@
         <span *ngIf="video.duration" class="duration">{{getDuration()}}</span>
       </div>
       <div *ngIf="getGenres()" class="genres">{{getGenres()}}</div>
+      <div *ngIf="videoLabels.length > 1" class="video-choices">
+        <span *ngFor="let label of videoLabels">{{label}}</span>
+      </div>
       <div *ngIf="show.tagLine" class="tag-line">{{show.tagLine}}</div>
-      <div class="episode-title"><span *ngIf="selection.episode">Episode {{selection.episode}}: </span>
+      <div *ngIf="show.type === TV_SEASON" class="episode-title"><span *ngIf="selection.episode">Episode {{selection.episode}}: </span>
         {{selection.name}}</div>
       <div class="overview">{{selection.overview}}</div>
       <div class="file">{{video.uri}}</div>

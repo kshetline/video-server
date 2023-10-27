@@ -30,7 +30,9 @@ export class CollectionViewComponent {
     if (this._collection !== value) {
       this._collection = value;
       this.items = value?.data;
-      this.items.sort((a, b) => getSortTime(a) - getSortTime(b));
+
+      if (this.items)
+        this.items.sort((a, b) => getSortTime(a) - getSortTime(b));
     }
   }
 
