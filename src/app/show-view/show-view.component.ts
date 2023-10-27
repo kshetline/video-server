@@ -2,7 +2,7 @@ import { Component, EventEmitter, HostListener, Input, Output } from '@angular/c
 import { LibraryItem, VType } from '../../../server/src/shared-types';
 import { checksum53, getSeasonTitle } from '../video-ui-utils';
 import { encodeForUri } from '@tubular/util';
-import { round } from '@tubular/math';
+import { max, round } from '@tubular/math';
 
 @Component({
   selector: 'app-show-view',
@@ -13,13 +13,33 @@ export class ShowViewComponent {
   readonly checksum53 = checksum53;
   readonly encodeForUri = encodeForUri;
   readonly getSeasonTitle = getSeasonTitle;
+  readonly TV_SEASON = VType.TV_SEASON;
 
   private _show: LibraryItem;
+
+  selection: LibraryItem;
+  video: LibraryItem;
+  videoChoices: LibraryItem[] = [];
+  videoIndex = 0;
 
   @Input() get show(): LibraryItem { return this._show; }
   set show(value: LibraryItem) {
     if (this._show !== value) {
       this._show = value;
+      this.videoChoices = [];
+
+      const gatherVideos = (item: LibraryItem): void => {
+        if (item.type === VType.FILE)
+          this.videoChoices.push(item);
+
+        if (item.data?.length > 0)
+          item.data.forEach(child => gatherVideos(child));
+      };
+
+      gatherVideos(value);
+      this.videoIndex = max(this.videoChoices.findIndex(vc => !vc.watched), 0);
+      this.video = this.videoChoices[this.videoIndex];
+      this.selection = this.video.parent ?? this.video;
     }
   }
 
@@ -35,11 +55,11 @@ export class ShowViewComponent {
   }
 
   showReleaseDate(): boolean {
-    return this.show.airDate && this.show.type === VType.TV_EPISODE && !this.showYear();
+    return this.selection.airDate && this.show.type === VType.TV_SEASON && !this.showYear();
   }
 
   getDuration(): string {
-    return round(this.show.duration / 60000) + ' minutes';
+    return round(this.video.duration / 60000) + ' minutes';
   }
 
   getGenres(): string {

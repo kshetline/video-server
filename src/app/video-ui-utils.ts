@@ -47,9 +47,12 @@ export function getSeasonTitle(item: LibraryItem): string {
     return item.name;
 
   let title = getTitle(item);
-  const season = item.name.trim();
+  let season = item.name.trim();
   const innerTitle = item.data && item.data[0] && item.data[0].data && item.data[0].data[0] && item.data[0].data[0].title;
   const $ = /^([^•]+)/.exec(innerTitle);
+
+  if (item.type === VType.TV_SEASON && !/\bMiniseries|Season\b/i.test(season) && item.season)
+    season += ` (Season ${item.season})`;
 
   if ($ && !$[1].includes('/'))
     title = $[1].trim();

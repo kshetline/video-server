@@ -17,14 +17,17 @@
       <div class="show-title">{{getSeasonTitle(show)}}</div>
       <div class="info-line">
         <app-rating *ngIf="show.voteAverage" [value]="show.voteAverage" [topValue]="10"></app-rating>
-        <span *ngIf="showYear()">{{show.year}}</span>
-        <span *ngIf="showReleaseDate()">{{show.releaseDate}}</span>
+        <span *ngIf="showYear()">{{selection.year}}</span>
+        <span *ngIf="showReleaseDate()">{{selection.releaseDate}}</span>
         <span *ngIf="show.certification" class="rating">{{show.certification}}</span>
-        <span *ngIf="show.duration" class="duration">{{getDuration()}}</span>
+        <span *ngIf="video.duration" class="duration">{{getDuration()}}</span>
       </div>
       <div *ngIf="getGenres()" class="genres">{{getGenres()}}</div>
       <div *ngIf="show.tagLine" class="tag-line">{{show.tagLine}}</div>
-      <div>{{show.overview}}</div>
+      <div class="episode-title"><span *ngIf="selection.episode">Episode {{selection.episode}}: </span>
+        {{selection.name}}</div>
+      <div class="overview">{{selection.overview}}</div>
+      <div class="file">{{video.uri}}</div>
     </div>
   </div>
 </div>
