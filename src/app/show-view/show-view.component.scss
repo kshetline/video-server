@@ -90,10 +90,11 @@
         margin: 0.25em 0;
 
         span {
+          cursor: pointer;
           display: block;
           background-color: rgba(white, 40%);
           min-width: 1.75em;
-          padding: 0.25em;
+          padding: 0.25em 0.25em 0;
           text-align: center;
         }
       }

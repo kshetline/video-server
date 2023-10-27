@@ -24,7 +24,11 @@
       </div>
       <div *ngIf="getGenres()" class="genres">{{getGenres()}}</div>
       <div *ngIf="videoLabels.length > 1" class="video-choices">
-        <span *ngFor="let label of videoLabels">{{label}}</span>
+        <span *ngFor="let label of videoLabels; index as i"
+              [ngStyle]="i === videoIndex ? { 'background-color': 'rgba(255, 255, 255, 0.75)',
+                'color': 'black', 'border': '2px solid blue' } : null"
+              (click)="selectVideo(i)"
+        >{{label}}</span>
       </div>
       <div *ngIf="show.tagLine" class="tag-line">{{show.tagLine}}</div>
       <div *ngIf="show.type === TV_SEASON" class="episode-title"><span *ngIf="selection.episode">Episode {{selection.episode}}: </span>

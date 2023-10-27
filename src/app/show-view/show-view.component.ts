@@ -115,6 +115,10 @@ export class ShowViewComponent {
   @HostListener('window:keydown', ['$event']) onKeyDown(event: KeyboardEvent): void {
     if (this.show && event.key === 'Escape')
       this.goBack.emit();
+    else if (event.key === 'ArrowLeft' && this.videoIndex > 0)
+      this.selectVideo(this.videoIndex - 1);
+    else if (event.key === 'ArrowRight' && this.videoIndex < this.videoLabels.length - 1)
+      this.selectVideo(this.videoIndex + 1);
   }
 
   showYear(): boolean {
@@ -134,5 +138,11 @@ export class ShowViewComponent {
       return this.show.genres.join(', ');
     else
       return '';
+  }
+
+  selectVideo(index: number): void {
+    this.videoIndex = index;
+    this.video = this.videoChoices[index];
+    this.selection = this.video.parent ?? this.video;
   }
 }
