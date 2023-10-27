@@ -10,7 +10,7 @@ import { CollectionViewComponent } from './collection-view/collection-view.compo
 import { InputTextModule } from 'primeng/inputtext';
 import { PosterViewComponent } from './poster-view/poster-view.component';
 import { RadioButtonModule } from 'primeng/radiobutton';
-import { RatingModule } from 'primeng/rating';
+import { RatingComponent } from './rating/rating.component';
 import { TooltipModule } from 'primeng/tooltip';
 import { ShowViewComponent } from './show-view/show-view.component';
 
@@ -19,7 +19,8 @@ import { ShowViewComponent } from './show-view/show-view.component';
     AppComponent,
     PosterViewComponent,
     CollectionViewComponent,
-    ShowViewComponent
+    ShowViewComponent,
+    RatingComponent
   ],
   imports: [
     BrowserModule,
@@ -30,7 +31,6 @@ import { ShowViewComponent } from './show-view/show-view.component';
     InputTextModule,
     NgOptimizedImage,
     RadioButtonModule,
-    RatingModule,
     TooltipModule
   ],
   providers: [],

@@ -4,15 +4,3 @@ body {
   margin: 0;
   overflow: hidden;
 }
-
-.p-rating {
-  gap: 1px !important;
-}
-
-staricon, starfillicon {
-  > svg {
-    color: #007AD9 !important;
-    height: 0.75em !important;
-    width: 0.75em !important;
-  }
-}

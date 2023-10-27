@@ -1,0 +1,13 @@
+:host {
+  color: goldenrod;
+  display: block;
+  position: relative;
+}
+
+.filled-stars {
+  left: 0;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  white-space: nowrap;
+}

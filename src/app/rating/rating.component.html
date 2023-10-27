@@ -1,0 +1,6 @@
+<div class="clear-stars">
+  <i *ngFor="let x of [].constructor(stars)" class="pi pi-star"></i>
+</div>
+<div class="filled-stars" [style.width]="(value * 100 / topValue) + '%'">
+  <i *ngFor="let x of [].constructor(stars)" class="pi pi-star-fill"></i>
+</div>
