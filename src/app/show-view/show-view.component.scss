@@ -94,7 +94,7 @@
           display: block;
           background-color: rgba(white, 40%);
           min-width: 1.75em;
-          padding: 0.25em 0.25em 0;
+          padding: 0.2em 0.25em;
           text-align: center;
         }
       }
@@ -105,13 +105,29 @@
       }
 
       .overview {
+        height: 6em;
+        line-height: 1.2em;
         margin-top: 0.75em;
+        overflow-y: auto;
       }
 
       .file {
-        font: 0.75em "Courier New", monospace;
-        margin-top: 0.75em;
-        opacity: 0.75;
+        height: 1.2em;
+        position: relative;
+
+        > div {
+          font: 0.75em "Courier New", monospace;
+          left: 0;
+          line-height: 1.2em;
+          height: 1.2em;
+          margin-top: 0.75em;
+          opacity: 0.75;
+          overflow: hidden;
+          position: absolute;
+          right: 0;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
       }
     }
   }

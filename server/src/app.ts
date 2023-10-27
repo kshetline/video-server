@@ -182,6 +182,10 @@ async function getChildren(parents: LibraryItem[], bonusDirs: Set<string>, direc
     if (parent.videoinfo) {
       parent.duration = parent.videoinfo.duration;
       parent.uri = parent.videoinfo.uri;
+
+      if (parent.videoinfo.lastWatchTime >= 0)
+        parent.watched = true;
+
       delete parent.videoinfo;
     }
 
@@ -358,7 +362,7 @@ async function getDirectories(dir: string, bonusDirs: Set<string>, map: Map<stri
 
 const MOVIE_DETAILS = new Set(['certification', 'homepage', 'logo', 'overview', 'ratingTomatoes', 'releaseDate', 'tagLine']);
 const SEASON_DETAILS = new Set(['episodeCount', 'overview', 'posterPath', 'seasonNumber']);
-const EPISODE_DETAILS = new Set(['airDate', 'episodeCount', 'overview', 'posterPath', 'seasonNumber']);
+const EPISODE_DETAILS = new Set(['airDate', 'episodeCount', 'overview', 'posterPath', 'seasonNumber', 'watched']);
 
 async function getShowInfo(parents: LibraryItem[]): Promise<void> {
   for (const parent of parents) {

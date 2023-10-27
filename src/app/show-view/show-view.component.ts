@@ -17,6 +17,7 @@ export class ShowViewComponent {
 
   private _show: LibraryItem;
 
+  anyOverview = false;
   selection: LibraryItem;
   video: LibraryItem;
   videoChoices: LibraryItem[] = [];
@@ -32,6 +33,7 @@ export class ShowViewComponent {
       this.videoIndex = 0;
       this.video = undefined;
       this.selection = undefined;
+      this.anyOverview = false;
 
       if (!value)
         return;
@@ -77,6 +79,7 @@ export class ShowViewComponent {
       this.videoIndex = max(choices.findIndex(vc => !vc.watched && (vc.is4k || !count4k)), 0);
       this.video = this.videoChoices[this.videoIndex];
       this.selection = this.video.parent ?? this.video;
+      this.anyOverview = !!choices.find(vc => vc.parent.overview);
 
       let episodeIndex = 0;
       let lastEpisode = -1;
