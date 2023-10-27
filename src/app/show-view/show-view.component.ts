@@ -54,7 +54,7 @@ export class ShowViewComponent {
     return this.show.year && (this.show.type === VType.MOVIE || !this.show.airDate);
   }
 
-  showReleaseDate(): boolean {
+  showAirDate(): boolean {
     return this.selection.airDate && this.show.type === VType.TV_SEASON && !this.showYear();
   }
 

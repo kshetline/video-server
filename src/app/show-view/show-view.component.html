@@ -18,7 +18,7 @@
       <div class="info-line">
         <app-rating *ngIf="show.voteAverage" [value]="show.voteAverage" [topValue]="10"></app-rating>
         <span *ngIf="showYear()">{{selection.year}}</span>
-        <span *ngIf="showReleaseDate()">{{selection.releaseDate}}</span>
+        <span *ngIf="showAirDate()">{{selection.airDate}}</span>
         <span *ngIf="show.certification" class="rating">{{show.certification}}</span>
         <span *ngIf="video.duration" class="duration">{{getDuration()}}</span>
       </div>

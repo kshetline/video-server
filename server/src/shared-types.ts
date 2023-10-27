@@ -2,6 +2,7 @@ export enum VType { FILE, MOVIE, COLLECTION, TV_SHOW, TV_SEASON, TV_EPISODE, TV_
 export enum LibraryStatus { NOT_STARTED, INITIALIZED, BONUS_MATERIAL_LINKED, ALL_VIDEOS, MEDIA_DETAILS, DONE = 100 }
 
 export interface ServerStatus {
+  lastUpdate: string;
   ready: boolean;
   updateProgress: number;
 }

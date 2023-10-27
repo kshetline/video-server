@@ -30,7 +30,7 @@ import { requestBinary, requestJson } from 'by-request';
 import { VideoLibrary, LibraryItem, LibraryStatus, MediaInfo, MediaInfoTrack, ServerStatus, ShowInfo, Track, VType } from './shared-types';
 import { abs, min } from '@tubular/math';
 import { lstat, readdir, writeFile } from 'fs/promises';
-import { existsSync, mkdirSync, readFileSync, Stats } from 'fs';
+import { existsSync, lstatSync, mkdirSync, readFileSync, Stats } from 'fs';
 import Jimp from 'jimp';
 import * as fs from 'fs';
 
@@ -510,9 +510,12 @@ function createAndStartServer(): void {
   httpsServer.on('error', onError);
   httpsServer.on('listening', onListening);
 
-  if (existsSync(libraryFile))
+  const stats = existsSync(libraryFile) && lstatSync(libraryFile);
+
+  if (stats)
     cachedLibrary = JSON.parse(readFileSync(libraryFile).toString('utf8'));
-  else
+
+  if (!stats || +stats.mtime < +Date.now() - 86_400_000)
     updateLibrary().finally();
 
   httpsServer.listen(httpPort);
@@ -617,7 +620,11 @@ function getApp(): Express {
   theApp.get('/api/status', async (req, res) => {
     noCache(res);
 
-    const status: ServerStatus = { ready: cachedLibrary?.status === LibraryStatus.DONE, updateProgress: -1 };
+    const status: ServerStatus = {
+      lastUpdate: cachedLibrary?.lastUpdate,
+      ready: cachedLibrary?.status === LibraryStatus.DONE,
+      updateProgress: -1
+    };
 
     if (pendingLibrary)
       status.updateProgress = pendingLibrary.progress;

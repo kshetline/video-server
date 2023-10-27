@@ -102,6 +102,8 @@ export class PosterViewComponent implements OnInit {
   private refilter(): void {
     this.showThumbnail = {};
 
+    document.querySelector('.poster-grid').scrollTop = 0;
+
     switch (this.filter) {
       case 'All':
         this.items = this.library.array.filter(item => this.matchesSearch(item));

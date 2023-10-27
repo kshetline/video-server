@@ -10,6 +10,7 @@ import { addBackLinks } from './video-ui-utils';
 })
 export class AppComponent implements AfterViewInit, OnInit {
   private canPoll = false;
+  private gettingLibrary = false;
 
   currentCollection: LibraryItem;
   currentShow: LibraryItem;
@@ -28,10 +29,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   }
 
   ngAfterViewInit(): void {
-    this.httpClient.get('/api/library').subscribe((library: VideoLibrary) => {
-      addBackLinks(library.array);
-      this.library = library;
-    });
+    this.pollLibrary();
     this.httpClient.get('/api/status').subscribe({
       next: (status: ServerStatus) => this.status = status,
       complete: () => this.canPoll = true
@@ -45,6 +43,20 @@ export class AppComponent implements AfterViewInit, OnInit {
       this.currentShow = item;
   }
 
+  private pollLibrary(): void {
+    if (this.gettingLibrary)
+      return;
+
+    this.gettingLibrary = true;
+    this.httpClient.get('/api/library').subscribe({
+      next: (library: VideoLibrary) => {
+        addBackLinks(library.array);
+        this.library = library;
+      },
+      complete: () => this.gettingLibrary = false
+    });
+  }
+
   private pollStatus = (): void => {
     if (!this.canPoll)
       setTimeout(() => this.pollStatus(), 100);
@@ -52,6 +64,10 @@ export class AppComponent implements AfterViewInit, OnInit {
       this.httpClient.get('/api/status').subscribe({
         next: (status: ServerStatus) => {
           this.status = status;
+
+          if (this.library && status.lastUpdate && new Date(this.library.lastUpdate) < new Date(status.lastUpdate))
+            this.pollLibrary();
+
           setTimeout(() => this.pollStatus(), this.status.updateProgress < 0 ? 60000 : 1000);
         },
         error: () => setTimeout(() => this.pollStatus(), 100)

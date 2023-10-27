@@ -2,6 +2,17 @@ import { Component, EventEmitter, HostListener, Input, Output } from '@angular/c
 import { LibraryItem } from '../../../server/src/shared-types';
 import { checksum53 } from '../video-ui-utils';
 
+function getSortTime(item: LibraryItem): number {
+  if (item.airDate)
+    return +new Date(item.airDate);
+  else if (item.releaseDate)
+    return +new Date(item.releaseDate);
+  if (item.year)
+    return +new Date(item.year + '-06-01');
+  else
+    return 0;
+}
+
 @Component({
   selector: 'app-collection-view',
   templateUrl: './collection-view.component.html',
@@ -19,6 +30,7 @@ export class CollectionViewComponent {
     if (this._collection !== value) {
       this._collection = value;
       this.items = value?.data;
+      this.items.sort((a, b) => getSortTime(a) - getSortTime(b));
     }
   }
 

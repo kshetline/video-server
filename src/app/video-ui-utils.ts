@@ -45,9 +45,13 @@ export function getSeasonTitle(item: LibraryItem): string {
     return '';
   else if (item?.type === VType.MOVIE)
     return item.name;
+  else if (item?.type === VType.TV_SEASON && item.parent?.name &&
+           stripDiacriticals_lc(item.name).includes(stripDiacriticals_lc(item.parent.name)))
+    return item.name;
 
   let title = getTitle(item);
-  let season = item.name.trim();
+  const baseSeason = item.name.trim();
+  let season = baseSeason;
   const innerTitle = item.data && item.data[0] && item.data[0].data && item.data[0].data[0] && item.data[0].data[0].title;
   const $ = /^([^•]+)/.exec(innerTitle);
 
@@ -57,7 +61,7 @@ export function getSeasonTitle(item: LibraryItem): string {
   if ($ && !$[1].includes('/'))
     title = $[1].trim();
 
-  if (title && season && stripDiacriticals_lc(title) !== stripDiacriticals_lc(season))
+  if (title && season && stripDiacriticals_lc(title) !== stripDiacriticals_lc(baseSeason))
     return `${title} • ${season}`;
   else if (title)
     return title;
