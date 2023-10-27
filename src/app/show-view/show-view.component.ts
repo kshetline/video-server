@@ -1,7 +1,8 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
-import { LibraryItem } from '../../../server/src/shared-types';
+import { LibraryItem, VType } from '../../../server/src/shared-types';
 import { checksum53, getSeasonTitle } from '../video-ui-utils';
 import { encodeForUri } from '@tubular/util';
+import { round } from '@tubular/math';
 
 @Component({
   selector: 'app-show-view',
@@ -27,5 +28,24 @@ export class ShowViewComponent {
   @HostListener('window:keydown', ['$event']) onKeyDown(event: KeyboardEvent): void {
     if (this.show && event.key === 'Escape')
       this.goBack.emit();
+  }
+
+  showYear(): boolean {
+    return this.show.year && (this.show.type === VType.MOVIE || !this.show.airDate);
+  }
+
+  showReleaseDate(): boolean {
+    return this.show.airDate && this.show.type === VType.TV_EPISODE && !this.showYear();
+  }
+
+  getDuration(): string {
+    return round(this.show.duration / 60000) + ' minutes';
+  }
+
+  getGenres(): string {
+    if (this.show.genres?.length > 0)
+      return this.show.genres.join(', ');
+    else
+      return '';
   }
 }

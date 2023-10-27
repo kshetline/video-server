@@ -63,9 +63,22 @@
         font-size: 2em;
       }
 
+      .info-line {
+        align-items: center;
+        display: flex;
+        gap: 1em;
+        padding: 0.25em 0;
+
+        .rating {
+          border: white 1.5px solid;
+          border-radius: 0.2em;
+          padding: 0.05em 0.4em;
+        }
+      }
+
       .tag-line {
         font-weight: bold;
-        padding: 0.5em 0;
+        padding: 0.75em 0;
       }
     }
   }

@@ -41,6 +41,7 @@ export interface LibraryItem {
   airDate: string;
   aspectRatio?: string;
   audio?: Track[];
+  certification?: string
   codec: string;
   directors: {
     name: string;
