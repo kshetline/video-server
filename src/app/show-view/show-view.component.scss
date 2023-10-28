@@ -115,18 +115,37 @@
         height: 1.2em;
         position: relative;
 
-        > div {
-          font: 0.75em "Courier New", monospace;
+        a:link, a:visited {
+          color: #0CF;
+        }
+
+        a:hover, a:active {
+          color: white;
+        }
+
+        a {
+          display: flex;
           left: 0;
-          line-height: 1.2em;
-          height: 1.2em;
-          margin-top: 0.75em;
-          opacity: 0.75;
-          overflow: hidden;
           position: absolute;
           right: 0;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+
+          > div {
+            font: 0.75em "Courier New", monospace;
+            line-height: 1.2em;
+            height: 1.2em;
+            margin-top: 0.75em;
+            white-space: nowrap;
+          }
+
+          > div:first-child {
+            flex-shrink: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          > div:last-child {
+            flex-shrink: 0;
+          }
         }
       }
     }

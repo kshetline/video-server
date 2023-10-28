@@ -698,5 +698,14 @@ function getApp(): Express {
     res.sendFile(imagePath);
   });
 
+  theApp.get('/api/download', async (req, res) => {
+    const url = (req.query.url as string) || '';
+    const filePath = paths.join(process.env.VS_VIDEO_SOURCE, url);
+
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${paths.basename(url)}"`);
+    res.sendFile(filePath);
+  });
+
   return theApp;
 }

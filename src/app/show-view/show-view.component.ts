@@ -148,4 +148,16 @@ export class ShowViewComponent {
     this.video = this.videoChoices[index];
     this.selection = this.video.parent ?? this.video;
   }
+
+  startOfPath(): string {
+    return (this.video?.uri || '').replace(/^\//, '').replace(/(.*)\/.+$/, '$1');
+  }
+
+  endOfPath(): string {
+    return (this.video?.uri || '').replace(/.*(\/.+)$/, '$1');
+  }
+
+  downloadLink(): string {
+    return '/api/download?url=' + encodeForUri(this.video?.uri || '');
+  }
 }
