@@ -38,7 +38,13 @@
       <div *ngIf="show.tagLine" class="tag-line">{{show.tagLine}}</div>
       <div *ngIf="show.type === TV_SEASON" class="episode-title">{{selection.name}}</div>
       <div *ngIf="anyOverview" class="overview"><div>{{selection.overview}}</div></div>
-      <div class="file"><a [href]="downloadLink()"><div>{{startOfPath()}}</div><div>{{endOfPath()}}</div></a></div>
+      <div class="file-wrapper">
+        <div class="file">
+          <button pButton type="button" label="Play" icon="pi pi-play" class="p-button-sm"></button>
+          <button pButton type="button" label="Download" icon="pi pi-download" class="p-button-sm"></button>
+          <a [href]="downloadLink()"><div>{{startOfPath()}}</div><div>{{endOfPath()}}</div></a>
+        </div>
+      </div>
     </div>
   </div>
 </div>
