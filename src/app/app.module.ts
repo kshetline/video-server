@@ -5,6 +5,7 @@ import { HttpClientJsonpModule, HttpClientModule } from '@angular/common/http';
 import { NgOptimizedImage } from '@angular/common';
 
 import { AppComponent } from './app.component';
+import { BonusViewComponent } from './bonus-view/bonus-view.component';
 import { ButtonModule } from 'primeng/button';
 import { CollectionViewComponent } from './collection-view/collection-view.component';
 import { InputTextModule } from 'primeng/inputtext';
@@ -17,10 +18,11 @@ import { ShowViewComponent } from './show-view/show-view.component';
 @NgModule({
   declarations: [
     AppComponent,
+    BonusViewComponent,
     PosterViewComponent,
     CollectionViewComponent,
     ShowViewComponent,
-    RatingComponent
+    RatingComponent,
   ],
   imports: [
     BrowserModule,

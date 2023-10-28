@@ -114,6 +114,7 @@ export class ShowViewComponent {
   }
 
   @Output() goBack: EventEmitter<void> = new EventEmitter();
+  @Output() viewBonus: EventEmitter<LibraryItem> = new EventEmitter();
 
   @HostListener('window:keydown', ['$event']) onKeyDown(event: KeyboardEvent): void {
     if (this.show && event.key === 'Escape')
@@ -124,12 +125,16 @@ export class ShowViewComponent {
       this.selectVideo(this.videoIndex + 1);
   }
 
-  showYear(): boolean {
+  hasBonusMaterial(): boolean {
+    return !!(this.video?.extras || this.video?.parent?.extras || this.show?.extras || this.show?.parent?.extras);
+  }
+
+  hasYear(): boolean {
     return this.show.year && (this.show.type === VType.MOVIE || !this.show.airDate);
   }
 
-  showAirDate(): boolean {
-    return this.selection.airDate && this.show.type === VType.TV_SEASON && !this.showYear();
+  hasAirDate(): boolean {
+    return this.selection.airDate && this.show.type === VType.TV_SEASON && !this.hasYear();
   }
 
   getDuration(): string {
@@ -163,5 +168,12 @@ export class ShowViewComponent {
 
   downloadLink(): string {
     return '/api/download?url=' + encodeForUri(this.video?.uri || '');
+  }
+
+  startDownload(elem: HTMLElement): void {
+    const link = elem.parentElement?.querySelector('a');
+
+    if (link)
+      link.click();
   }
 }

@@ -2,4 +2,7 @@
 <app-collection-view [class.active]="currentCollection" [collection]=currentCollection
   (goBack)="currentCollection = null" (showSelected)="currentShow = $event"
   [currentShow]=currentShow></app-collection-view>
-<app-show-view [class.active]="currentShow" [show]=currentShow (goBack)="currentShow = null"></app-show-view>
+<app-show-view [class.active]="currentShow" [show]="currentShow" (goBack)="currentShow = null"
+               (viewBonus)="bonusSource = $event"></app-show-view>
+<app-bonus-view [class.active]="bonusSource" [source]="bonusSource"
+                (goBack)="bonusSource = null"></app-bonus-view>

@@ -24,6 +24,7 @@ export class CollectionViewComponent {
   private _collection: LibraryItem;
 
   items: LibraryItem[];
+  overview = '';
 
   @Input() get collection(): LibraryItem { return this._collection; }
   set collection(value: LibraryItem) {

@@ -82,3 +82,14 @@
     z-index: 102;
   }
 }
+
+.overview {
+  background-color: rgba(black, 0.5);
+  bottom: 0;
+  left: 0;
+  padding: 1em;
+  pointer-events: none;
+  position: fixed;
+  right: 0;
+  z-index: 103;
+}

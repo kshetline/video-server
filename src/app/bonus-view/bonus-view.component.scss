@@ -1,0 +1,23 @@
+:host {
+  background-color: #454;
+  color: white;
+  display: block;
+}
+
+.go-back-panel {
+  align-items: center;
+  background-color: black;
+  color: white;
+  display: flex;
+  height: 3.5em;
+  left: 0;
+  padding-left: 2em;
+  right: 0;
+  top: 0;
+  z-index: 310;
+}
+
+.content {
+  background-size: cover;
+  height: calc(100vh - 3.5em);
+}

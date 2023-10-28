@@ -12,6 +12,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   private canPoll = false;
   private gettingLibrary = false;
 
+  bonusSource: LibraryItem;
   currentCollection: LibraryItem;
   currentShow: LibraryItem;
   library: VideoLibrary;
