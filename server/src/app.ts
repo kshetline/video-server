@@ -27,12 +27,12 @@ import logger from 'morgan';
 import * as paths from 'path';
 import { checksum53, jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
 import { requestBinary, requestJson } from 'by-request';
-import { VideoLibrary, LibraryItem, LibraryStatus, MediaInfo, MediaInfoTrack, ServerStatus, ShowInfo, Track, VType } from './shared-types';
+import { LibraryItem, LibraryStatus, MediaInfo, MediaInfoTrack, ServerStatus, ShowInfo, Track, VideoLibrary, VType } from './shared-types';
 import { abs, min } from '@tubular/math';
 import { lstat, readdir, writeFile } from 'fs/promises';
+import * as fs from 'fs';
 import { existsSync, lstatSync, mkdirSync, readFileSync, Stats } from 'fs';
 import Jimp from 'jimp';
-import * as fs from 'fs';
 
 const debug = require('debug')('express:server');
 
@@ -360,7 +360,8 @@ async function getDirectories(dir: string, bonusDirs: Set<string>, map: Map<stri
   return count;
 }
 
-const MOVIE_DETAILS = new Set(['certification', 'homepage', 'logo', 'overview', 'ratingTomatoes', 'releaseDate', 'tagLine']);
+const MOVIE_DETAILS = new Set(['backdropPath', 'certification', 'homepage', 'logo', 'overview', 'posterPath',
+  'ratingTomatoes', 'releaseDate', 'tagLine']);
 const SEASON_DETAILS = new Set(['episodeCount', 'overview', 'posterPath', 'seasonNumber']);
 const EPISODE_DETAILS = new Set(['airDate', 'episodeCount', 'overview', 'posterPath', 'seasonNumber', 'watched']);
 
@@ -371,10 +372,28 @@ async function getShowInfo(parents: LibraryItem[]): Promise<void> {
       delete (parent as any).seasonNumber;
     }
 
-    if (parent.type === VType.MOVIE || parent.type === VType.TV_SEASON) {
+    if (parent.type === VType.MOVIE || parent.type === VType.TV_SHOW ||
+        parent.type === VType.TV_SEASON || parent.type === VType.TV_COLLECTION) {
       const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getDetail?id=${parent.id}`;
       const showInfo: ShowInfo = await requestJson(url);
       const topInfo = showInfo.aggregation?.aggregation;
+
+      if (showInfo.tv) {
+        if (showInfo.tv.backdropPath)
+          parent.backdropPath = showInfo.tv.backdropPath;
+
+        if (showInfo.tv.certification)
+          parent.certification = showInfo.tv.certification;
+
+        if (showInfo.tv.homepage)
+          parent.homepage = showInfo.tv.homepage;
+
+        if (showInfo.tv.numberOfSeasons)
+          parent.seasonCount = showInfo.tv.numberOfSeasons;
+
+        if (showInfo.tv.type)
+          parent.tvType = showInfo.tv.type;
+      }
 
       if (parent.type === VType.MOVIE) {
         if (topInfo) {

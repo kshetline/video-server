@@ -16,18 +16,22 @@
     <div class="show-info">
       <div class="show-title">{{getSeasonTitle(show)}}</div>
       <div class="info-line">
-        <app-rating *ngIf="show.voteAverage" [value]="show.voteAverage" [topValue]="10"></app-rating>
+        <app-rating *ngIf="getVoteAverage()" [value]="getVoteAverage()" [topValue]="10"></app-rating>
         <span *ngIf="showYear()">{{selection.year}}</span>
         <span *ngIf="showAirDate()">{{selection.airDate}}</span>
         <span *ngIf="show.certification" class="rating">{{show.certification}}</span>
         <span *ngIf="video.duration" class="duration">{{getDuration()}}</span>
+        <span *ngIf="show.homepage" class="homepage">
+          <a [href]="show.homepage" target="_blank">
+            <i class="pi pi-home"><span class="blank">&nbsp;</span></i>Homepage</a>
+        </span>
       </div>
       <div *ngIf="getGenres()" class="genres">{{getGenres()}}</div>
       <div *ngIf="videoLabels.length > 1" class="video-choices">
         <span *ngFor="let label of videoLabels; index as i"
               [ngStyle]="i === videoIndex ? { 'background-color': 'rgba(255, 255, 255, 0.75)',
                 'color': 'black', 'box-shadow': '#69F 0 0 3px 3px' } : null"
-              [style.opacity]="videoChoices[i].watched ? '0.5' : '1'"
+              [style.opacity]="videoChoices[i].watched ? '0.6' : '1'"
               (click)="selectVideo(i)"
         >{{label}}</span>
       </div>

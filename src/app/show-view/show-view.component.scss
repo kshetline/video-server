@@ -59,6 +59,23 @@
       background-color: rgba(black, 60%);
       padding: 1em;
 
+      a:link, a:visited {
+        color: #0CF;
+      }
+
+      a:hover, a:active {
+        color: white;
+      }
+
+      a > .pi {
+        position: relative;
+        top: 2px;
+      }
+
+      a > blank {
+        text-decoration: none;
+      }
+
       .show-title {
         font-size: 2em;
       }
@@ -109,19 +126,12 @@
         line-height: 1.2em;
         margin-top: 0.75em;
         overflow-y: auto;
+        white-space: pre-line;
       }
 
       .file {
-        height: 1.2em;
+        height: 1.6em;
         position: relative;
-
-        a:link, a:visited {
-          color: #0CF;
-        }
-
-        a:hover, a:active {
-          color: white;
-        }
 
         a {
           display: flex;
@@ -130,9 +140,10 @@
           right: 0;
 
           > div {
-            font: 0.75em "Courier New", monospace;
-            line-height: 1.2em;
-            height: 1.2em;
+            font-family: "Courier New", monospace;
+            font-weight: bold;
+            line-height: 1.6em;
+            height: 1.6em;
             margin-top: 0.75em;
             white-space: nowrap;
           }

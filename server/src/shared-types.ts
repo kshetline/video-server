@@ -42,6 +42,7 @@ export interface LibraryItem {
   airDate: string;
   aspectRatio?: string;
   audio?: Track[];
+  backdropPath?: string;
   certification?: string
   codec: string;
   directors: {
@@ -53,6 +54,7 @@ export interface LibraryItem {
   extras?: string[];
   frameRate?: number;
   genres?: string[];
+  homepage?: string;
   is2k?: boolean;
   is3d?: boolean;
   is4k?: boolean;
@@ -62,13 +64,17 @@ export interface LibraryItem {
   logo?: string;
   overview: string;
   parent?: LibraryItem;
+  posterPath?: string;
   ratingTomatoes: string;
   releaseDate: string;
   resolution?: string;
   season?: number;
+  seasonCount?: number;
   subtitle?: Track[];
   tagLine?: string;
   title?: string;
+  tvName?: string;
+  tvType?: string;
   uri?: string;
   video?: Track[];
   videoinfo?: VideoInfo;
@@ -167,9 +173,13 @@ export interface ShowInfo {
     name: string;
   }],
   tv: {
+    backdropPath: string;
     certification: string;
     homepage: string;
+    name: string;
+    numberOfSeasons: number;
     overview: string;
     posterPath: string;
+    type: string; // Miniseries, etc.
   }
 }

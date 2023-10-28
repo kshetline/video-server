@@ -63,9 +63,11 @@ export class AppComponent implements AfterViewInit, OnInit {
     else {
       this.httpClient.get('/api/status').subscribe({
         next: (status: ServerStatus) => {
+          const finished = status.ready && (!this.status || !this.status.ready);
           this.status = status;
 
-          if (this.library && status.lastUpdate && new Date(this.library.lastUpdate) < new Date(status.lastUpdate))
+          if (finished ||
+              (this.library && status.lastUpdate && new Date(this.library.lastUpdate) < new Date(status.lastUpdate)))
             this.pollLibrary();
 
           setTimeout(() => this.pollStatus(), this.status.updateProgress < 0 ? 60000 : 1000);

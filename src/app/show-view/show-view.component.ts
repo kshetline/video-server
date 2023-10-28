@@ -136,6 +136,10 @@ export class ShowViewComponent {
     return round(this.video.duration / 60000) + ' minutes';
   }
 
+  getVoteAverage(): number {
+    return this.video.voteAverage || this.show.voteAverage;
+  }
+
   getGenres(): string {
     if (this.show.genres?.length > 0)
       return this.show.genres.join(', ');
