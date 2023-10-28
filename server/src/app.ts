@@ -438,6 +438,9 @@ async function getShowInfo(parents: LibraryItem[]): Promise<void> {
 
       if (showInfo.genres)
         parent.genres = showInfo.genres.map(g => g.name);
+
+      if (parent.type === VType.TV_COLLECTION || parent.type === VType.TV_SHOW)
+        await getShowInfo(parent.data);
     }
     else
       await getShowInfo(parent.data);
