@@ -22,7 +22,7 @@ import { execSync } from 'child_process';
 import cookieParser from 'cookie-parser';
 import express, { Express, Request, Response } from 'express';
 import * as https from 'https';
-import { asLines, forEach, isNumber, isString, isValidJson, toBoolean, toInt, toNumber } from '@tubular/util';
+import { asLines, encodeForUri, forEach, isNumber, isString, isValidJson, makePlainASCII, toBoolean, toInt, toNumber } from '@tubular/util';
 import logger from 'morgan';
 import * as paths from 'path';
 import { checksum53, jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
@@ -701,9 +701,12 @@ function getApp(): Express {
   theApp.get('/api/download', async (req, res) => {
     const url = (req.query.url as string) || '';
     const filePath = paths.join(process.env.VS_VIDEO_SOURCE, url);
+    const fileName = paths.basename(url);
+    const legacyName = makePlainASCII(fileName, true);
 
     res.setHeader('Content-Type', 'application/octet-stream');
-    res.setHeader('Content-Disposition', `attachment; filename="${paths.basename(url)}"`);
+    res.setHeader('Content-Disposition',
+      `attachment; filename=${legacyName}; filename*=UTF-8''${encodeForUri(fileName)}`);
     res.sendFile(filePath);
   });
 
