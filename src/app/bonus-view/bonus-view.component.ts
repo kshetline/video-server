@@ -1,6 +1,7 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { LibraryItem, VType } from '../../../server/src/shared-types';
 import { checksum53 } from '../video-ui-utils';
+import { encodeForUri } from '@tubular/util';
 
 @Component({
   selector: 'app-bonus-view',
@@ -8,7 +9,28 @@ import { checksum53 } from '../video-ui-utils';
   styleUrls: ['./bonus-view.component.scss']
 })
 export class BonusViewComponent {
-  @Input() source: LibraryItem;
+  private _source: LibraryItem;
+
+  extras: string[] = [];
+
+  @Input() get source(): LibraryItem { return this._source; }
+  set source(value: LibraryItem) {
+    if (this._source !== value) {
+      this._source = value;
+      this.extras = [];
+
+      if (value) {
+        let src = value;
+
+        while (src) {
+          if (src.extras)
+            this.extras.push(...src.extras);
+
+          src = src.parent;
+        }
+      }
+    }
+  }
 
   @Output() goBack: EventEmitter<void> = new EventEmitter();
 
@@ -27,5 +49,20 @@ export class BonusViewComponent {
       return `url("/api/backdrop?id=${show.id}&cs=${checksum53(show.name)}")`;
     else
       return null;
+  }
+
+  uriToTitle(uri: string): string {
+    return uri.replace(/^(.*\/)/, '').replace(/\.mkv$/, '').replace(/？/g, '?').replace(/：/g, ':');
+  }
+
+  startDownload(elem: HTMLElement): void {
+    const link = elem.parentElement?.querySelector('a');
+
+    if (link)
+      link.click();
+  }
+
+  downloadLink(uri: string): string {
+    return '/api/download?url=' + encodeForUri(uri);
   }
 }

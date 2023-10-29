@@ -113,11 +113,13 @@ export class ShowViewComponent {
     }
   }
 
+  @Input() currentBonus: LibraryItem;
+
   @Output() goBack: EventEmitter<void> = new EventEmitter();
   @Output() viewBonus: EventEmitter<LibraryItem> = new EventEmitter();
 
   @HostListener('window:keydown', ['$event']) onKeyDown(event: KeyboardEvent): void {
-    if (this.show && event.key === 'Escape')
+    if (this.show && !this.currentBonus && event.key === 'Escape')
       this.goBack.emit();
     else if (event.key === 'ArrowLeft' && this.videoIndex > 0)
       this.selectVideo(this.videoIndex - 1);

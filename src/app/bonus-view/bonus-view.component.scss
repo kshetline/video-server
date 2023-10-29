@@ -20,4 +20,34 @@
 .content {
   background-size: cover;
   height: calc(100vh - 3.5em);
+  overflow: hidden;
+  position: relative;
+
+  .inner-content {
+    align-content: start;
+    align-items: start;
+    bottom: 1em;
+    display: grid;
+    justify-content: center;
+    left: 1em;
+    overflow-y: auto;
+    position: absolute;
+    right: 1em;
+    grid-template-columns: auto;
+    top: 1em;
+
+    .extra {
+      align-items: center;
+      background-color: rgba(black, 60%);
+      display: flex;
+      gap: 1em;
+      padding: 1em;
+      margin: 0.5em 0;
+
+      a {
+        opacity: 0;
+        pointer-events: none;
+      }
+    }
+  }
 }

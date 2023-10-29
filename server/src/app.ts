@@ -234,7 +234,8 @@ async function getChildren(parents: LibraryItem[], bonusDirs: Set<string>, direc
         const checkPath = paths.join(basePath, bonusDir);
 
         if (directoryMap.has(checkPath))
-          parent.extras = directoryMap.get(checkPath).map(file => paths.join(checkPath, file));
+          parent.extras = directoryMap.get(checkPath).map(
+            file => paths.join(checkPath, file).substring(process.env.VS_VIDEO_SOURCE.length).replace(/\\/g, '/'));
       }
     }
 
@@ -350,10 +351,10 @@ async function getDirectories(dir: string, bonusDirs: Set<string>, map: Map<stri
       if (!map.has(dir))
         map.set(dir, []);
 
-      map.get(dir).push(file);
-
-      if (file.endsWith('.mkv'))
+      if (file.endsWith('.mkv')) {
+        map.get(dir).push(file);
         ++count;
+      }
     }
   }
 
