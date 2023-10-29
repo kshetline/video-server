@@ -13,3 +13,4 @@ tsc-out
 /server/cache/
 /.angular/
 /cert/
+/dist/

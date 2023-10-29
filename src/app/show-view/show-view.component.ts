@@ -132,7 +132,7 @@ export class ShowViewComponent {
   }
 
   hasYear(): boolean {
-    return this.show.year && (this.show.type === VType.MOVIE || !this.show.airDate);
+    return this.show.year && this.show.type === VType.MOVIE;
   }
 
   hasAirDate(): boolean {

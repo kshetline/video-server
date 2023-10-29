@@ -10,6 +10,7 @@
   "scripts": {
     "start": "nodemon --watch ./src/**/*.ts --ignore **/*.spec.ts -e js,mjs,json,ts --exec 'tsc && chmod +x ./tsc-out/app.js && node ./tsc-out/app.js -d'",
     "start-win": "nodemon --watch ./src/**/*.ts --ignore **/*.spec.ts -e js,mjs,json,ts --exec \"tsc && node ./tsc-out/app.js -d\"",
+    "build": "webpack",
     "test": "mocha --require ts-node/register src/**/*.spec.ts --exit"
   },
   "dependencies": {
@@ -46,6 +47,9 @@
     "terser-webpack-plugin": "^5.3.3",
     "ts-loader": "^9.3.0",
     "ts-node": "^10.8.1",
-    "typescript": "^4.7.3"
+    "typescript": "^4.7.3",
+    "webpack": "^5.73.0",
+    "webpack-cli": "^4.10.0",
+    "webpack-node-externals": "^3.0.0"
   }
 }
