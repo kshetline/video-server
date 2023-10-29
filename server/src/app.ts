@@ -21,6 +21,7 @@
 import { execSync } from 'child_process';
 import cookieParser from 'cookie-parser';
 import express, { Express, Request, Response } from 'express';
+import * as http from 'http';
 import * as https from 'https';
 import { asLines, encodeForUri, forEach, isNumber, isString, isValidJson, makePlainASCII, toBoolean, toInt, toNumber } from '@tubular/util';
 import logger from 'morgan';
@@ -44,7 +45,7 @@ const httpPort = normalizePort(process.env.VC_PORT || defaultPort);
 const cacheDir = paths.join(process.cwd(), 'cache');
 const thumbnailDir = paths.join(cacheDir, 'thumbnail');
 const app = getApp();
-let httpsServer: https.Server;
+let httpServer: http.Server | https.Server;
 const MAX_START_ATTEMPTS = 3;
 let startAttempts = 0;
 
@@ -530,12 +531,13 @@ async function updateLibrary(): Promise<void> {
 
 function createAndStartServer(): void {
   console.log(`*** Starting server on port ${httpPort} at ${timeStamp()} ***`);
-  httpsServer = https.createServer({
+  httpServer = toBoolean(process.env.VC_USE_HTTPS) ? https.createServer({
     key: fs.readFileSync(process.env.VS_KEY),
     cert: fs.readFileSync(process.env.VS_CERT)
-  }, app);
-  httpsServer.on('error', onError);
-  httpsServer.on('listening', onListening);
+  }, app) :
+    http.createServer(app);
+  httpServer.on('error', onError);
+  httpServer.on('listening', onListening);
 
   const stats = existsSync(libraryFile) && lstatSync(libraryFile);
 
@@ -545,7 +547,7 @@ function createAndStartServer(): void {
   if (!stats || +stats.mtime < +Date.now() - 86_400_000)
     updateLibrary().finally();
 
-  httpsServer.listen(httpPort);
+  httpServer.listen(httpPort);
 }
 
 function onError(error: any): void {
@@ -573,7 +575,7 @@ function onError(error: any): void {
 }
 
 function onListening(): void {
-  const addr = httpsServer.address();
+  const addr = httpServer.address();
   const bind = isString(addr) ? 'pipe ' + addr : 'port ' + addr.port;
 
   debug('Listening on ' + bind);
@@ -612,7 +614,7 @@ function shutdown(signal?: string): void {
 
   console.log(`\n*** ${signal ? signal + ': ' : ''}closing server at ${timeStamp()} ***`);
   // Make sure that if the orderly clean-up gets stuck, shutdown still happens.
-  httpsServer.close(() => process.exit(0));
+  httpServer.close(() => process.exit(0));
 }
 
 function getApp(): Express {
