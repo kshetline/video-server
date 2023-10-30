@@ -462,7 +462,7 @@ function fixVideoFlags(parents: LibraryItem[]): void {
     delete parent.is2k;
 
     if (parent.type === VType.FILE) {
-      if (!parent.is3d)
+      if (!parent.is3d || parent.uri.endsWith('(2D).mkv'))
         delete parent.is3d;
 
       delete parent.isHD;
@@ -474,6 +474,7 @@ function fixVideoFlags(parents: LibraryItem[]): void {
         case 'HD': parent.isHD = true; break;
         case 'FHD': parent.isFHD = true; break;
         case 'UHD': parent.is4k = true; break;
+        default: parent.isSD = true; break;
       }
 
       if (/\bHDR/.test((parent.video || [])[0]?.codec || ''))

@@ -18,9 +18,11 @@ export class ShowViewComponent {
   private _show: LibraryItem;
 
   anyOverview = false;
+  categoryLabels: string[] = [];
   selection: LibraryItem;
   video: LibraryItem;
-  videoChoices: LibraryItem[] = [];
+  videoCategory = 1;
+  videoChoices: LibraryItem[][] = [];
   videoLabels: string[] = [];
   videoIndex = 0;
 
@@ -30,6 +32,8 @@ export class ShowViewComponent {
       this._show = value;
       this.videoChoices = [];
       this.videoLabels = [];
+      this.categoryLabels = [];
+      this.videoCategory = 0;
       this.videoIndex = 0;
       this.video = undefined;
       this.selection = undefined;
@@ -38,17 +42,28 @@ export class ShowViewComponent {
       if (!value)
         return;
 
-      const choices = this.videoChoices;
+      const choices: LibraryItem[] = [];
       const isTV = (value.type === VType.TV_SEASON);
       let count2k = 0;
       let count4k = 0;
       let count3d = 0;
+      let countOSE = 0;
+      const episodes = new Set<number>();
+      let hasDuplicateEpisodes = false;
       const gatherVideos = (item: LibraryItem): void => {
         if (item.type === VType.FILE) {
-          this.videoChoices.push(item);
+          choices.push(item);
           count2k += (item.isFHD || item.is2k) && !item.is3d ? 1 : 0;
           count4k += item.is4k ? 1 : 0;
           count3d += item.is3d ? 1 : 0;
+          countOSE += /Original Special Effects/i.test(item.uri) ? 1 : 0;
+
+          if (item.parent.episode > 0) {
+            if (episodes.has(item.parent.episode))
+              hasDuplicateEpisodes = true;
+            else
+              episodes.add(item.parent.episode);
+          }
         }
 
         if (item.data?.length > 0)
@@ -73,30 +88,39 @@ export class ShowViewComponent {
         if (count3d && !a.is3d && b.is3d)
           return 1;
 
+        if (count2k && a.is2k && !b.is2k)
+          return -1;
+
+        if (count2k && !a.is2k && b.is2k)
+          return 1;
+
         return 0;
       });
 
       this.videoIndex = max(choices.findIndex(vc => !vc.watched && (vc.is4k || !count4k)), 0);
-      this.video = this.videoChoices[this.videoIndex];
+      this.video = choices[this.videoIndex];
       this.selection = this.video.parent ?? this.video;
       this.anyOverview = !!choices.find(vc => vc.parent.overview);
 
       let episodeIndex = 0;
       let lastEpisode = -1;
-      const hasDuplicateEpisodes = isTV && !!choices.find((vc, i) =>
-        vc.parent.episode === choices[i + 1]?.parent.episode);
 
       this.videoLabels = choices.map((vc, i) => {
-        if (this.show.type === VType.TV_SEASON) {
+        if (this.show.type === VType.TV_SEASON && episodes.size > 1) {
           if (!hasDuplicateEpisodes)
             return vc.parent.episode.toString();
 
           if (vc.parent.episode !== lastEpisode) {
             lastEpisode = vc.parent.episode;
-            episodeIndex = 1;
+            episodeIndex = 0;
           }
 
-          return `${vc.parent.episode}-${episodeIndex++}`;
+          ++episodeIndex;
+
+          if (countOSE === episodes.size || count4k === count2k)
+            return `${vc.parent.episode}`;
+          else
+            return `${vc.parent.episode}-${episodeIndex++}`;
         }
 
         if (vc.is4k && count4k === 1 && (count2k > 0 || count3d > 0))
@@ -110,6 +134,21 @@ export class ShowViewComponent {
 
         return String.fromCharCode(65 + i);
       });
+
+      if (countOSE === episodes.size || count4k === count2k) {
+        if (countOSE === episodes.size)
+          this.categoryLabels = ['Updated FX', 'Original FX'];
+        else
+          this.categoryLabels = ['4K', '2K'];
+
+        this.videoChoices = [
+          choices.filter((_vc, i) => i % 2 === 0),
+          choices.filter((_vc, i) => i % 2 === 1)
+        ];
+        this.videoLabels = this.videoLabels.filter((_vl, i) => i % 2 === 0);
+      }
+      else
+        this.videoChoices = [choices];
     }
   }
 
@@ -156,8 +195,13 @@ export class ShowViewComponent {
 
   selectVideo(index: number): void {
     this.videoIndex = index;
-    this.video = this.videoChoices[index];
+    this.video = this.videoChoices[this.videoCategory][index];
     this.selection = this.video.parent ?? this.video;
+
+    const focus = document.querySelector(':focus') as HTMLElement;
+
+    if (focus?.getAttribute('type') === 'radio')
+      focus.blur();
   }
 
   startOfPath(): string {

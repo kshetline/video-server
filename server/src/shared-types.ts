@@ -61,6 +61,7 @@ export interface LibraryItem {
   isFHD?: boolean;
   isHD?: boolean;
   isHdr?: boolean;
+  isSD?: boolean;
   logo?: string;
   overview: string;
   parent?: LibraryItem;

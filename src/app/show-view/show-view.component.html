@@ -29,11 +29,15 @@
         </span>
       </div>
       <div *ngIf="getGenres()" class="genres">{{getGenres()}}</div>
+      <div *ngIf="categoryLabels.length > 1" class="video-categories">
+        <p-radioButton *ngFor="let label of categoryLabels; index as i" [label]="label" [value]="i"
+                       [(ngModel)]="videoCategory" (click)="selectVideo(videoIndex)"></p-radioButton>
+      </div>
       <div *ngIf="videoLabels.length > 1" class="video-choices">
         <span *ngFor="let label of videoLabels; index as i"
               [ngStyle]="i === videoIndex ? { 'background-color': 'rgba(255, 255, 255, 0.75)',
                 'color': 'black', 'box-shadow': '#69F 0 0 3px 3px' } : null"
-              [style.opacity]="videoChoices[i].watched ? '0.6' : '1'"
+              [style.opacity]="videoChoices[videoCategory][i].watched ? '0.6' : '1'"
               (click)="selectVideo(i)"
         >{{label}}</span>
       </div>

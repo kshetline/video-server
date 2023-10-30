@@ -100,6 +100,12 @@
         font-size: 0.8em;
       }
 
+      .video-categories {
+        display: flex;
+        gap: 1em;
+        margin: 0.75em 0;
+      }
+
       .video-choices {
         display: flex;
         flex-wrap: wrap;
