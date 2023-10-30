@@ -39,9 +39,9 @@ const debug = require('debug')('express:server');
 
 // Create HTTP server
 const devMode = process.argv.includes('-d');
-const allowCors = toBoolean(process.env.VC_ALLOW_CORS) || devMode;
+const allowCors = toBoolean(process.env.VS_ALLOW_CORS) || devMode;
 const defaultPort = devMode ? 4201 : 8080;
-const httpPort = normalizePort(process.env.VC_PORT || defaultPort);
+const httpPort = normalizePort(process.env.VS_PORT || defaultPort);
 const cacheDir = paths.join(process.cwd(), 'cache');
 const thumbnailDir = paths.join(cacheDir, 'thumbnail');
 const app = getApp();
