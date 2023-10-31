@@ -28,7 +28,9 @@ import logger from 'morgan';
 import * as paths from 'path';
 import { checksum53, jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
 import { requestBinary, requestJson } from 'by-request';
-import { LibraryItem, LibraryStatus, MediaInfo, MediaInfoTrack, ServerStatus, ShowInfo, Track, VideoLibrary, VType } from './shared-types';
+import {
+  Cut, LibraryItem, LibraryStatus, MediaInfo, MediaInfoTrack, ServerStatus, ShowInfo, Track, VideoLibrary, VType
+} from './shared-types';
 import { abs, min } from '@tubular/math';
 import { lstat, readdir, writeFile } from 'fs/promises';
 import * as fs from 'fs';
@@ -36,6 +38,14 @@ import { existsSync, lstatSync, mkdirSync, readFileSync, Stats } from 'fs';
 import Jimp from 'jimp';
 
 const debug = require('debug')('express:server');
+
+const DIRECTORS = /\(.*\bDirector['’]s\b/i;
+const FINAL = /\(.*\bFinal\b/i;
+const EXTENDED = /(\/|\(.*)\bExtended\b/i;
+const INT_THEATRICAL = /\(.*\bInternational Theatrical\b/i;
+const SPECIAL_EDITION = /\bspecial edition\b/i;
+const UNRATED = /\bunrated\b/i;
+const THEATRICAL = /(\/|\(.*)\b(Original|Theatrical)\b/i;
 
 // Create HTTP server
 const devMode = process.argv.includes('-d');
@@ -178,77 +188,95 @@ function filter(item: LibraryItem): void {
   }
 }
 
-async function getChildren(parents: LibraryItem[], bonusDirs: Set<string>, directoryMap: Map<string, string[]>): Promise<void> {
-  for (const parent of (parents || [])) {
-    if (parent.videoinfo) {
-      parent.duration = parent.videoinfo.duration;
-      parent.uri = parent.videoinfo.uri;
+async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directoryMap: Map<string, string[]>): Promise<void> {
+  for (const item of (items || [])) {
+    if (item.videoinfo) {
+      item.duration = item.videoinfo.duration;
+      item.uri = item.videoinfo.uri;
 
-      if (parent.videoinfo.lastWatchTime >= 0)
-        parent.watched = true;
+      if (item.videoinfo.lastWatchTime >= 0)
+        item.watched = true;
 
-      delete parent.videoinfo;
+      delete item.videoinfo;
     }
 
-    filter(parent);
+    filter(item);
 
-    if (parent.type > VType.FILE) {
-      const url = process.env.VS_ZIDOO_CONNECT + `ZidooPoster/getCollection?id=${parent.id}`;
+    if (item.type > VType.FILE) {
+      const url = process.env.VS_ZIDOO_CONNECT + `ZidooPoster/getCollection?id=${item.id}`;
       const data = (await requestJson(url) as LibraryItem).data;
 
       if (data) {
-        parent.data = data;
-        await getChildren(parent.data, bonusDirs, directoryMap);
+        item.data = data;
+        await getChildren(item.data, bonusDirs, directoryMap);
       }
     }
+    else if (!/-Extras-|Bonus Disc/i.exec(item.uri || '')) {
+      if (DIRECTORS.test(item.uri))
+        item.cut = Cut.DIRECTORS;
+      else if (FINAL.test(item.uri))
+        item.cut = Cut.FINAL;
+      else if (EXTENDED.test(item.uri))
+        item.cut = Cut.EXTENDED;
+      else if (INT_THEATRICAL.test(item.uri))
+        item.cut = Cut.INT_THEATRICAL;
+      else if (SPECIAL_EDITION.test(item.uri))
+        item.cut = Cut.SPECIAL_EDITION;
+      else if (UNRATED.test(item.uri))
+        item.cut = Cut.UNRATED;
+      else if (THEATRICAL.test(item.uri))
+        item.cut = Cut.THEATRICAL;
+      else
+        item.cut = Cut.NA;
+    }
 
-    if (parent.type === VType.TV_EPISODE && parent.data?.length > 0) {
-      const video = parent.data[0];
+    if (item.type === VType.TV_EPISODE && item.data?.length > 0) {
+      const video = item.data[0];
       let $ = SEASON_EPISODE.exec(video.title) || SEASON_EPISODE.exec(video.name) || SEASON_EPISODE.exec(video.uri);
 
       if ($) {
-        parent.season = toInt($[1]);
-        parent.episode = toInt($[2]);
+        item.season = toInt($[1]);
+        item.episode = toInt($[2]);
       }
       else if (($ = SPECIAL_EPISODE.exec(video.name)) || ($ = SPECIAL_EPISODE.exec(video.title))) {
-        parent.season = 0;
-        parent.episode = toInt($[1]);
+        item.season = 0;
+        item.episode = toInt($[1]);
       }
     }
 
-    if (parent.data?.length > 0 && parent.type === VType.TV_SEASON)
-      parent.data.sort((a, b) => (a.episode || 0) - (b.episode || 0));
+    if (item.data?.length > 0 && item.type === VType.TV_SEASON)
+      item.data.sort((a, b) => (a.episode || 0) - (b.episode || 0));
 
     let uri: string;
 
-    if (parent.data?.length > 0) {
-      if (parent.type === VType.TV_SHOW)
-        uri = paths.dirname(parent.data[0]?.data[0]?.data[0]?.uri);
+    if (item.data?.length > 0) {
+      if (item.type === VType.TV_SHOW)
+        uri = paths.dirname(item.data[0]?.data[0]?.data[0]?.uri);
       else
-        uri = parent.data[0].uri;
+        uri = item.data[0].uri;
     }
 
-    if (uri && (parent.type === VType.MOVIE || parent.type === VType.TV_SHOW || parent.type === VType.TV_SEASON)) {
+    if (uri && (item.type === VType.MOVIE || item.type === VType.TV_SHOW || item.type === VType.TV_SEASON)) {
       const basePath = paths.dirname(paths.join(process.env.VS_VIDEO_SOURCE, uri));
 
       for (const bonusDir of Array.from(bonusDirs)) {
         const checkPath = paths.join(basePath, bonusDir);
 
         if (directoryMap.has(checkPath))
-          parent.extras = directoryMap.get(checkPath).map(
+          item.extras = directoryMap.get(checkPath).map(
             file => paths.join(checkPath, file).substring(process.env.VS_VIDEO_SOURCE.length).replace(/\\/g, '/'));
       }
     }
 
-    if (parents === pendingLibrary.array)
+    if (items === pendingLibrary.array)
       pendingLibrary.progress = min(pendingLibrary.progress + 44 / 2.89 / pendingLibrary.total, 39.7);
   }
 }
 
-async function getMediaInfo(parents: LibraryItem[]): Promise<void> {
-  for (const parent of (parents || [])) {
-    if (parent.type === VType.FILE) {
-      const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getVideoInfo?id=${parent.aggregationId}`;
+async function getMediaInfo(items: LibraryItem[]): Promise<void> {
+  for (const item of (items || [])) {
+    if (item.type === VType.FILE) {
+      const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getVideoInfo?id=${item.aggregationId}`;
       const data: any = await requestJson(url);
       const mediaInfo: MediaInfo = JSON.parse(data.mediaJson || 'null');
 
@@ -267,31 +295,31 @@ async function getMediaInfo(parents: LibraryItem[]): Promise<void> {
 
           switch (track['@type']) {
             case 'General':
-              parent.title = track.Title || track.Movie;
+              item.title = track.Title || track.Movie;
               break;
             case 'Video':
-              parent.aspectRatio = formatAspectRatio(track);
-              parent.resolution = formatResolution(track);
-              parent.video = parent.video ?? [];
-              parent.video.push(t);
+              item.aspectRatio = formatAspectRatio(track);
+              item.resolution = formatResolution(track);
+              item.video = item.video ?? [];
+              item.video.push(t);
               break;
             case 'Audio':
               t.channels = channelString(track);
-              parent.audio = parent.audio ?? [];
-              parent.audio.push(t);
+              item.audio = item.audio ?? [];
+              item.audio.push(t);
               break;
             case 'Text':
-              parent.subtitle = parent.subtitle ?? [];
-              parent.subtitle.push(t);
+              item.subtitle = item.subtitle ?? [];
+              item.subtitle.push(t);
               break;
           }
         }
       }
     }
     else
-      await getMediaInfo(parent.data);
+      await getMediaInfo(item.data);
 
-    if (parents === pendingLibrary.array)
+    if (items === pendingLibrary.array)
       pendingLibrary.progress = min(pendingLibrary.progress + 110 / 2.89 / pendingLibrary.total, 77.8);
   }
 }
@@ -367,41 +395,41 @@ const MOVIE_DETAILS = new Set(['backdropPath', 'certification', 'homepage', 'log
 const SEASON_DETAILS = new Set(['episodeCount', 'overview', 'posterPath', 'seasonNumber']);
 const EPISODE_DETAILS = new Set(['airDate', 'episodeCount', 'overview', 'posterPath', 'seasonNumber', 'watched']);
 
-async function getShowInfo(parents: LibraryItem[]): Promise<void> {
-  for (const parent of parents) {
-    if (isNumber((parent as any).seasonNumber)) {
-      parent.season = (parent as any).seasonNumber;
-      delete (parent as any).seasonNumber;
+async function getShowInfo(items: LibraryItem[]): Promise<void> {
+  for (const item of items) {
+    if (isNumber((item as any).seasonNumber)) {
+      item.season = (item as any).seasonNumber;
+      delete (item as any).seasonNumber;
     }
 
-    if (parent.type === VType.MOVIE || parent.type === VType.TV_SHOW ||
-        parent.type === VType.TV_SEASON || parent.type === VType.TV_COLLECTION) {
-      const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getDetail?id=${parent.id}`;
+    if (item.type === VType.MOVIE || item.type === VType.TV_SHOW ||
+        item.type === VType.TV_SEASON || item.type === VType.TV_COLLECTION) {
+      const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getDetail?id=${item.id}`;
       const showInfo: ShowInfo = await requestJson(url);
       const topInfo = showInfo.aggregation?.aggregation;
 
       if (showInfo.tv) {
         if (showInfo.tv.backdropPath)
-          parent.backdropPath = showInfo.tv.backdropPath;
+          item.backdropPath = showInfo.tv.backdropPath;
 
         if (showInfo.tv.certification)
-          parent.certification = showInfo.tv.certification;
+          item.certification = showInfo.tv.certification;
 
         if (showInfo.tv.homepage)
-          parent.homepage = showInfo.tv.homepage;
+          item.homepage = showInfo.tv.homepage;
 
         if (showInfo.tv.numberOfSeasons)
-          parent.seasonCount = showInfo.tv.numberOfSeasons;
+          item.seasonCount = showInfo.tv.numberOfSeasons;
 
         if (showInfo.tv.type)
-          parent.tvType = showInfo.tv.type;
+          item.tvType = showInfo.tv.type;
       }
 
-      if (parent.type === VType.MOVIE) {
+      if (item.type === VType.MOVIE) {
         if (topInfo) {
           forEach(topInfo, (key, value) => {
             if (MOVIE_DETAILS.has(key) && value)
-              (parent as any)[key] = value;
+              (item as any)[key] = value;
           });
         }
       }
@@ -409,18 +437,18 @@ async function getShowInfo(parents: LibraryItem[]): Promise<void> {
         if (topInfo) {
           forEach(topInfo, (key, value) => {
             if (key === 'seasonNumber' && isNumber(value))
-              parent.season = value;
+              item.season = value;
             else if (SEASON_DETAILS.has(key) && value)
-              (parent as any)[key] = value;
+              (item as any)[key] = value;
           });
         }
 
         const episodeInfo = showInfo.aggregation?.aggregations;
 
-        if (episodeInfo?.length > 0 && parent.data?.length > 0) {
+        if (episodeInfo?.length > 0 && item.data?.length > 0) {
           for (const info of episodeInfo) {
             const inner = info.aggregation;
-            const match = inner?.episodeNumber != null && parent.data.find(d => d.episode === inner.episodeNumber);
+            const match = inner?.episodeNumber != null && item.data.find(d => d.episode === inner.episodeNumber);
 
             if (match) {
               forEach(inner, (key, value) => {
@@ -433,61 +461,64 @@ async function getShowInfo(parents: LibraryItem[]): Promise<void> {
       }
 
       if (showInfo.directors)
-        parent.directors = showInfo.directors.map(d => ({ name: d.name, profilePath: d.profilePath }));
+        item.directors = showInfo.directors.map(d => ({ name: d.name, profilePath: d.profilePath }));
 
       if (showInfo.actors)
-        parent.actors = showInfo.actors.map(a => ({ character: a.character, name: a.name, profilePath: a.profilePath }));
+        item.actors = showInfo.actors.map(a => ({ character: a.character, name: a.name, profilePath: a.profilePath }));
 
       if (showInfo.genres)
-        parent.genres = showInfo.genres.map(g => g.name);
+        item.genres = showInfo.genres.map(g => g.name);
 
-      if (parent.type === VType.TV_COLLECTION || parent.type === VType.TV_SHOW)
-        await getShowInfo(parent.data);
+      if (item.type === VType.TV_COLLECTION || item.type === VType.TV_SHOW)
+        await getShowInfo(item.data);
     }
     else
-      await getShowInfo(parent.data);
+      await getShowInfo(item.data);
 
-    if (parents === pendingLibrary.array)
+    if (items === pendingLibrary.array)
       pendingLibrary.progress = min(pendingLibrary.progress + 64 / 2.89 / pendingLibrary.total, 99.4);
   }
 }
 
-function fixVideoFlags(parents: LibraryItem[]): void {
-  for (const parent of parents) {
-    if (parent.data?.length > 0)
-      fixVideoFlags(parent.data);
+function fixVideoFlags(items: LibraryItem[]): void {
+  for (const item of items) {
+    if (item.data?.length > 0)
+      fixVideoFlags(item.data);
   }
 
-  for (const parent of parents) {
-    delete parent.is2k;
+  for (const item of items) {
+    delete item.is2k;
 
-    if (parent.type === VType.FILE) {
-      if (!parent.is3d || parent.uri.endsWith('(2D).mkv'))
-        delete parent.is3d;
+    if (item.type === VType.FILE) {
+      if (!item.is3d || item.uri.endsWith('(2D).mkv'))
+        delete item.is3d;
 
-      delete parent.isHD;
-      delete parent.isFHD;
-      delete parent.is4k;
-      delete parent.isHdr;
+      if (item.uri.endsWith('(2K).mkv'))
+        item.resolution = 'FHD';
 
-      switch (parent.resolution) {
-        case 'HD': parent.isHD = true; break;
-        case 'FHD': parent.isFHD = true; break;
-        case 'UHD': parent.is4k = true; break;
-        default: parent.isSD = true; break;
+      delete item.isHD;
+      delete item.isFHD;
+      delete item.is4k;
+      delete item.isHdr;
+
+      switch (item.resolution) {
+        case 'HD': item.isHD = true; break;
+        case 'FHD': item.isFHD = true; break;
+        case 'UHD': item.is4k = true; break;
+        default: item.isSD = true; break;
       }
 
-      if (/\bHDR/.test((parent.video || [])[0]?.codec || ''))
-        parent.isHdr = true;
+      if (/\bHDR/.test((item.video || [])[0]?.codec || ''))
+        item.isHdr = true;
     }
     else {
-      const data: any[] = parent.data || [];
+      const data: any[] = item.data || [];
 
       for (const flag of ['is3d', 'isHD', 'isFHD', 'is4k', 'isHdr']) {
         if (data.find(v => v[flag]))
-          (parent as any)[flag] = true;
+          (item as any)[flag] = true;
         else
-          delete (parent as any)[flag];
+          delete (item as any)[flag];
       }
     }
   }

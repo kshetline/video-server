@@ -1,5 +1,5 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
-import { LibraryItem, VType } from '../../../server/src/shared-types';
+import { Cut, LibraryItem, VType } from '../../../server/src/shared-types';
 import { checksum53, getSeasonTitle } from '../video-ui-utils';
 import { encodeForUri } from '@tubular/util';
 import { max, round } from '@tubular/math';
@@ -48,11 +48,13 @@ export class ShowViewComponent {
       let count4k = 0;
       let count3d = 0;
       let countOSE = 0;
+      const cuts = new Map<number, number>();
       const episodes = new Set<number>();
       let hasDuplicateEpisodes = false;
       const gatherVideos = (item: LibraryItem): void => {
         if (item.type === VType.FILE) {
           choices.push(item);
+          cuts.set(item.cut, (cuts.get(item.cut) || 0) + 1);
           count2k += (item.isFHD || item.is2k) && !item.is3d ? 1 : 0;
           count4k += item.is4k ? 1 : 0;
           count3d += item.is3d ? 1 : 0;
@@ -75,6 +77,9 @@ export class ShowViewComponent {
       choices.sort((a, b) => {
         if (isTV && a.parent.episode !== b.parent.episode)
           return (a.parent.episode || 0) - (b.parent.episode || 0);
+
+        if (!isTV && a.cut !== b.cut)
+          return (b.cut || Cut.NA) - (a.cut || Cut.NA);
 
         if (count4k && a.is4k && !b.is4k)
           return -1;
@@ -123,19 +128,27 @@ export class ShowViewComponent {
             return `${vc.parent.episode}-${episodeIndex++}`;
         }
 
-        if (vc.is4k && count4k === 1 && (count2k > 0 || count3d > 0))
-          return '4K';
+        let cut = '';
 
-        if (vc.is3d && count3d === 1 && (count2k > 0 || count4k > 0))
-          return '3D';
+        if (!isTV && cuts.size > 0)
+          cut = ['', 'TC-', 'ITC-', 'UR-', 'EC-', 'DC-', 'FC-', 'SE-'][vc.cut];
 
-        if ((vc.isFHD || vc.is2k) && count2k === 1 && (count3d > 0 || count4k > 0))
-          return count3d && !count4k ? '2D' : '2K';
+        if (vc.is4k && count4k === cuts.size && (count2k > 0 || count3d > 0))
+          return cut + '4K';
+
+        if (vc.is3d && count3d === cuts.size && (count2k > 0 || count4k > 0))
+          return cut + '3D';
+
+        if ((vc.isFHD || vc.is2k) && count2k === cuts.size && (count3d > 0 || count4k > 0))
+          return cut + (count3d && !count4k ? '2D' : '2K');
+
+        if (cut)
+          return cut.slice(0, -1);
 
         return String.fromCharCode(65 + i);
       });
 
-      if (countOSE === episodes.size || count4k === count2k) {
+      if (countOSE > 0 && (countOSE === episodes.size || count4k === count2k)) {
         if (countOSE === episodes.size)
           this.categoryLabels = ['Updated FX', 'Original FX'];
         else

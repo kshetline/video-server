@@ -1,3 +1,4 @@
+export enum Cut { NA, THEATRICAL, INT_THEATRICAL, UNRATED, EXTENDED, DIRECTORS, FINAL, SPECIAL_EDITION }
 export enum VType { FILE, MOVIE, COLLECTION, TV_SHOW, TV_SEASON, TV_EPISODE, TV_COLLECTION }
 export enum LibraryStatus { NOT_STARTED, INITIALIZED, BONUS_MATERIAL_LINKED, ALL_VIDEOS, MEDIA_DETAILS, DONE = 100 }
 
@@ -34,18 +35,19 @@ export interface LibraryItem {
   name: string;
   data?: LibraryItem[];
 
-  actors: {
+  actors?: {
     character: string;
     name: string;
     profilePath: string;
   }[];
-  airDate: string;
+  airDate?: string;
   aspectRatio?: string;
   audio?: Track[];
   backdropPath?: string;
   certification?: string
-  codec: string;
-  directors: {
+  codec?: string;
+  cut?: Cut;
+  directors?: {
     name: string;
     profilePath: string;
   }[];
@@ -63,10 +65,10 @@ export interface LibraryItem {
   isHdr?: boolean;
   isSD?: boolean;
   logo?: string;
-  overview: string;
+  overview?: string;
   parent?: LibraryItem;
   posterPath?: string;
-  ratingTomatoes: string;
+  ratingTomatoes?: string;
   releaseDate: string;
   resolution?: string;
   season?: number;
