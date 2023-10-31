@@ -23,7 +23,9 @@ import cookieParser from 'cookie-parser';
 import express, { Express, Request, Response } from 'express';
 import * as http from 'http';
 import * as https from 'https';
-import { asLines, encodeForUri, forEach, isNumber, isString, isValidJson, makePlainASCII, toBoolean, toInt, toNumber } from '@tubular/util';
+import {
+  asLines, encodeForUri, forEach, isNumber, isString, isValidJson, makePlainASCII, toBoolean, toInt, toNumber
+} from '@tubular/util';
 import logger from 'morgan';
 import * as paths from 'path';
 import { checksum53, jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
@@ -33,8 +35,7 @@ import {
 } from './shared-types';
 import { abs, min } from '@tubular/math';
 import { lstat, readdir, writeFile } from 'fs/promises';
-import * as fs from 'fs';
-import { existsSync, lstatSync, mkdirSync, readFileSync, Stats } from 'fs';
+import fs, { existsSync, lstatSync, mkdirSync, readFileSync, Stats } from 'fs';
 import Jimp from 'jimp';
 
 const debug = require('debug')('express:server');
@@ -47,13 +48,15 @@ const SPECIAL_EDITION = /\bspecial edition\b/i;
 const UNRATED = /\bunrated\b/i;
 const THEATRICAL = /(\/|\(.*)\b(Original|Theatrical)\b/i;
 
+const cacheDir = paths.join(process.cwd(), 'cache');
+const thumbnailDir = paths.join(cacheDir, 'thumbnail');
+const REQUIRED_HOST = process.env.VS_REQUIRED_HOST;
+
 // Create HTTP server
 const devMode = process.argv.includes('-d');
 const allowCors = toBoolean(process.env.VS_ALLOW_CORS) || devMode;
 const defaultPort = devMode ? 4201 : 8080;
 const httpPort = normalizePort(process.env.VS_PORT || defaultPort);
-const cacheDir = paths.join(process.cwd(), 'cache');
-const thumbnailDir = paths.join(cacheDir, 'thumbnail');
 const app = getApp();
 let httpServer: http.Server | https.Server;
 const MAX_START_ATTEMPTS = 3;
@@ -656,6 +659,13 @@ function getApp(): Express {
   theApp.use(express.json());
   theApp.use(express.urlencoded({ extended: false }));
   theApp.use(cookieParser());
+
+  theApp.use((req, res, next) => {
+    if (!REQUIRED_HOST || req.hostname === 'localhost' || req.hostname === REQUIRED_HOST)
+      next();
+    else
+      res.status(403).end();
+  });
 
   theApp.use(express.static(paths.join(__dirname, 'public')));
   theApp.get('/', (_req, res) => {

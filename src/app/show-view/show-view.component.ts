@@ -175,6 +175,8 @@ export class ShowViewComponent {
       }
       else
         this.videoChoices = [choices];
+
+      this.selectVideo(this.videoIndex);
     }
   }
 
@@ -254,6 +256,11 @@ export class ShowViewComponent {
 
         if (loadCount !== this.backgroundLoadCount)
           return;
+        else if (img.naturalHeight < 800) {
+          this.faderOpacity = '0';
+          this.backgroundMain = this.getBackgroundAux(true);
+          return;
+        }
 
         this.backgroundOverlay = newBackground;
         this.transitionDuration = FADER_TRANSITION_DURATION;
@@ -270,7 +277,7 @@ export class ShowViewComponent {
       img.addEventListener('error', () => {
         img.remove();
         this.faderOpacity = '0';
-        this.backgroundMain = undefined;
+        this.backgroundMain = this.getBackgroundAux(true);
       });
 
       img.src = newBackground.slice(5, -2);
