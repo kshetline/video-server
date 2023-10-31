@@ -18,9 +18,9 @@ export class ShowViewComponent {
   readonly TV_SEASON = VType.TV_SEASON;
 
   private _show: LibraryItem;
-  private backgroundLoadCount = 0;
   private backgroundMain = '';
-  private backgroundTimer: any;
+  private backgroundChangeInProgress = false;
+  private pendingBackgroundIndex = -1;
   private thumbnailMode = false;
 
   anyOverview = false;
@@ -54,6 +54,8 @@ export class ShowViewComponent {
       this.thumbnailMode = false;
       this.thumbnailWidth = '0';
       this.transitionDuration = FADER_TRANSITION_DURATION;
+      this.backgroundChangeInProgress = false;
+      this.pendingBackgroundIndex = -1;
 
       if (!value)
         return;
@@ -250,28 +252,27 @@ export class ShowViewComponent {
     this.selection = this.video.parent ?? this.video;
 
     if (this.show?.type === VType.TV_SEASON) {
-      if (this.backgroundTimer) {
-        clearTimeout(this.backgroundTimer);
-        this.faderOpacity = '0';
-        this.backgroundTimer = undefined;
-        this.transitionDuration = '0s';
+      if (this.backgroundChangeInProgress) {
+        this.pendingBackgroundIndex = index;
+        return;
       }
 
-      const loadCount = ++this.backgroundLoadCount;
+      this.backgroundChangeInProgress = true;
+
       const newBackground = this.getBackgroundAux();
       const img = new Image();
 
       img.addEventListener('load', () => {
         img.remove();
 
-        if (loadCount !== this.backgroundLoadCount)
-          return;
-        else if (this.thumbnailMode || img.naturalHeight < 800) {
+        if (this.thumbnailMode || img.naturalHeight < 800) {
           this.thumbnailMode = true;
           this.faderOpacity = '0';
           this.backgroundMain = this.getBackgroundAux(true);
           this.thumbnail = newBackground;
           this.thumbnailWidth = round(img.naturalWidth * 200 / img.naturalHeight) + 'px';
+          this.checkPendingBackgroundChange();
+
           return;
         }
 
@@ -279,11 +280,11 @@ export class ShowViewComponent {
         this.transitionDuration = FADER_TRANSITION_DURATION;
         this.faderOpacity = '100';
 
-        this.backgroundTimer = setTimeout(() => {
-          this.backgroundTimer = undefined;
+        setTimeout(() => {
           this.backgroundMain = newBackground;
           this.transitionDuration = '0s';
           this.faderOpacity = '0';
+          this.checkPendingBackgroundChange();
         }, parseFloat(FADER_TRANSITION_DURATION) * 1000 + 100);
       });
 
@@ -291,6 +292,7 @@ export class ShowViewComponent {
         img.remove();
         this.faderOpacity = '0';
         this.backgroundMain = this.getBackgroundAux(true);
+        this.checkPendingBackgroundChange();
       });
 
       img.src = newBackground;
@@ -319,5 +321,18 @@ export class ShowViewComponent {
 
     if (link)
       link.click();
+  }
+
+  private checkPendingBackgroundChange(): void {
+    setTimeout(() => {
+      this.backgroundChangeInProgress = false;
+
+      const pending = this.pendingBackgroundIndex;
+
+      if (pending >= 0) {
+        this.pendingBackgroundIndex = -1;
+        this.selectVideo(pending);
+      }
+    });
   }
 }
