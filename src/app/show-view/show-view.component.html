@@ -3,9 +3,11 @@
   <p-button *ngIf="hasBonusMaterial()" label="Bonus material" icon="pi pi-plus" styleClass="p-button-success"
             (click)="viewBonus.emit(video)"/>
 </div>
-<div *ngIf="show" class="content" [style.background-image]="getBackground()">
-  <div class="background-fader" [style.opacity]="faderOpacity" [style.background-image]="backgroundOverlay"
+<div *ngIf="show" class="content" [style.background-image]="cssUrl(getBackground())">
+  <div class="background-fader" [style.opacity]="faderOpacity" [style.background-image]="cssUrl(backgroundOverlay)"
        [style.transition-duration]="transitionDuration"></div>
+  <div *ngIf="thumbnail" class="thumbnail" [style.background-image]="cssUrl(thumbnail)"
+    [style.width]="thumbnailWidth"></div>
   <div class="poster-area">
     <div class="logo">
       <img *ngIf="show.logo" [ngSrc]="'/api/logo?url=' + encodeForUri(show.logo)" alt="{{show.name}}" fill priority="true">

@@ -38,6 +38,15 @@
     transition: opacity 0.75s ease-in;
   }
 
+  .thumbnail {
+    background-size: cover;
+    box-shadow: 0 0 3px 3px rgba(white, 75%);
+    height: 200px;
+    position: absolute;
+    right: 2em;
+    top: 5.5em;
+  }
+
   .poster-area {
     align-items: center;
     display: flex;

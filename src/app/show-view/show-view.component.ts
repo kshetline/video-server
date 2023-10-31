@@ -21,12 +21,15 @@ export class ShowViewComponent {
   private backgroundLoadCount = 0;
   private backgroundMain = '';
   private backgroundTimer: any;
+  private thumbnailMode = false;
 
   anyOverview = false;
   backgroundOverlay = '';
   categoryLabels: string[] = [];
   faderOpacity = '0';
   selection: LibraryItem;
+  thumbnail: string;
+  thumbnailWidth = '0';
   transitionDuration = FADER_TRANSITION_DURATION;
   video: LibraryItem;
   videoCategory = 1;
@@ -47,6 +50,9 @@ export class ShowViewComponent {
       this.selection = undefined;
       this.anyOverview = false;
       this.backgroundMain = '';
+      this.thumbnail = undefined;
+      this.thumbnailMode = false;
+      this.thumbnailWidth = '0';
       this.transitionDuration = FADER_TRANSITION_DURATION;
 
       if (!value)
@@ -204,7 +210,7 @@ export class ShowViewComponent {
   private getBackgroundAux(ignoreEpisode = false): string {
     const id2 = !ignoreEpisode && this.show?.type === VType.TV_SEASON && this.video?.parent.id;
 
-    return `url("/api/backdrop?id=${this.show.id}${id2 ? '&id2=' + id2 : ''}&cs=${checksum53(this.show.name)}")`;
+    return `/api/backdrop?id=${this.show.id}${id2 ? '&id2=' + id2 : ''}&cs=${checksum53(this.show.name)}`;
   }
 
   hasBonusMaterial(): boolean {
@@ -234,6 +240,10 @@ export class ShowViewComponent {
       return '';
   }
 
+  cssUrl(url: string): string {
+    return 'url("' + url + '")';
+  }
+
   selectVideo(index: number): void {
     this.videoIndex = index;
     this.video = this.videoChoices[this.videoCategory][index];
@@ -256,9 +266,12 @@ export class ShowViewComponent {
 
         if (loadCount !== this.backgroundLoadCount)
           return;
-        else if (img.naturalHeight < 800) {
+        else if (this.thumbnailMode || img.naturalHeight < 800) {
+          this.thumbnailMode = true;
           this.faderOpacity = '0';
           this.backgroundMain = this.getBackgroundAux(true);
+          this.thumbnail = newBackground;
+          this.thumbnailWidth = round(img.naturalWidth * 200 / img.naturalHeight) + 'px';
           return;
         }
 
@@ -280,7 +293,7 @@ export class ShowViewComponent {
         this.backgroundMain = this.getBackgroundAux(true);
       });
 
-      img.src = newBackground.slice(5, -2);
+      img.src = newBackground;
     }
 
     const focus = document.querySelector(':focus') as HTMLElement;
