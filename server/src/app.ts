@@ -493,7 +493,7 @@ function fixVideoFlags(items: LibraryItem[]): void {
       if (!item.is3d || item.uri.endsWith('(2D).mkv'))
         delete item.is3d;
 
-      if (item.uri.endsWith('(2K).mkv'))
+      if (item.uri.endsWith('(2K).mkv') || item.uri.includes('/2K/'))
         item.resolution = 'FHD';
 
       delete item.isHD;
@@ -699,24 +699,45 @@ function getApp(): Express {
   });
 
   async function getImage(imageType: string, apiPath: string, req: Request, res: Response): Promise<void> {
-    const imagePath = paths.join(cacheDir, imageType, `${req.query.id}-${req.query.cs || 'x'}.jpg`);
+    const id = req.query.id;
+    let id2 = req.query.id2;
     let fullSize: Buffer;
+    let imagePath: string;
 
-    if (!await existsAsync(imagePath)) {
-      const url = `${process.env.VS_ZIDOO_CONNECT}${apiPath}?id=${req.query.id}`;
+    for (let i = 0; i < 2; ++i) {
+      imagePath = paths.join(cacheDir, imageType, `${id}${id2 ? '-' + id2 : ''}-${req.query.cs || 'x'}.jpg`);
 
-      fullSize = await requestBinary(url);
+      const stat = await safeLstat(imagePath);
 
-      if (fullSize.length < 200 && isValidJson(fullSize.toString())) {
-        const msg = JSON.parse(fullSize.toString());
-
-        res.statusCode = msg.status;
-        res.setHeader('Content-Type', 'text/plain');
-        res.send(msg.msg);
-        return;
+      if (id2 && stat?.size === 0) {
+        id2 = undefined;
+        continue;
       }
 
-      await writeFile(imagePath, fullSize, 'binary');
+      if (!stat) {
+        const url = `${process.env.VS_ZIDOO_CONNECT}${apiPath}?id=${id2 || id}`;
+
+        fullSize = await requestBinary(url);
+
+        if (fullSize.length < 200 && isValidJson(fullSize.toString())) {
+          if (id2) {
+            await writeFile(imagePath, '', 'binary');
+            id2 = undefined;
+            continue;
+          }
+          else {
+            const msg = JSON.parse(fullSize.toString());
+
+            res.statusCode = msg.status;
+            res.setHeader('Content-Type', 'text/plain');
+            res.send(msg.msg);
+            return;
+          }
+        }
+
+        await writeFile(imagePath, fullSize, 'binary');
+        break;
+      }
     }
 
     if (!req.query.w || !req.query.h) {

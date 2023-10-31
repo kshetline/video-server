@@ -4,6 +4,8 @@ import { checksum53, getSeasonTitle } from '../video-ui-utils';
 import { encodeForUri } from '@tubular/util';
 import { max, round } from '@tubular/math';
 
+const FADER_TRANSITION_DURATION = '0.75s';
+
 @Component({
   selector: 'app-show-view',
   templateUrl: './show-view.component.html',
@@ -16,10 +18,16 @@ export class ShowViewComponent {
   readonly TV_SEASON = VType.TV_SEASON;
 
   private _show: LibraryItem;
+  private backgroundLoadCount = 0;
+  private backgroundMain = '';
+  private backgroundTimer: any;
 
   anyOverview = false;
+  backgroundOverlay = '';
   categoryLabels: string[] = [];
+  faderOpacity = '0';
   selection: LibraryItem;
+  transitionDuration = FADER_TRANSITION_DURATION;
   video: LibraryItem;
   videoCategory = 1;
   videoChoices: LibraryItem[][] = [];
@@ -38,6 +46,8 @@ export class ShowViewComponent {
       this.video = undefined;
       this.selection = undefined;
       this.anyOverview = false;
+      this.backgroundMain = '';
+      this.transitionDuration = FADER_TRANSITION_DURATION;
 
       if (!value)
         return;
@@ -54,7 +64,10 @@ export class ShowViewComponent {
       const gatherVideos = (item: LibraryItem): void => {
         if (item.type === VType.FILE) {
           choices.push(item);
-          cuts.set(item.cut, (cuts.get(item.cut) || 0) + 1);
+
+          if (item.cut)
+            cuts.set(item.cut, (cuts.get(item.cut) || 0) + 1);
+
           count2k += (item.isFHD || item.is2k) && !item.is3d ? 1 : 0;
           count4k += item.is4k ? 1 : 0;
           count3d += item.is3d ? 1 : 0;
@@ -133,13 +146,13 @@ export class ShowViewComponent {
         if (!isTV && cuts.size > 0)
           cut = ['', 'TC-', 'ITC-', 'UR-', 'EC-', 'DC-', 'FC-', 'SE-'][vc.cut];
 
-        if (vc.is4k && count4k === cuts.size && (count2k > 0 || count3d > 0))
+        if (vc.is4k && count4k === max(cuts.size, 1) && (count2k > 0 || count3d > 0))
           return cut + '4K';
 
-        if (vc.is3d && count3d === cuts.size && (count2k > 0 || count4k > 0))
+        if (vc.is3d && count3d === max(cuts.size, 1) && (count2k > 0 || count4k > 0))
           return cut + '3D';
 
-        if ((vc.isFHD || vc.is2k) && count2k === cuts.size && (count3d > 0 || count4k > 0))
+        if ((vc.isFHD || vc.is2k) && count2k === max(cuts.size, 1) && (count3d > 0 || count4k > 0))
           return cut + (count3d && !count4k ? '2D' : '2K');
 
         if (cut)
@@ -148,7 +161,7 @@ export class ShowViewComponent {
         return String.fromCharCode(65 + i);
       });
 
-      if (countOSE > 0 && (countOSE === episodes.size || count4k === count2k)) {
+      if ((countOSE > 0 && countOSE === episodes.size) || (count4k > 0 && count4k === count2k)) {
         if (countOSE === episodes.size)
           this.categoryLabels = ['Updated FX', 'Original FX'];
         else
@@ -177,6 +190,19 @@ export class ShowViewComponent {
       this.selectVideo(this.videoIndex - 1);
     else if (event.key === 'ArrowRight' && this.videoIndex < this.videoLabels.length - 1)
       this.selectVideo(this.videoIndex + 1);
+  }
+
+  getBackground(): string {
+    if (this.show?.type !== VType.TV_SEASON || !this.backgroundMain)
+      return (this.backgroundMain = this.getBackgroundAux());
+    else
+      return this.backgroundMain;
+  }
+
+  private getBackgroundAux(ignoreEpisode = false): string {
+    const id2 = !ignoreEpisode && this.show?.type === VType.TV_SEASON && this.video?.parent.id;
+
+    return `url("/api/backdrop?id=${this.show.id}${id2 ? '&id2=' + id2 : ''}&cs=${checksum53(this.show.name)}")`;
   }
 
   hasBonusMaterial(): boolean {
@@ -210,6 +236,45 @@ export class ShowViewComponent {
     this.videoIndex = index;
     this.video = this.videoChoices[this.videoCategory][index];
     this.selection = this.video.parent ?? this.video;
+
+    if (this.show?.type === VType.TV_SEASON) {
+      if (this.backgroundTimer) {
+        clearTimeout(this.backgroundTimer);
+        this.faderOpacity = '0';
+        this.backgroundTimer = undefined;
+        this.transitionDuration = '0s';
+      }
+
+      const loadCount = ++this.backgroundLoadCount;
+      const newBackground = this.getBackgroundAux();
+      const img = new Image();
+
+      img.addEventListener('load', () => {
+        img.remove();
+
+        if (loadCount !== this.backgroundLoadCount)
+          return;
+
+        this.backgroundOverlay = newBackground;
+        this.transitionDuration = FADER_TRANSITION_DURATION;
+        this.faderOpacity = '100';
+
+        this.backgroundTimer = setTimeout(() => {
+          this.backgroundTimer = undefined;
+          this.backgroundMain = newBackground;
+          this.transitionDuration = '0s';
+          this.faderOpacity = '0';
+        }, parseFloat(FADER_TRANSITION_DURATION) * 1000 + 100);
+      });
+
+      img.addEventListener('error', () => {
+        img.remove();
+        this.faderOpacity = '0';
+        this.backgroundMain = undefined;
+      });
+
+      img.src = newBackground.slice(5, -2);
+    }
 
     const focus = document.querySelector(':focus') as HTMLElement;
 
