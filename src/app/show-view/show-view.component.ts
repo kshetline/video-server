@@ -212,7 +212,7 @@ export class ShowViewComponent {
   private getBackgroundAux(ignoreEpisode = false): string {
     const id2 = !ignoreEpisode && this.show?.type === VType.TV_SEASON && this.video?.parent.id;
 
-    return `/api/backdrop?id=${this.show.id}${id2 ? '&id2=' + id2 : ''}&cs=${checksum53(this.show.name)}`;
+    return `/api/img/backdrop?id=${this.show.id}${id2 ? '&id2=' + id2 : ''}&cs=${checksum53(this.show.name)}`;
   }
 
   hasBonusMaterial(): boolean {

@@ -7,7 +7,7 @@
   <div class="item-list">
     <div *ngFor="let item of items" class="library-item">
       <div class="loading">Loading...</div>
-      <img [ngSrc]="'/api/poster?id=' + item.id + '&cs=' + checksum53(item.name) + '&w=300&h=450'"
+      <img [ngSrc]="'/api/img/poster?id=' + item.id + '&cs=' + checksum53(item.name) + '&w=300&h=450'"
            width=150 height=225 alt="{{item.name}}" priority>
       <div class="rating-wrapper">
         <app-rating *ngIf="item.voteAverage" [value]="item.voteAverage" [topValue]="10"></app-rating>

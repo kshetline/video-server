@@ -20,28 +20,21 @@
 
 import { execSync } from 'child_process';
 import cookieParser from 'cookie-parser';
-import express, { Express, Request, Response } from 'express';
+import express, { Express } from 'express';
 import * as http from 'http';
 import * as https from 'https';
-import { asLines, encodeForUri, isString, isValidJson, makePlainASCII, toBoolean, toInt } from '@tubular/util';
+import { asLines, encodeForUri, isString, makePlainASCII, toBoolean } from '@tubular/util';
 import logger from 'morgan';
 import * as paths from 'path';
-import { cacheDir, checksum53, existsAsync, jsonOrJsonp, noCache, normalizePort, safeLstat, thumbnailDir, timeStamp } from './vs-util';
-import { requestBinary } from 'by-request';
-
-import { writeFile } from 'fs/promises';
+import { jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
 import fs from 'fs';
-import Jimp from 'jimp';
 import { cachedLibrary, initLibrary, pendingLibrary, router as libraryRouter } from './library-router';
+import { router as imageRouter } from './image-router';
 import { LibraryStatus, ServerStatus } from './shared-types';
 
 const debug = require('debug')('express:server');
 
 const REQUIRED_HOST = process.env.VS_REQUIRED_HOST;
-
-/* cspell:disable-next-line */ // noinspection SpellCheckingInspection
-const TRANSPARENT_PIXEL = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
-  'base64');
 
 // Create HTTP server
 const devMode = process.argv.includes('-d');
@@ -179,6 +172,7 @@ function getApp(): Express {
   }
 
   theApp.use('/api/library', libraryRouter);
+  theApp.use('/api/img', imageRouter);
 
   theApp.get('/api/status', async (req, res) => {
     noCache(res);
@@ -193,86 +187,6 @@ function getApp(): Express {
       status.updateProgress = pendingLibrary.progress;
 
     jsonOrJsonp(req, res, status);
-  });
-
-  async function getImage(imageType: string, apiPath: string, req: Request, res: Response): Promise<void> {
-    const id = req.query.id;
-    let id2 = req.query.id2;
-    let fullSize: Buffer;
-    let imagePath: string;
-
-    for (let i = 0; i < 2; ++i) {
-      imagePath = paths.join(cacheDir, imageType, `${id}${id2 ? '-' + id2 : ''}-${req.query.cs || 'x'}.jpg`);
-
-      const stat = await safeLstat(imagePath);
-
-      if (id2 && stat?.size === 0) {
-        id2 = undefined;
-        continue;
-      }
-
-      if (!stat) {
-        const url = `${process.env.VS_ZIDOO_CONNECT}${apiPath}?id=${id2 || id}`;
-
-        fullSize = await requestBinary(url);
-
-        if (fullSize.length < 200 && isValidJson(fullSize.toString())) {
-          if (id2) {
-            await writeFile(imagePath, '', 'binary');
-            id2 = undefined;
-            continue;
-          }
-          else if (imageType === 'backdrop')
-            fullSize = TRANSPARENT_PIXEL;
-          else {
-            const msg = JSON.parse(fullSize.toString());
-
-            res.statusCode = msg.status;
-            res.setHeader('Content-Type', 'text/plain');
-            res.send(msg.msg);
-            return;
-          }
-        }
-
-        await writeFile(imagePath, fullSize, 'binary');
-        break;
-      }
-    }
-
-    if (!req.query.w || !req.query.h) {
-      res.sendFile(imagePath);
-      return;
-    }
-
-    const thumbnailPath = paths.join(thumbnailDir, imageType, `${req.query.id}-${req.query.cs}-${req.query.w}-${req.query.h}.jpg`);
-
-    if (!await existsAsync(thumbnailPath)) {
-      Jimp.read((fullSize || imagePath) as any).then(image =>
-        image.resize(toInt(req.query.w), toInt(req.query.h)).quality(80).write(thumbnailPath,
-          () => res.sendFile(thumbnailPath)));
-    }
-    else
-      res.sendFile(thumbnailPath);
-  }
-
-  theApp.get('/api/poster', async (req, res) => {
-    await getImage('poster', 'Poster/v2/getPoster', req, res);
-  });
-
-  theApp.get('/api/backdrop', async (req, res) => {
-    await getImage('backdrop', 'Poster/v2/getBackdrop', req, res);
-  });
-
-  theApp.get('/api/logo', async (req, res) => {
-    const url = (req.query.url as string) || '';
-    const ext = (/(\.\w+)$/.exec(url) ?? [])[1] || '.png';
-    const cs = checksum53(url);
-    const imagePath = paths.join(cacheDir, 'logo', `${cs}${ext}`);
-
-    if (!await existsAsync(imagePath))
-      await writeFile(imagePath, await requestBinary(url), 'binary');
-
-    res.sendFile(imagePath);
   });
 
   theApp.get('/api/download', async (req, res) => {
