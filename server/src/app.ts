@@ -197,7 +197,7 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
       item.duration = item.videoinfo.duration;
       item.uri = item.videoinfo.uri;
 
-      if (item.videoinfo.lastWatchTime >= 0)
+      if (item.videoinfo.lastWatchTime >= 0 && item.videoinfo.playPoint / item.videoinfo.duration > 0.5)
         item.watched = true;
 
       delete item.videoinfo;

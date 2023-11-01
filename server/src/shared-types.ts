@@ -23,6 +23,7 @@ export interface VideoInfo {
   duration: number;
   lastWatchTime: number;
   mediaInfo: any;
+  playPoint: number;
   uri: string;
 }
 
