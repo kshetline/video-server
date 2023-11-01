@@ -1,5 +1,20 @@
 import { Request, Response } from 'express';
 import { lstat } from 'fs/promises';
+import { existsSync, mkdirSync, Stats } from 'fs';
+import paths from 'path';
+
+export const cacheDir = paths.join(process.cwd(), 'cache');
+export const thumbnailDir = paths.join(cacheDir, 'thumbnail');
+
+for (const dir of [
+  cacheDir, thumbnailDir,
+  paths.join(cacheDir, 'poster'), paths.join(thumbnailDir, 'poster'),
+  paths.join(cacheDir, 'backdrop'),
+  paths.join(cacheDir, 'logo')
+]) {
+  if (!existsSync(dir))
+    mkdirSync(dir);
+}
 
 export function noCache(res: Response): void {
   res.header('Cache-Control', 'private, no-cache, no-store, must-revalidate');
@@ -82,6 +97,18 @@ export async function existsAsync(path: string): Promise<boolean> {
   }
 
   return false;
+}
+
+export async function safeLstat(path: string): Promise<Stats | null> {
+  try {
+    return await lstat(path);
+  }
+  catch (e) {
+    if (e.code !== 'ENOENT')
+      throw e;
+  }
+
+  return null;
 }
 
 export function checksum53(s: string, seed = 0): string {
