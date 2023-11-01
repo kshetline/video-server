@@ -123,9 +123,6 @@ export class ShowViewComponent {
         return 0;
       });
 
-      this.videoIndex = max(choices.findIndex(vc => !vc.watched && (vc.is4k || !count4k)), 0);
-      this.video = choices[this.videoIndex];
-      this.selection = this.video.parent ?? this.video;
       this.anyOverview = !!choices.find(vc => vc.parent.overview);
 
       let episodeIndex = 0;
@@ -184,6 +181,9 @@ export class ShowViewComponent {
       else
         this.videoChoices = [choices];
 
+      this.videoIndex = max(this.videoChoices[0].findIndex(vc => !vc.watched), 0);
+      this.video = this.videoChoices[0][this.videoIndex];
+      this.selection = this.video.parent ?? this.video;
       this.selectVideo(this.videoIndex);
     }
   }

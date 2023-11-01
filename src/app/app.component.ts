@@ -2,6 +2,7 @@ import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { VideoLibrary, LibraryItem, ServerStatus, VType } from '../../server/src/shared-types';
 import { addBackLinks } from './video-ui-utils';
+import { isEqual } from '@tubular/util';
 
 @Component({
   selector: 'app-root',
@@ -51,8 +52,12 @@ export class AppComponent implements AfterViewInit, OnInit {
     this.gettingLibrary = true;
     this.httpClient.get('/api/library').subscribe({
       next: (library: VideoLibrary) => {
-        addBackLinks(library.array);
-        this.library = library;
+        if (!isEqual(this.library, library, { keysToIgnore: ['lastUpdate', 'parent'] })) {
+          addBackLinks(library.array);
+          this.library = library;
+        }
+        else
+          this.library.lastUpdate = library.lastUpdate;
       },
       complete: () => this.gettingLibrary = false
     });
