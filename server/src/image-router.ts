@@ -1,9 +1,9 @@
 import { Request, Response, Router } from 'express';
 import paths from 'path';
-import { cacheDir, checksum53, escapeForRegex, existsAsync, safeLstat, thumbnailDir } from './vs-util';
+import { cacheDir, checksum53, deleteIfPossible, escapeForRegex, existsAsync, safeLstat, thumbnailDir } from './vs-util';
 import { requestBinary } from 'by-request';
 import { isValidJson, toInt } from '@tubular/util';
-import { readdir, unlink, writeFile } from 'fs/promises';
+import { readdir, writeFile } from 'fs/promises';
 import Jimp from 'jimp';
 
 export const router = Router();
@@ -91,13 +91,6 @@ router.get('/logo', async (req, res) => {
 
   res.sendFile(imagePath);
 });
-
-async function deleteIfPossible(path: string): Promise<void> {
-  try {
-    await unlink(path);
-  }
-  catch {}
-}
 
 router.post('/refresh', async (req, res) => {
   const type = req.query.type?.toString();

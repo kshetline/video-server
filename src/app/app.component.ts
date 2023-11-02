@@ -70,17 +70,23 @@ export class AppComponent implements AfterViewInit, OnInit {
           }
           else {
             update.saveImg = (update.elem as HTMLElement).style.backgroundImage;
-            (update.elem as HTMLElement).style.backgroundImage = 'none';
+            (update.elem as HTMLElement).style.backgroundImage = 'url("/assets/tiny_clear.png")';
           }
 
           this.httpClient.post('/api/img/refresh', null, { params: {
             type: update.type,
             file: update.file
           } }).subscribe({ complete: () => {
-            if (update.elem.localName === 'img')
-              (update.elem as HTMLImageElement).src = update.saveImg;
-            else
-              (update.elem as HTMLElement).style.backgroundImage = update.saveImg;
+            const fetchImg = update.saveImg.replace(/^url\(['"]/, '').replace(/['"]\)/, '');
+
+            fetch(fetchImg, { cache: 'reload' }).finally(() => {
+              setTimeout(() => {
+                if (update.elem.localName === 'img')
+                  (update.elem as HTMLImageElement).src = update.saveImg;
+                else
+                  (update.elem as HTMLElement).style.backgroundImage = update.saveImg;
+              }, 500);
+            });
           } });
         });
       }

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { lstat } from 'fs/promises';
+import { lstat, unlink } from 'fs/promises';
 import { existsSync, mkdirSync, Stats } from 'fs';
 import paths from 'path';
 
@@ -125,4 +125,14 @@ export function checksum53(s: string, seed = 0): string {
   h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
 
   return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).toUpperCase().padStart(14, '0');
+}
+
+export async function deleteIfPossible(path: string): Promise<boolean> {
+  try {
+    await unlink(path);
+    return true;
+  }
+  catch {}
+
+  return false;
 }
