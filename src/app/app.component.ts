@@ -1,8 +1,9 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { VideoLibrary, LibraryItem, ServerStatus, VType } from '../../server/src/shared-types';
-import { addBackLinks } from './video-ui-utils';
+import { addBackLinks, checksum53, getZIndex } from './video-ui-utils';
 import { isEqual } from '@tubular/util';
+import { floor } from '@tubular/math';
 
 @Component({
   selector: 'app-root',
@@ -22,6 +23,69 @@ export class AppComponent implements AfterViewInit, OnInit {
   constructor(private httpClient: HttpClient) {}
 
   ngOnInit(): void {
+    window.addEventListener('click', evt => {
+      if (evt.shiftKey) {
+        evt.preventDefault();
+        evt.stopImmediatePropagation();
+
+        let topZRange: number = undefined;
+        const elems = document.elementsFromPoint(evt.clientX, evt.clientY);
+        const updates: { elem: Element, type: string, file: string, saveImg?: string }[] = [];
+
+        for (const elem of elems) {
+          const zRange = floor(getZIndex(elem) / 100);
+
+          if (topZRange == null)
+            topZRange = zRange;
+          else if (zRange < topZRange)
+            break;
+
+          let src: string;
+
+          if (elem.localName === 'img')
+            src = (elem as HTMLImageElement).src;
+          else if ((elem as HTMLElement).style?.backgroundImage)
+            src = (elem as HTMLElement).style.backgroundImage;
+
+          let $ = src && /\b(poster|backdrop)\?id=(\d+)(?:&id2=(\d+))?&cs=([0-9A-F]+)\b/.exec(src);
+          let file: string;
+
+          if ($)
+            file = `${$[2]}${$[3] ? '-' + $[3] : ''}-${$[4]}.jpg`;
+          else if (src) {
+            $ = /\b(logo)\?url=(.+)(\.\w+)/.exec(src);
+
+            if ($)
+              file = checksum53(decodeURIComponent($[2] + $[3])) + $[3];
+          }
+
+          if ($)
+            updates.push({ elem, type: $[1], file });
+        }
+
+        updates.forEach(update => {
+          if (update.elem.localName === 'img') {
+            update.saveImg = (update.elem as HTMLImageElement).src;
+            (update.elem as HTMLImageElement).src = '/assets/tiny_clear.png';
+          }
+          else {
+            update.saveImg = (update.elem as HTMLElement).style.backgroundImage;
+            (update.elem as HTMLElement).style.backgroundImage = 'none';
+          }
+
+          this.httpClient.post('/api/img/refresh', null, { params: {
+            type: update.type,
+            file: update.file
+          } }).subscribe({ complete: () => {
+            if (update.elem.localName === 'img')
+              (update.elem as HTMLImageElement).src = update.saveImg;
+            else
+              (update.elem as HTMLElement).style.backgroundImage = update.saveImg;
+          } });
+        });
+      }
+    }, true);
+
     navigator.serviceWorker.register('/assets/service.js').then(reg =>
       console.log('Service worker registration succeeded:', reg))
       .catch(err => {

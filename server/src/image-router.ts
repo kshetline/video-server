@@ -1,9 +1,9 @@
 import { Request, Response, Router } from 'express';
 import paths from 'path';
-import { cacheDir, checksum53, existsAsync, safeLstat, thumbnailDir } from './vs-util';
+import { cacheDir, checksum53, escapeForRegex, existsAsync, safeLstat, thumbnailDir } from './vs-util';
 import { requestBinary } from 'by-request';
 import { isValidJson, toInt } from '@tubular/util';
-import { writeFile } from 'fs/promises';
+import { readdir, unlink, writeFile } from 'fs/promises';
 import Jimp from 'jimp';
 
 export const router = Router();
@@ -90,4 +90,39 @@ router.get('/logo', async (req, res) => {
     await writeFile(imagePath, await requestBinary(url), 'binary');
 
   res.sendFile(imagePath);
+});
+
+async function deleteIfPossible(path: string): Promise<void> {
+  try {
+    await unlink(path);
+  }
+  catch {}
+}
+
+router.post('/refresh', async (req, res) => {
+  const type = req.query.type?.toString();
+  const file = req.query.file?.toString();
+  const imagePath = paths.join(cacheDir, type, file);
+  const size = (await safeLstat(imagePath))?.size;
+
+  await deleteIfPossible(imagePath);
+
+  if (size === 0) {
+    const altPath = imagePath.replace(/^(.+\/\d+-)(\d+-)(.+)$/, '$1$3');
+
+    if (altPath !== imagePath)
+      await deleteIfPossible(altPath);
+  }
+
+  if (type === 'poster') {
+    const thumbnails = await readdir(paths.join(thumbnailDir, type));
+    const match = new RegExp('^' + escapeForRegex(file.slice(0, -4)) + '-\\d+-\\d+\\.jpg$');
+
+    for (const thumbnail of thumbnails) {
+      if (match.test(thumbnail))
+        await deleteIfPossible(thumbnail);
+    }
+  }
+
+  res.status(200).send();
 });

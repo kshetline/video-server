@@ -68,3 +68,14 @@ export function getSeasonTitle(item: LibraryItem): string {
   else
     return season || '';
 }
+
+export function getZIndex(elem: Element): number {
+  do {
+    const index = parseInt(getComputedStyle(elem).getPropertyValue('z-index'));
+
+    if (!isNaN(index))
+      return index;
+  } while ((elem = elem.parentElement));
+
+  return 0;
+}

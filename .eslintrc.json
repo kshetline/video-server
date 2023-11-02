@@ -80,6 +80,7 @@
     }],
     "no-new": "off",
     "no-return-assign": "off",
+    "no-undef-init": "off",
     "no-unexpected-multiline": "off",
     "no-unused-expressions": "off",
     "no-useless-constructor": "off",
