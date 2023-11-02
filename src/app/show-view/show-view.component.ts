@@ -140,7 +140,7 @@ export class ShowViewComponent {
 
           ++episodeIndex;
 
-          if (countOSE === episodes.size || count4k === count2k)
+          if ((countOSE > 0 && countOSE === episodes.size) || (count4k > 0 && count4k === count2k))
             return `${vc.parent.episode}`;
           else
             return `${vc.parent.episode}-${episodeIndex++}`;
@@ -166,8 +166,8 @@ export class ShowViewComponent {
         return String.fromCharCode(65 + i);
       });
 
-      if ((countOSE > 0 && countOSE === episodes.size) || (count4k > 0 && count4k === count2k)) {
-        if (countOSE === episodes.size)
+      if (episodes.size && (countOSE === episodes.size || (count4k > 0 && count4k === count2k))) {
+        if (countOSE > 0)
           this.categoryLabels = ['Updated FX', 'Original FX'];
         else
           this.categoryLabels = ['4K', '2K'];
