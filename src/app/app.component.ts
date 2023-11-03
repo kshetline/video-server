@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { VideoLibrary, LibraryItem, ServerStatus, VType } from '../../server/src/shared-types';
-import { addBackLinks, checksum53, getZIndex } from './video-ui-utils';
+import { checksum53, addBackLinks, getZIndex, incrementImageIndex } from './video-ui-utils';
 import { isEqual } from '@tubular/util';
 import { floor } from '@tubular/math';
 
@@ -23,8 +23,10 @@ export class AppComponent implements AfterViewInit, OnInit {
   constructor(private httpClient: HttpClient) {}
 
   ngOnInit(): void {
+    fetch('/assets/tiny_clear.png').finally();
+
     window.addEventListener('click', evt => {
-      if (evt.shiftKey) {
+      if (evt.altKey) {
         evt.preventDefault();
         evt.stopImmediatePropagation();
 
@@ -73,21 +75,26 @@ export class AppComponent implements AfterViewInit, OnInit {
             (update.elem as HTMLElement).style.backgroundImage = 'url("/assets/tiny_clear.png")';
           }
 
-          this.httpClient.post('/api/img/refresh', null, { params: {
-            type: update.type,
-            file: update.file
-          } }).subscribe({ complete: () => {
-            const fetchImg = update.saveImg.replace(/^url\(['"]/, '').replace(/['"]\)/, '');
+          this.httpClient.post('/api/img/refresh', null, {
+            params: {
+              type: update.type,
+              file: update.file
+            }
+          }).subscribe({
+            complete: () => {
+              const fetchImg = update.saveImg.replace(/^url\(['"]/, '').replace(/['"]\)/, '').replace(/&ii=\d+/, '') +
+                  `&ii=${(incrementImageIndex())}`;
 
-            fetch(fetchImg, { cache: 'reload' }).finally(() => {
-              setTimeout(() => {
-                if (update.elem.localName === 'img')
-                  (update.elem as HTMLImageElement).src = update.saveImg;
-                else
-                  (update.elem as HTMLElement).style.backgroundImage = update.saveImg;
-              }, 500);
-            });
-          } });
+              fetch(fetchImg, { cache: 'reload' }).finally(() => {
+                setTimeout(() => {
+                  if (update.elem.localName === 'img')
+                    (update.elem as HTMLImageElement).src = fetchImg;
+                  else
+                    (update.elem as HTMLElement).style.backgroundImage = `url("${fetchImg}")`;
+                }, 500);
+              });
+            }
+          });
         });
       }
     }, true);

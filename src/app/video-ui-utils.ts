@@ -1,6 +1,17 @@
 import { LibraryItem, VType } from '../../server/src/shared-types';
 import { stripDiacriticals_lc } from '@tubular/util';
 
+let imageIndex = 0;
+
+export function getImageIndex(): number {
+  return imageIndex;
+}
+
+export function incrementImageIndex(): number {
+  return ++imageIndex;
+}
+
+// noinspection DuplicatedCode
 export function checksum53(s: string, seed = 0): string {
   let h1 = 0xdeadbeef ^ seed;
   let h2 = 0x41c6ce57 ^ seed;

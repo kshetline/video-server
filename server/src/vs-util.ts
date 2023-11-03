@@ -48,27 +48,6 @@ export function normalizePort(val: number | string): string | number | false {
   return false;
 }
 
-export function splitIpAndPort(ipWithPossiblePort: string, defaultPort?: number): [string, number] {
-  if (!ipWithPossiblePort)
-    return [undefined, defaultPort];
-
-  let $ = /^\[(.+)]:(\d+)$/.exec(ipWithPossiblePort); // IPv6 with port
-
-  if ($)
-    return [$[1], Number($[2])];
-
-  $ = /^([^[:]+):(\d+)$/.exec(ipWithPossiblePort); // domain or IPv4 with port
-
-  if ($)
-    return [$[1], Number($[2])];
-
-  return [ipWithPossiblePort, defaultPort];
-}
-
-export function getRemoteAddress(req: Request): string {
-  return (req.headers['x-real-ip'] as string) || req.socket.remoteAddress;
-}
-
 const charsNeedingRegexEscape = /[-[\]/{}()*+?.\\^$|]/g;
 
 export function escapeForRegex(s: string): string {
@@ -111,6 +90,7 @@ export async function safeLstat(path: string): Promise<Stats | null> {
   return null;
 }
 
+// noinspection DuplicatedCode
 export function checksum53(s: string, seed = 0): string {
   let h1 = 0xdeadbeef ^ seed;
   let h2 = 0x41c6ce57 ^ seed;

@@ -101,7 +101,7 @@ router.post('/refresh', async (req, res) => {
   await deleteIfPossible(imagePath);
 
   if (size === 0) {
-    const altPath = imagePath.replace(/^(.+\/\d+-)(\d+-)(.+)$/, '$1$3');
+    const altPath = imagePath.replace(/^(.+[\\/]\d+-)(\d+-)(.+)$/, '$1$3');
 
     if (altPath !== imagePath)
       await deleteIfPossible(altPath);
