@@ -1,6 +1,7 @@
 import { EventEmitter, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { toInt } from '@tubular/util';
+import { Observable } from 'rxjs/internal/Observable';
 
 @Injectable({
   providedIn: 'root'
@@ -10,14 +11,18 @@ export class AuthService {
 
   loginStatus = new EventEmitter<boolean>();
 
-  login(user: string, pwd: string): void {
-    this.http.post('/api/login', { user, pwd }).subscribe({
+  login(user: string, pwd: string): Observable<any> {
+    const observable = this.http.post('/api/login', { user, pwd });
+
+    observable.subscribe({
       next: jwt => {
         this.setSession(jwt.toString());
         this.loginStatus.next(true);
       },
       error: () => this.loginStatus.next(false)
     });
+
+    return observable;
   }
 
   private setSession(jwt: string): void {

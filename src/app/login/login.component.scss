@@ -25,3 +25,12 @@ p-button {
   grid-column: 2 / 2;
   place-self: center;
 }
+
+.error-message {
+  color: #C03;
+  font-weight: bold;
+  grid-column: 1 / span 2;
+  height: 1.2em;
+  place-self: stretch;
+  text-align: center;
+}

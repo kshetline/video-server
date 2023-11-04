@@ -146,7 +146,11 @@ function shutdown(signal?: string): void {
     return;
 
   console.log(`\n*** ${signal ? signal + ': ' : ''}closing server at ${timeStamp()} ***`);
+
   // Make sure that if the orderly clean-up gets stuck, shutdown still happens.
+  if (insecureServer)
+    insecureServer.close();
+
   httpServer.close(() => process.exit(0));
 }
 

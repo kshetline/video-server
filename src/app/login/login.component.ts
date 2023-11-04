@@ -7,6 +7,7 @@ import { AuthService } from '../auth.service';
   styleUrls: ['./login.component.scss']
 })
 export class LoginComponent implements AfterViewInit {
+  error = '';
   user = '';
   password = '';
 
@@ -22,7 +23,11 @@ export class LoginComponent implements AfterViewInit {
   }
 
   login(): void {
+    this.error = '';
+
     if (this.user && this.password)
-      this.auth.login(this.user, this.password);
+      this.auth.login(this.user, this.password).subscribe({
+        error: () => this.error = 'Login failed'
+      });
   }
 }
