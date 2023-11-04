@@ -20,7 +20,6 @@ function isTV(item: LibraryItem): boolean {
   styleUrls: ['./poster-view.component.scss']
 })
 export class PosterViewComponent implements OnInit {
-  checksum53 = checksum53;
   readonly COLLECTION = VType.COLLECTION;
 
   private _library: VideoLibrary;
@@ -97,6 +96,10 @@ export class PosterViewComponent implements OnInit {
 
   onClick(item: LibraryItem): void {
     this.itemClicked.emit(item);
+  }
+
+  getPosterUrl(item: LibraryItem): string {
+    return `/api/img/poster?id=${item.id}&cs=${checksum53(item.name)}&w=300&h=450`;
   }
 
   private refilter(): void {

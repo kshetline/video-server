@@ -187,3 +187,9 @@ export interface ShowInfo {
     type: string; // Miniseries, etc.
   }
 }
+
+export interface User {
+  name: string;
+  hash: string;
+  role: string;
+}

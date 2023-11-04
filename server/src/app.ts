@@ -30,7 +30,9 @@ import { jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
 import fs from 'fs';
 import { cachedLibrary, initLibrary, pendingLibrary, router as libraryRouter } from './library-router';
 import { router as imageRouter } from './image-router';
-import { LibraryStatus, ServerStatus } from './shared-types';
+import { LibraryStatus, ServerStatus, User } from './shared-types';
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 const debug = require('debug')('express:server');
 
@@ -45,6 +47,7 @@ const app = getApp();
 let httpServer: http.Server | https.Server;
 const MAX_START_ATTEMPTS = 3;
 let startAttempts = 0;
+let users: User[] = [];
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
@@ -63,6 +66,7 @@ function createAndStartServer(): void {
   httpServer.on('error', onError);
   httpServer.on('listening', onListening);
 
+  users = JSON.parse(fs.readFileSync('users.json').toString('utf8'));
   initLibrary();
 
   httpServer.listen(httpPort);
@@ -143,6 +147,27 @@ function getApp(): Express {
   theApp.use(express.urlencoded({ extended: false }));
   theApp.use(cookieParser());
 
+  //  hashed_password = crypto.pbkdf2Sync("password", salt, 100000, 64, 'sha512').toString('hex')
+  theApp.use((req, res, next) => {
+    const token = req.headers.authorization;
+    const userInfo = token?.split('.')[1];
+
+    if (req.url === '/api/login' || req.url?.startsWith('/api/img'))
+      next();
+    else if (userInfo == null)
+      res.sendStatus(401);
+    else {
+      jwt.verify(token, process.env.VS_TOKEN_SECRET as string, (err: any, user: any) => {
+        if (err)
+          res.sendStatus(403);
+        else {
+          (req as any).user = user;
+          next();
+        }
+      });
+    }
+  });
+
   theApp.use((req, res, next) => {
     if (!REQUIRED_HOST || req.hostname === 'localhost' || req.hostname === REQUIRED_HOST)
       next();
@@ -170,6 +195,36 @@ function getApp(): Express {
       }
     });
   }
+
+  theApp.post('/api/login', async (req, res) => {
+    const username = req.body.user?.toString();
+    const pwd = req.body.pwd?.toString();
+
+    for (const user of users) {
+      if (user.name === username) {
+        try {
+          const hashed = await new Promise((resolve, reject) => {
+            crypto.pbkdf2(pwd, process.env.VS_SALT, 100000, 64, 'sha512', (err, key) => {
+              if (err)
+                reject(err);
+              else
+                resolve(key.toString('hex'));
+            });
+          });
+
+          if (hashed === user.hash) {
+            res.json(jwt.sign({ username }, process.env.VS_TOKEN_SECRET, { expiresIn: 86400 }));
+            return;
+          }
+        }
+        catch {}
+
+        break;
+      }
+    }
+
+    res.status(403).end();
+  });
 
   theApp.use('/api/library', libraryRouter);
   theApp.use('/api/img', imageRouter);

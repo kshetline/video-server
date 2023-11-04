@@ -4,6 +4,7 @@ import { VideoLibrary, LibraryItem, ServerStatus, VType } from '../../server/src
 import { checksum53, addBackLinks, getZIndex, incrementImageIndex } from './video-ui-utils';
 import { isEqual } from '@tubular/util';
 import { floor } from '@tubular/math';
+import { AuthService } from './auth.service';
 
 @Component({
   selector: 'app-root',
@@ -20,7 +21,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   library: VideoLibrary;
   status: ServerStatus;
 
-  constructor(private httpClient: HttpClient) {}
+  constructor(private httpClient: HttpClient, private auth: AuthService) {}
 
   ngOnInit(): void {
     fetch('/assets/tiny_clear.png').finally();
@@ -108,10 +109,17 @@ export class AppComponent implements AfterViewInit, OnInit {
   }
 
   ngAfterViewInit(): void {
-    this.pollLibrary();
+    if (this.auth.isLoggedIn())
+      this.pollLibrary();
+
     this.httpClient.get('/api/status').subscribe({
       next: (status: ServerStatus) => this.status = status,
       complete: () => this.canPoll = true
+    });
+
+    this.auth.loginStatus.subscribe(state => {
+      if (state)
+        this.pollLibrary();
     });
   }
 
@@ -138,6 +146,14 @@ export class AppComponent implements AfterViewInit, OnInit {
       },
       complete: () => this.gettingLibrary = false
     });
+  }
+
+  isLoggedOut(): boolean {
+    return this.auth.isLoggedOut();
+  }
+
+  logOut(): void {
+    this.auth.logout();
   }
 
   private pollStatus = (): void => {

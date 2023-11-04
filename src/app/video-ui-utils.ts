@@ -3,8 +3,8 @@ import { stripDiacriticals_lc } from '@tubular/util';
 
 let imageIndex = 0;
 
-export function getImageIndex(): number {
-  return imageIndex;
+export function getImageParam(): string {
+  return imageIndex > 0 ? '&ii=' + imageIndex : '';
 }
 
 export function incrementImageIndex(): number {

@@ -1,6 +1,6 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { Cut, LibraryItem, VType } from '../../../server/src/shared-types';
-import { checksum53, getImageIndex, getSeasonTitle } from '../video-ui-utils';
+import { checksum53, getImageParam, getSeasonTitle } from '../video-ui-utils';
 import { encodeForUri } from '@tubular/util';
 import { max, round } from '@tubular/math';
 
@@ -202,6 +202,14 @@ export class ShowViewComponent {
       this.selectVideo(this.videoIndex + 1);
   }
 
+  getLogoUrl(): string {
+    return `/api/img/logo?url=${encodeForUri(this.show.logo)}`;
+  }
+
+  getPosterUrl(item: LibraryItem): string {
+    return `/api/img/poster?id=${item.id}&cs=${checksum53(item.name)}&w=300&h=450`;
+  }
+
   getBackground(): string {
     if (this.show?.type !== VType.TV_SEASON || !this.backgroundMain)
       return (this.backgroundMain = this.getBackgroundAux());
@@ -212,8 +220,7 @@ export class ShowViewComponent {
   private getBackgroundAux(ignoreEpisode = false): string {
     const id2 = !ignoreEpisode && this.show?.type === VType.TV_SEASON && this.video?.parent.id;
 
-    return `/api/img/backdrop?id=${this.show.id}${id2 ? '&id2=' + id2 : ''}&cs=${checksum53(this.show.name)}` +
-        (getImageIndex() > 0 ? '&ii=' + getImageIndex() : '');
+    return `/api/img/backdrop?id=${this.show.id}${id2 ? '&id2=' + id2 : ''}&cs=${checksum53(this.show.name)}${getImageParam()}`;
   }
 
   hasBonusMaterial(): boolean {

@@ -10,11 +10,10 @@
     [style.width]="thumbnailWidth"></div>
   <div class="poster-area">
     <div class="logo">
-      <img *ngIf="show.logo" [ngSrc]="'/api/img/logo?url=' + encodeForUri(show.logo)" alt="{{show.name}}" fill priority="true">
+      <img *ngIf="show.logo" [ngSrc]="getLogoUrl()" [alt]="show.name" fill priority="true">
     </div>
     <div class="poster">
-      <img [ngSrc]="'/api/img/poster?id=' + show.id + '&amp;cs=' + checksum53(show.name)" alt="{{show.name}}"
-           class="poster" fill priority>
+      <img [ngSrc]="getPosterUrl(show)" class="poster" [alt]="show.name" fill priority>
     </div>
   </div>
   <div class="show-info-wrapper">

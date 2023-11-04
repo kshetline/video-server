@@ -1,0 +1,22 @@
+:host {
+  align-content: center;
+  align-items: center;
+  background-color: darkblue;
+  display: grid;
+  flex-direction: column;
+  gap: 1em;
+  height: 100vh;
+  justify-content: center;
+  grid-template-columns: auto auto;
+  z-index: 1000;
+}
+
+label {
+  color: white;
+  text-align: right;
+}
+
+p-button {
+  grid-column: 2 / 2;
+  place-self: center;
+}

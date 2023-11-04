@@ -50,4 +50,8 @@ export class CollectionViewComponent {
   onClick(item: LibraryItem): void {
     this.showSelected.emit(item);
   }
+
+  getPosterUrl(item: LibraryItem): string {
+    return `/api/img/poster?id=${item.id}&cs=${checksum53(item.name)}&w=300&h=450`;
+  }
 }

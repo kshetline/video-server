@@ -1,6 +1,6 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { LibraryItem, VType } from '../../../server/src/shared-types';
-import { checksum53 } from '../video-ui-utils';
+import { checksum53, getImageParam } from '../video-ui-utils';
 import { encodeForUri } from '@tubular/util';
 
 @Component({
@@ -46,7 +46,7 @@ export class BonusViewComponent {
       show = show.parent;
 
     if (show)
-      return `url("/api/img/backdrop?id=${show.id}&cs=${checksum53(show.name)}")`;
+      return `url("/api/img/backdrop?id=${show.id}&cs=${checksum53(show.name)}${getImageParam()}")`;
     else
       return null;
   }
