@@ -100,12 +100,16 @@ export class AppComponent implements AfterViewInit, OnInit {
       }
     }, true);
 
-    navigator.serviceWorker.register('/assets/service.js').then(reg =>
-      console.log('Service worker registration succeeded:', reg))
-      .catch(err => {
-        console.error('Service worker registration failed:', err);
-        this.pollStatus();
-      });
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.register('/assets/service.js').then(reg =>
+        console.log('Service worker registration succeeded:', reg))
+        .catch(err => {
+          console.error('Service worker registration failed:', err);
+          this.pollStatus();
+        });
+    }
+    else
+      console.warn('Service worker not available');
   }
 
   ngAfterViewInit(): void {

@@ -43,8 +43,10 @@ const devMode = process.argv.includes('-d');
 const allowCors = toBoolean(process.env.VS_ALLOW_CORS) || devMode;
 const defaultPort = devMode ? 4201 : 8080;
 const httpPort = normalizePort(process.env.VS_PORT || defaultPort);
+const insecurePort = normalizePort(process.env.VS_INSECURE_PORT);
 const app = getApp();
 let httpServer: http.Server | https.Server;
+let insecureServer: http.Server;
 const MAX_START_ATTEMPTS = 3;
 let startAttempts = 0;
 let users: User[] = [];
@@ -58,7 +60,9 @@ createAndStartServer();
 
 function createAndStartServer(): void {
   console.log(`*** Starting server on port ${httpPort} at ${timeStamp()} ***`);
-  httpServer = toBoolean(process.env.VC_USE_HTTPS) ? https.createServer({
+  const useHttps = toBoolean(process.env.VS_USE_HTTPS);
+
+  httpServer = useHttps ? https.createServer({
     key: fs.readFileSync(process.env.VS_KEY),
     cert: fs.readFileSync(process.env.VS_CERT)
   }, app) :
@@ -70,6 +74,13 @@ function createAndStartServer(): void {
   initLibrary();
 
   httpServer.listen(httpPort);
+
+  if (useHttps && insecurePort) {
+    insecureServer = http.createServer(app);
+    insecureServer.on('error', onError);
+    insecureServer.on('listening', onListening);
+    insecureServer.listen(insecurePort);
+  }
 }
 
 function onError(error: any): void {
@@ -152,7 +163,7 @@ function getApp(): Express {
     const token = req.headers.authorization;
     const userInfo = token?.split('.')[1];
 
-    if (/^\/api\/(login|status|img\b.*)$/.test(req.url))
+    if (!/^\/api\//.test(req.url) || /^\/api\/(login|img|status)\b/.test(req.url))
       next();
     else if (userInfo == null)
       res.sendStatus(401);
@@ -169,8 +180,12 @@ function getApp(): Express {
   });
 
   theApp.use((req, res, next) => {
-    if (!REQUIRED_HOST || req.hostname === 'localhost' || req.hostname === REQUIRED_HOST)
-      next();
+    if (!REQUIRED_HOST || req.hostname === 'localhost' || req.hostname === REQUIRED_HOST) {
+      if (!req.secure && insecureServer)
+        res.redirect(`https://${req.headers.host.toString().replace(/:\d+$/, '')}${req.path}`);
+      else
+        next();
+    }
     else
       res.status(403).end();
   });
