@@ -152,7 +152,7 @@ function getApp(): Express {
     const token = req.headers.authorization;
     const userInfo = token?.split('.')[1];
 
-    if (req.url === '/api/login' || req.url?.startsWith('/api/img'))
+    if (/^\/api\/(login|status|img\b.*)$/.test(req.url))
       next();
     else if (userInfo == null)
       res.sendStatus(401);

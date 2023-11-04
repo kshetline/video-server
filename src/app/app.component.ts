@@ -148,6 +148,10 @@ export class AppComponent implements AfterViewInit, OnInit {
     });
   }
 
+  isLoggedIn(): boolean {
+    return this.auth.isLoggedIn();
+  }
+
   isLoggedOut(): boolean {
     return this.auth.isLoggedOut();
   }

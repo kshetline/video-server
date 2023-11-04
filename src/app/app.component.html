@@ -1,12 +1,12 @@
-<div class="status-panel">
+<div *ngIf="isLoggedIn()" class="status-panel">
   <p-button icon="pi pi-sign-out" styleClass="p-button-rounded" (click)="logOut()"></p-button>
 </div>
 <app-poster-view [library]="library" (itemClicked)="itemClicked($event)"></app-poster-view>
-<app-collection-view [class.active]="currentCollection" [collection]=currentCollection
+<app-collection-view *ngIf="isLoggedIn()" [class.active]="currentCollection" [collection]=currentCollection
   (goBack)="currentCollection = null" (showSelected)="currentShow = $event"
   [currentShow]=currentShow></app-collection-view>
-<app-show-view [class.active]="currentShow" [show]="currentShow" (goBack)="currentShow = null"
+<app-show-view *ngIf="isLoggedIn()" [class.active]="currentShow" [show]="currentShow" (goBack)="currentShow = null"
                (viewBonus)="bonusSource = $event" [currentBonus]="bonusSource"></app-show-view>
-<app-bonus-view [class.active]="bonusSource" [source]="bonusSource"
+<app-bonus-view *ngIf="isLoggedIn()" [class.active]="bonusSource" [source]="bonusSource"
                 (goBack)="bonusSource = null"></app-bonus-view>
 <app-login *ngIf="isLoggedOut()"></app-login>
