@@ -30,7 +30,7 @@ import { jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
 import fs from 'fs';
 import { cachedLibrary, initLibrary, pendingLibrary, router as libraryRouter } from './library-router';
 import { router as imageRouter } from './image-router';
-import { LibraryStatus, ServerStatus, User } from './shared-types';
+import { LibraryStatus, ServerStatus, User, UserSession } from './shared-types';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 
@@ -44,6 +44,7 @@ const allowCors = toBoolean(process.env.VS_ALLOW_CORS) || devMode;
 const defaultPort = devMode ? 4201 : 8080;
 const httpPort = normalizePort(process.env.VS_PORT || defaultPort);
 const insecurePort = normalizePort(process.env.VS_INSECURE_PORT);
+const useHttps = toBoolean(process.env.VS_USE_HTTPS);
 const app = getApp();
 let httpServer: http.Server | https.Server;
 let insecureServer: http.Server;
@@ -60,7 +61,6 @@ createAndStartServer();
 
 function createAndStartServer(): void {
   console.log(`*** Starting server on port ${httpPort} at ${timeStamp()} ***`);
-  const useHttps = toBoolean(process.env.VS_USE_HTTPS);
 
   httpServer = useHttps ? https.createServer({
     key: fs.readFileSync(process.env.VS_KEY),
@@ -87,7 +87,8 @@ function onError(error: any): void {
   if (error.syscall !== 'listen')
     throw error;
 
-  const bind = isString(httpPort) ? 'Pipe ' + httpPort : 'Port ' + httpPort;
+  const port = (/:(\d+)$/.exec(error.message) || ['', httpPort.toString()])[1];
+  const bind = isString(httpPort) ? 'Pipe ' + port : 'Port ' + port;
 
   // handle specific listen errors with friendly messages
   switch (error.code) {
@@ -98,7 +99,7 @@ function onError(error: any): void {
     case 'EADDRINUSE':
       console.error(bind + ' is already in use');
 
-      if (!canReleasePortAndRestart())
+      if (!canReleasePortAndRestart(port))
         process.exit(1);
 
       break;
@@ -114,15 +115,15 @@ function onListening(): void {
   debug('Listening on ' + bind);
 }
 
-function canReleasePortAndRestart(): boolean {
-  if (process.env.USER !== 'root' || !toBoolean(process.env.AWC_LICENSED_TO_KILL) || ++startAttempts > MAX_START_ATTEMPTS)
+function canReleasePortAndRestart(port: string): boolean {
+  if (process.env.USER !== 'root' || !toBoolean(process.env.VS_LICENSED_TO_KILL) || ++startAttempts > MAX_START_ATTEMPTS)
     return false;
 
   try {
     const lines = asLines(execSync('netstat -pant').toString());
 
     for (const line of lines) {
-      const $ = new RegExp(String.raw`^tcp.*:${httpPort}\b.*\bLISTEN\b\D*(\d+)\/node`).exec(line);
+      const $ = new RegExp(String.raw`^tcp.*:${port}\b.*\bLISTEN\b\D*(\d+)\/node`).exec(line);
 
       if ($) {
         const signal = (startAttempts > 1 ? '-9 ' : '');
@@ -164,10 +165,10 @@ function getApp(): Express {
 
   //  hashed_password = crypto.pbkdf2Sync("password", salt, 100000, 64, 'sha512').toString('hex')
   theApp.use((req, res, next) => {
-    const token = req.headers.authorization;
+    const token = req.cookies.vs_jwt;
     const userInfo = token?.split('.')[1];
 
-    if (!/^\/api\//.test(req.url) || /^\/api\/(login|img|status)\b/.test(req.url))
+    if (!/^\/api\//.test(req.url) || /^\/api\/(login|status)\b/.test(req.url))
       next();
     else if (userInfo == null)
       res.sendStatus(401);
@@ -232,7 +233,14 @@ function getApp(): Express {
           });
 
           if (hashed === user.hash) {
-            res.json(jwt.sign({ username }, process.env.VS_TOKEN_SECRET, { expiresIn: 86400 }));
+            const expiresIn = user.time_to_expire || 3600; // In seconds
+            const expiration = Date.now() + expiresIn * 1000;
+            const token = jwt.sign({ username }, process.env.VS_TOKEN_SECRET, { expiresIn });
+            const session: UserSession = { name: user.name, role: user.role, expiration };
+
+            res.cookie('vs_jwt', token, { secure: useHttps, httpOnly: true, expires: new Date(expiration) });
+            res.json(session);
+
             return;
           }
         }

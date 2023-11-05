@@ -2,6 +2,7 @@ import { EventEmitter, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { toInt } from '@tubular/util';
 import { Observable } from 'rxjs/internal/Observable';
+import { UserSession } from '../../server/src/shared-types';
 
 @Injectable({
   providedIn: 'root'
@@ -15,8 +16,8 @@ export class AuthService {
     const observable = this.http.post('/api/login', { user, pwd });
 
     observable.subscribe({
-      next: jwt => {
-        this.setSession(jwt.toString());
+      next: (session: UserSession) => {
+        this.setSession(session);
         this.loginStatus.next(true);
       },
       error: () => this.loginStatus.next(false)
@@ -25,19 +26,13 @@ export class AuthService {
     return observable;
   }
 
-  private setSession(jwt: string): void {
-    const payload = JSON.parse(atob(jwt.split('.')[1] || 'null'));
+  private setSession(session: UserSession): void {
+    const expiration = (session?.expiration as number || 0);
 
-    localStorage.setItem('vs_jwt', jwt);
-    localStorage.setItem('vs_expires_at', ((payload?.exp as number || 0) * 1000).toString());
-  }
-
-  getToken(): string {
-    return localStorage.getItem('vs_jwt');
+    localStorage.setItem('vs_expires_at', expiration.toString());
   }
 
   logout(): void {
-    localStorage.removeItem('vs_jwt');
     localStorage.removeItem('vs_expires_at');
   }
 

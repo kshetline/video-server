@@ -192,4 +192,11 @@ export interface User {
   name: string;
   hash: string;
   role: string;
+  time_to_expire: number;
+}
+
+export interface UserSession {
+  name: string;
+  role: string;
+  expiration: number;
 }
