@@ -27,6 +27,7 @@ export class ShowViewComponent {
   backgroundOverlay = '';
   categoryLabels: string[] = [];
   faderOpacity = '0';
+  playSrc = '';
   selection: LibraryItem;
   thumbnail: string;
   thumbnailWidth = '0';
@@ -329,6 +330,14 @@ export class ShowViewComponent {
 
     if (link)
       link.click();
+  }
+
+  play(): void {
+    this.playSrc = this.video.streamUri;
+  }
+
+  closePlayer(): void {
+    this.playSrc = '';
   }
 
   private checkPendingBackgroundChange(): void {

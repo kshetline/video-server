@@ -26,7 +26,7 @@ import * as https from 'https';
 import { asLines, encodeForUri, isString, makePlainASCII, toBoolean } from '@tubular/util';
 import logger from 'morgan';
 import * as paths from 'path';
-import { jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
+import { existsAsync, jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
 import fs from 'fs';
 import { cachedLibrary, initLibrary, pendingLibrary, router as libraryRouter } from './library-router';
 import { router as imageRouter } from './image-router';
@@ -274,13 +274,36 @@ function getApp(): Express {
   theApp.get('/api/download', async (req, res) => {
     const url = (req.query.url as string) || '';
     const filePath = paths.join(process.env.VS_VIDEO_SOURCE, url);
-    const fileName = paths.basename(url);
-    const legacyName = makePlainASCII(fileName, true);
 
-    res.setHeader('Content-Type', 'application/octet-stream');
-    res.setHeader('Content-Disposition',
-      `attachment; filename=${legacyName}; filename*=UTF-8''${encodeForUri(fileName)}`);
-    res.sendFile(filePath);
+    if (await existsAsync(filePath)) {
+      const fileName = paths.basename(url);
+      const legacyName = makePlainASCII(fileName, true);
+
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.setHeader('Content-Disposition',
+        `attachment; filename=${legacyName}; filename*=UTF-8''${encodeForUri(fileName)}`);
+      res.sendFile(filePath);
+    }
+    else
+      res.sendStatus(404);
+  });
+
+  theApp.get('/api/stream/*', async (req, res) => {
+    const filePath = paths.join(process.env.VS_VIDEO_SOURCE,
+      req.url.substring(12).split('/').map(s => decodeURIComponent(s)).join('/'));
+
+    if (await existsAsync(filePath)) {
+      if (filePath.endsWith('.audio.webm'))
+        res.setHeader('Content-Type', 'audio/webm');
+      else if (filePath.endsWith('.webm'))
+        res.setHeader('Content-Type', 'video/webm');
+      else if (filePath.endsWith('.mpd'))
+        res.setHeader('Content-Type', 'application/dash+xml');
+
+      res.sendFile(filePath);
+    }
+    else
+      res.sendStatus(404);
   });
 
   return theApp;

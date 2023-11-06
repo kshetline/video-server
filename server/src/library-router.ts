@@ -7,7 +7,7 @@ import { abs, min } from '@tubular/math';
 import { requestJson } from 'by-request';
 import paths from 'path';
 import { readdir, writeFile } from 'fs/promises';
-import { cacheDir, jsonOrJsonp, noCache, safeLstat } from './vs-util';
+import { cacheDir, existsAsync, jsonOrJsonp, noCache, safeLstat } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
 
 export const router = Router();
@@ -156,6 +156,13 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
       }
     }
     else if (!/-Extras-|Bonus Disc/i.exec(item.uri || '')) {
+      if (item.uri) {
+        const streamUri = item.uri.replace(/\.mkv$/, '.mpd').replace(/\s*\(2[DK]\)/, '');
+
+        if (await existsAsync(paths.join(process.env.VS_VIDEO_SOURCE, streamUri)))
+          item.streamUri = streamUri;
+      }
+
       if (DIRECTORS.test(item.uri))
         item.cut = Cut.DIRECTORS;
       else if (FINAL.test(item.uri))

@@ -74,6 +74,7 @@ export interface LibraryItem {
   resolution?: string;
   season?: number;
   seasonCount?: number;
+  streamUri?: string;
   subtitle?: Track[];
   tagLine?: string;
   title?: string;

@@ -9,6 +9,7 @@ import { BonusViewComponent } from './bonus-view/bonus-view.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ButtonModule } from 'primeng/button';
 import { CollectionViewComponent } from './collection-view/collection-view.component';
+import { DashPlayerComponent } from './dash-player/dash-player.component';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { PosterViewComponent } from './poster-view/poster-view.component';
@@ -22,11 +23,12 @@ import { LoginComponent } from './login/login.component';
   declarations: [
     AppComponent,
     BonusViewComponent,
+    DashPlayerComponent,
     PosterViewComponent,
     CollectionViewComponent,
     ShowViewComponent,
     RatingComponent,
-    LoginComponent,
+    LoginComponent
   ],
   imports: [
     BrowserAnimationsModule,
