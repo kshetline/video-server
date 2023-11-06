@@ -1,5 +1,20 @@
 :host {
+  align-items: center;
   background-color: #333;
   color: white;
-  display: block;
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+p-button {
+  position: absolute;
+  right: 1em;
+  top: 1em;
+  z-index: 301;
+}
+
+video {
+  height: min(1080px, calc(100vh - 2em));
+  width: min(1920px, calc(100vw - 2em));
 }
