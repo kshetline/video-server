@@ -30,6 +30,7 @@ import { existsAsync, jsonOrJsonp, noCache, normalizePort, timeStamp } from './v
 import fs from 'fs';
 import { cachedLibrary, initLibrary, pendingLibrary, router as libraryRouter } from './library-router';
 import { router as imageRouter } from './image-router';
+import { router as streamingRouter } from './streaming-router';
 import { LibraryStatus, ServerStatus, User, UserSession } from './shared-types';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
@@ -255,6 +256,7 @@ function getApp(): Express {
 
   theApp.use('/api/library', libraryRouter);
   theApp.use('/api/img', imageRouter);
+  theApp.use('/api/stream', streamingRouter);
 
   theApp.get('/api/status', async (req, res) => {
     noCache(res);
@@ -282,24 +284,6 @@ function getApp(): Express {
       res.setHeader('Content-Type', 'application/octet-stream');
       res.setHeader('Content-Disposition',
         `attachment; filename=${legacyName}; filename*=UTF-8''${encodeForUri(fileName)}`);
-      res.sendFile(filePath);
-    }
-    else
-      res.sendStatus(404);
-  });
-
-  theApp.get('/api/stream/*', async (req, res) => {
-    const filePath = paths.join(process.env.VS_VIDEO_SOURCE,
-      req.url.substring(12).split('/').map(s => decodeURIComponent(s)).join('/'));
-
-    if (await existsAsync(filePath)) {
-      if (filePath.endsWith('.audio.webm'))
-        res.setHeader('Content-Type', 'audio/webm');
-      else if (filePath.endsWith('.webm'))
-        res.setHeader('Content-Type', 'video/webm');
-      else if (filePath.endsWith('.mpd'))
-        res.setHeader('Content-Type', 'application/dash+xml');
-
       res.sendFile(filePath);
     }
     else

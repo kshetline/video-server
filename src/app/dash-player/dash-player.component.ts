@@ -11,6 +11,8 @@ export class DashPlayerComponent {
   private player: MediaPlayerClass;
   private _src: string;
 
+  currentResolution = '';
+
   @Output() onClose = new EventEmitter<void>();
 
   @Input() get src(): string { return this._src; }
@@ -29,6 +31,11 @@ export class DashPlayerComponent {
         const url = '/api/stream' + value.split('/').map(s => encodeForUri(s)).join('/');
 
         this.player = MediaPlayer().create();
+        this.player.on('qualityChangeRendered', evt => {
+          const info = this.player.getBitrateInfoListFor('video')[evt.newQuality];
+
+          setTimeout(() => this.currentResolution = `${info.width}x${info.height}`);
+        });
         this.player.initialize(document.querySelector('#video-player'), url, true);
       }
     }
