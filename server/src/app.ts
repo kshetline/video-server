@@ -23,7 +23,7 @@ import cookieParser from 'cookie-parser';
 import express, { Express } from 'express';
 import * as http from 'http';
 import * as https from 'https';
-import { asLines, encodeForUri, isString, makePlainASCII, toBoolean } from '@tubular/util';
+import { asLines, encodeForUri, isString, makePlainASCII, toBoolean, toInt } from '@tubular/util';
 import logger from 'morgan';
 import * as paths from 'path';
 import { existsAsync, jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
@@ -31,7 +31,7 @@ import fs from 'fs';
 import { cachedLibrary, initLibrary, pendingLibrary, router as libraryRouter } from './library-router';
 import { router as imageRouter } from './image-router';
 import { router as streamingRouter } from './streaming-router';
-import { LibraryStatus, ServerStatus, User, UserSession } from './shared-types';
+import { LibraryItem, LibraryStatus, ServerStatus, User, UserSession, VType } from './shared-types';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 
@@ -288,6 +288,45 @@ function getApp(): Express {
     }
     else
       res.sendStatus(404);
+  });
+
+  function findVideo(id: number, item?: LibraryItem): LibraryItem {
+    if (!item)
+      item = { id: -1, data: cachedLibrary.array } as LibraryItem;
+
+    if (item.type === VType.FILE && item.id === id)
+      return item;
+    else if (item.data) {
+      for (const child of item.data) {
+        const match = findVideo(id, child);
+
+        if (match)
+          return match;
+      }
+    }
+
+    return null;
+  }
+
+  theApp.get('/api/stream-check', async (req, res) => {
+    noCache(res);
+
+    const id = toInt(req.query.id);
+    let result: string = null;
+    const video = findVideo(id);
+
+    if (video?.uri) {
+      if (video.streamUri)
+        result = video.streamUri;
+      else {
+        const streamUri = video.uri.replace(/\s*\(2[DK]\)/, '').replace(/\.mkv$/, '.mpd');
+
+        if (await existsAsync(paths.join(process.env.VS_VIDEO_SOURCE, streamUri)))
+          result = video.streamUri = streamUri;
+      }
+    }
+
+    jsonOrJsonp(req, res, result);
   });
 
   return theApp;

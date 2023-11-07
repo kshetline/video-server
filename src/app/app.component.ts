@@ -116,8 +116,8 @@ export class AppComponent implements AfterViewInit, OnInit {
     if (this.auth.isLoggedIn())
       this.pollLibrary();
 
-    this.httpClient.get('/api/status').subscribe({
-      next: (status: ServerStatus) => this.status = status,
+    this.httpClient.get<ServerStatus>('/api/status').subscribe({
+      next: status => this.status = status,
       complete: () => this.canPoll = true
     });
 
@@ -139,8 +139,8 @@ export class AppComponent implements AfterViewInit, OnInit {
       return;
 
     this.gettingLibrary = true;
-    this.httpClient.get('/api/library').subscribe({
-      next: (library: VideoLibrary) => {
+    this.httpClient.get<VideoLibrary>('/api/library').subscribe({
+      next: library => {
         if (!isEqual(this.library, library, { keysToIgnore: ['lastUpdate', 'parent'] })) {
           addBackLinks(library.array);
           this.library = library;
@@ -168,8 +168,8 @@ export class AppComponent implements AfterViewInit, OnInit {
     if (!this.canPoll)
       setTimeout(() => this.pollStatus(), 100);
     else {
-      this.httpClient.get('/api/status').subscribe({
-        next: (status: ServerStatus) => {
+      this.httpClient.get<ServerStatus>('/api/status').subscribe({
+        next: status => {
           const finished = status.ready && (!this.status || !this.status.ready);
           this.status = status;
 

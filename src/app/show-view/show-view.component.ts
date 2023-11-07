@@ -3,6 +3,7 @@ import { Cut, LibraryItem, VType } from '../../../server/src/shared-types';
 import { checksum53, getImageParam, getSeasonTitle } from '../video-ui-utils';
 import { encodeForUri } from '@tubular/util';
 import { max, round } from '@tubular/math';
+import { HttpClient } from '@angular/common/http';
 
 const FADER_TRANSITION_DURATION = '0.75s';
 
@@ -12,14 +13,13 @@ const FADER_TRANSITION_DURATION = '0.75s';
   styleUrls: ['./show-view.component.scss']
 })
 export class ShowViewComponent {
-  readonly checksum53 = checksum53;
-  readonly encodeForUri = encodeForUri;
   readonly getSeasonTitle = getSeasonTitle;
   readonly TV_SEASON = VType.TV_SEASON;
 
   private _show: LibraryItem;
   private backgroundMain = '';
   private backgroundChangeInProgress = false;
+  private checkedForStream = new Set<number>();
   private pendingBackgroundIndex = -1;
   private thumbnailMode = false;
 
@@ -37,6 +37,8 @@ export class ShowViewComponent {
   videoChoices: LibraryItem[][] = [];
   videoLabels: string[] = [];
   videoIndex = 0;
+
+  constructor(private httpClient: HttpClient) {}
 
   @Input() get show(): LibraryItem { return this._show; }
   set show(value: LibraryItem) {
@@ -57,6 +59,7 @@ export class ShowViewComponent {
       this.transitionDuration = FADER_TRANSITION_DURATION;
       this.backgroundChangeInProgress = false;
       this.pendingBackgroundIndex = -1;
+      this.checkedForStream.clear();
 
       if (!value)
         return;
@@ -259,6 +262,9 @@ export class ShowViewComponent {
     this.videoIndex = index;
     this.video = this.videoChoices[this.videoCategory][index];
     this.selection = this.video.parent ?? this.video;
+
+    if (!this.video.streamUri && !this.checkedForStream.has(this.video.id))
+      this.httpClient.get<string>(`/api/stream-check?id=${this.video.id}`).subscribe(streamUri => this.video.streamUri = streamUri);
 
     if (this.show?.type === VType.TV_SEASON) {
       if (this.backgroundChangeInProgress) {
