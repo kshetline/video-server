@@ -4,3 +4,11 @@ body {
   margin: 0;
   overflow: hidden;
 }
+
+.narrow-progress {
+  width: 6em;
+
+  .p-progressbar {
+  height: 0.75em;
+  }
+}

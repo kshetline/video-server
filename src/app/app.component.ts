@@ -100,7 +100,7 @@ export class AppComponent implements AfterViewInit, OnInit {
       }
     }, true);
 
-    if (navigator.serviceWorker) {
+    if (navigator.serviceWorker && Date.now() < 0) { // TODO: Enable push events
       navigator.serviceWorker.register('/assets/service.js').then(reg =>
         console.log('Service worker registration succeeded:', reg))
         .catch(err => {
@@ -108,8 +108,10 @@ export class AppComponent implements AfterViewInit, OnInit {
           this.pollStatus();
         });
     }
-    else
+    else {
       console.warn('Service worker not available');
+      this.pollStatus();
+    }
   }
 
   ngAfterViewInit(): void {

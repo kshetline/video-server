@@ -13,6 +13,7 @@ import { DashPlayerComponent } from './dash-player/dash-player.component';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { PosterViewComponent } from './poster-view/poster-view.component';
+import { ProgressBarModule } from 'primeng/progressbar';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { RatingComponent } from './rating/rating.component';
 import { TooltipModule } from 'primeng/tooltip';
@@ -40,6 +41,7 @@ import { LoginComponent } from './login/login.component';
     InputTextModule,
     NgOptimizedImage,
     PasswordModule,
+    ProgressBarModule,
     RadioButtonModule,
     TooltipModule
   ],

@@ -1,4 +1,6 @@
 <div *ngIf="isLoggedIn()" class="status-panel">
+  <p-progressBar *ngIf="status?.updateProgress >= 0" [value]="status?.updateProgress"
+                 [showValue]="false" class="narrow-progress"></p-progressBar>
   <p-button icon="pi pi-sign-out" styleClass="p-button-rounded" (click)="logOut()"></p-button>
 </div>
 <app-poster-view [library]="library" (itemClicked)="itemClicked($event)"></app-poster-view>
