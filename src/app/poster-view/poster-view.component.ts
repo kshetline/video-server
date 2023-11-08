@@ -129,7 +129,7 @@ export class PosterViewComponent implements OnInit {
   private matchesSearch(item: LibraryItem): boolean {
     if (!this.searchText)
       return true;
-    else if (!item.name || item.type === VType.TV_EPISODE || item.type === VType.TV_SEASON || item.type === VType.FILE)
+    else if (!item.name || item.type === VType.TV_EPISODE || item.type === VType.FILE)
       return false;
 
     const text = stripDiacriticals_lc(this.searchText);

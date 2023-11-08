@@ -1,13 +1,15 @@
 <div class='filter-panel'>
-  <div class="filter-buttons">
+  <div class="filter-row">
     <span class="p-input-icon-left">
       <i class="pi pi-search"></i>
       <input type="text" pInputText [(ngModel)]="searchText"/>
       <i class="pi pi-times-circle clear-icon" [style.display]="searchText ? 'block' : 'none'"
          (click)="searchText = ''"></i>
     </span>
-    <p-radioButton *ngFor="let choice of filterChoices" [label]="choice" [value]="choice"
-                   [(ngModel)]="filter"></p-radioButton>
+    <div class="filter-buttons">
+      <p-radioButton *ngFor="let choice of filterChoices" [label]="choice" [value]="choice"
+                     [(ngModel)]="filter"></p-radioButton>
+    </div>
   </div>
 </div>
 <div class='poster-grid'>
