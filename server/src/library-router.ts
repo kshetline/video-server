@@ -7,7 +7,7 @@ import { abs, min } from '@tubular/math';
 import { requestJson } from 'by-request';
 import paths from 'path';
 import { readdir, writeFile } from 'fs/promises';
-import { cacheDir, existsAsync, jsonOrJsonp, noCache, safeLstat } from './vs-util';
+import { cacheDir, existsAsync, jsonOrJsonp, noCache, safeLstat, unref } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
 
 export const router = Router();
@@ -15,6 +15,7 @@ export const router = Router();
 const comparator = new Intl.Collator('en', { caseFirst: 'upper' }).compare;
 const SEASON_EPISODE = /\bS(\d{1,2})E(\d{1,3})\b/i;
 const SPECIAL_EPISODE = /-M(\d\d?)-/;
+const DAY = 86_400_000;
 
 const DIRECTORS = /\(.*\bDirector['’]s\b/i;
 const FINAL = /\(.*\bFinal\b/i;
@@ -27,6 +28,8 @@ const THEATRICAL = /(\/|\(.*)\b(Original|Theatrical)\b/i;
 const libraryFile = paths.join(cacheDir, 'library.json');
 export let cachedLibrary = { status: LibraryStatus.NOT_STARTED, progress: -1 } as VideoLibrary;
 export let pendingLibrary: VideoLibrary;
+
+let pendingUpdate: any;
 
 function formatAspectRatio(track: MediaInfoTrack): string {
   if (!track)
@@ -451,6 +454,11 @@ function fixVideoFlags(items: LibraryItem[]): void {
 }
 
 export async function updateLibrary(): Promise<void> {
+  if (pendingUpdate) {
+    clearTimeout(pendingUpdate);
+    pendingUpdate = undefined;
+  }
+
   if (pendingLibrary)
     return;
 
@@ -493,8 +501,15 @@ export function initLibrary(): void {
   if (stats)
     cachedLibrary = JSON.parse(readFileSync(libraryFile).toString('utf8'));
 
-  if (!stats || +stats.mtime < +Date.now() - 86_400_000)
+  const age = +Date.now() - +stats.mtime;
+
+  if (!stats || age > DAY)
     updateLibrary().finally();
+  else
+    unref(pendingUpdate = setTimeout(() => {
+      pendingUpdate = undefined;
+      updateLibrary().finally();
+    }, DAY - age));
 }
 
 router.get('/', async (req, res) => {

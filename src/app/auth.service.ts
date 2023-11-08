@@ -8,6 +8,8 @@ import { UserSession } from '../../server/src/shared-types';
   providedIn: 'root'
 })
 export class AuthService {
+  private currentSession: UserSession;
+
   constructor(private http: HttpClient) {}
 
   loginStatus = new EventEmitter<boolean>();
@@ -30,10 +32,14 @@ export class AuthService {
     const expiration = (session?.expiration as number || 0);
 
     localStorage.setItem('vs_expires_at', expiration.toString());
+    localStorage.setItem('vs_session', btoa(JSON.stringify(session)));
+    this.currentSession = session;
   }
 
   logout(): void {
+    this.currentSession = undefined;
     localStorage.removeItem('vs_expires_at');
+    localStorage.removeItem('vs_session');
   }
 
   isLoggedIn(): boolean {
@@ -46,5 +52,16 @@ export class AuthService {
 
   getExpiration(): number {
     return toInt(localStorage.getItem('vs_expires_at'));
+  }
+
+  getSession(): UserSession {
+    if (!this.currentSession) {
+      try {
+        this.currentSession = JSON.parse(atob(localStorage.getItem('vs_session')));
+      }
+      catch {}
+    }
+
+    return this.currentSession;
   }
 }

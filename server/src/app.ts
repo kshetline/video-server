@@ -28,7 +28,7 @@ import logger from 'morgan';
 import * as paths from 'path';
 import { existsAsync, jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
 import fs from 'fs';
-import { cachedLibrary, initLibrary, pendingLibrary, router as libraryRouter } from './library-router';
+import { cachedLibrary, initLibrary, pendingLibrary, router as libraryRouter, updateLibrary } from './library-router';
 import { router as imageRouter } from './image-router';
 import { router as streamingRouter } from './streaming-router';
 import { LibraryItem, LibraryStatus, ServerStatus, User, UserSession, VType } from './shared-types';
@@ -178,6 +178,7 @@ function getApp(): Express {
         if (err)
           res.sendStatus(403);
         else {
+          user.role = users.find(u => u.name === user.username)?.role;
           (req as any).user = user;
           next();
         }
@@ -327,6 +328,15 @@ function getApp(): Express {
     }
 
     jsonOrJsonp(req, res, result);
+  });
+
+  theApp.post('/api/library-refresh', async (req, res) => {
+    if ((req as any).user?.role !== 'admin')
+      res.sendStatus(403);
+    else {
+      updateLibrary().finally();
+      res.json(null);
+    }
   });
 
   return theApp;
