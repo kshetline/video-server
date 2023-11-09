@@ -1,18 +1,19 @@
 :host {
   align-items: center;
-  background-color: #226;
+  background-color: #115;
   color: white;
   display: flex;
   justify-content: center;
-  position: relative;
 }
 
 .info-line {
   display: flex;
   gap: 1em;
+  opacity: 1;
   position: absolute;
   right: 1em;
   top: 1em;
+  transition: opacity 1s ease-in-out;
   z-index: 301;
 
   .resolution {
@@ -21,7 +22,6 @@
 }
 
 video {
-  height: min(1080px, calc(100vh - 5.5em));
-  margin-top: 3.5em;
+  height: min(1080px, calc(100vh - 2em));
   width: min(1920px, calc(100vw - 2em));
 }

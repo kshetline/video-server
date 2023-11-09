@@ -4,7 +4,8 @@
 <div class="content" [style.background-image]="getBackgroundUrl()">
   <div class="inner-content">
     <div *ngFor="let extra of extras" class="extra">
-      <button pButton type="button" label="Play" icon="pi pi-play" class="p-button-sm"></button>
+      <button pButton type="button" label="Play" icon="pi pi-play" class="p-button-sm"
+        [disabled]="!streamUris.get(extra)" (click)="play(extra)"></button>
       <button #btn pButton type="button" label="Download" icon="pi pi-download"
               class="p-button-sm" (click)="startDownload(btn)"></button>
       <a [href]="downloadLink(extra)"><div>&nbsp;</div></a>
@@ -12,3 +13,4 @@
     </div>
   </div>
 </div>
+<app-dash-player [src]="playSrc" (onClose)="closePlayer()" [class.active]="!!playSrc"></app-dash-player>

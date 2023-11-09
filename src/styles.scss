@@ -17,3 +17,27 @@ body {
   height: 1.8rem;
   width: 1.8rem;
 }
+
+app-dash-player {
+  bottom: 50%;
+  height: 0;
+  left: 50%;
+  overflow: hidden;
+  pointer-events: none;
+  position: fixed;
+  right: 50%;
+  transition: bottom 0.5s, height 0.5s, left 0.5s, right 0.5s, top 0.5s, width 0.5s;
+  top: 50%;
+  width: 0;
+  z-index: 300;
+
+  &.active {
+    bottom: 0;
+    height: 100vh;
+    left: 0;
+    pointer-events: all;
+    right: 0;
+    top: 0;
+    width: 100vw;
+  }
+}

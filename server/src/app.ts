@@ -312,22 +312,33 @@ function getApp(): Express {
   theApp.get('/api/stream-check', async (req, res) => {
     noCache(res);
 
-    const id = toInt(req.query.id);
+    let uri = req.query.uri as string;
+    let streamUri: string;
+    let video: LibraryItem;
     let result: string = null;
-    const video = findVideo(id);
 
-    if (video?.uri) {
-      if (video.streamUri)
-        result = video.streamUri;
-      else {
-        const streamUriBase = video.uri.replace(/\.mkv$/, '').replace(/\s*\(2[DK]\)$/, '');
+    if (!uri) {
+      video = findVideo(toInt(req.query.id));
 
-        for (const ext of ['.mpd', '.av.webm']) {
-          const streamUri = streamUriBase + ext;
+      if (video?.uri) {
+        uri = video.uri;
+        streamUri = video.streamUri;
+      }
+    }
 
-          if (await existsAsync(paths.join(process.env.VS_VIDEO_SOURCE, streamUri))) {
-            result = video.streamUri = streamUri;
-          }
+    if (streamUri)
+      result = streamUri;
+    else if (uri) {
+      const streamUriBase = uri.replace(/\.mkv$/, '').replace(/\s*\(2[DK]\)$/, '');
+
+      for (const ext of ['.mpd', '.av.webm']) {
+        const streamUri = streamUriBase + ext;
+
+        if (await existsAsync(paths.join(process.env.VS_VIDEO_SOURCE, streamUri))) {
+          result = streamUri;
+
+          if (video)
+            video.streamUri = streamUri;
         }
       }
     }

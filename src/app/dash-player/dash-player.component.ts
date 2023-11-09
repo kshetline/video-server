@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { MediaPlayer, MediaPlayerClass } from 'dashjs';
 import { encodeForUri } from '@tubular/util';
 
@@ -8,11 +8,21 @@ import { encodeForUri } from '@tubular/util';
   styleUrls: ['./dash-player.component.scss']
 })
 export class DashPlayerComponent {
+  private mouseTimer: any;
   private player: MediaPlayerClass;
   private _src: string;
 
   currentResolution = '';
+  showHeader = false;
   webMUrl = '';
+
+  @HostListener('window:mousemove') onMouseMove(): void {
+    if (this.mouseTimer)
+      clearTimeout(this.mouseTimer);
+
+    this.showHeader = true;
+    this.mouseTimer = setTimeout(() => this.showHeader = false, 5000);
+  }
 
   @Output() onClose = new EventEmitter<void>();
 
@@ -31,7 +41,9 @@ export class DashPlayerComponent {
       if (!value)
         this.onClose.emit();
       else {
-        const url = '/api/stream' + value.split('/').map(s => encodeForUri(s)).join('/');
+        this.showHeader = true;
+
+        const url = '/api/stream' + (value.startsWith('/') ? '' : '/') + value.split('/').map(s => encodeForUri(s)).join('/');
 
         if (url.endsWith('.mpd')) {
           this.player = MediaPlayer().create();
