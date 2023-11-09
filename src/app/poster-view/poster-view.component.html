@@ -15,7 +15,7 @@
 <div class='poster-grid'>
   <div *ngIf="overview" class="overview">{{overview}}</div>
   <div *ngFor="let item of items; index as i" class="library-item">
-    <ng-container *ngIf="item.type === COLLECTION">
+    <ng-container *ngIf="item.type === COLLECTION; else notCollection">
       <div *ngIf="item.data?.length > 1" [attr.data-thumbnail]="'t2-' + i" class="poster-thumbnail-wrapper offset2">
         <img *ngIf="i < 100 || showThumbnail['t2-' + i]"
              [ngSrc]="getPosterUrl(item.data[1])" width="150" height="225" alt="{{item.data[1].name}}" priority>
@@ -25,6 +25,7 @@
              [ngSrc]="getPosterUrl(item.data[0])" width="150" height="225" alt="{{item.data[0].name}}" priority>
       </div>
     </ng-container>
+    <ng-template #notCollection><span class="hash">{{hashTitle(item.name)}}</span></ng-template>
 
     <div [attr.data-thumbnail]="'t-' + i" class="poster-thumbnail-wrapper">
       <div class="loading">Loading...</div>

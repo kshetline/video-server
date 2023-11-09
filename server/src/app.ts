@@ -26,7 +26,7 @@ import * as https from 'https';
 import { asLines, encodeForUri, isString, makePlainASCII, toBoolean, toInt } from '@tubular/util';
 import logger from 'morgan';
 import * as paths from 'path';
-import { existsAsync, jsonOrJsonp, noCache, normalizePort, timeStamp } from './vs-util';
+import { existsAsync, jsonOrJsonp, noCache, normalizePort, role, timeStamp } from './vs-util';
 import fs from 'fs';
 import { cachedLibrary, initLibrary, pendingLibrary, router as libraryRouter, updateLibrary } from './library-router';
 import { router as imageRouter } from './image-router';
@@ -347,7 +347,7 @@ function getApp(): Express {
   });
 
   theApp.post('/api/library-refresh', async (req, res) => {
-    if ((req as any).user?.role !== 'admin')
+    if (role(req) !== 'admin')
       res.sendStatus(403);
     else {
       updateLibrary().finally();

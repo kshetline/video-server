@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { VideoLibrary, LibraryItem, VType } from '../../../server/src/shared-types';
-import { checksum53 } from '../video-ui-utils';
+import { checksum53, hashTitle } from '../video-ui-utils';
 import { stripDiacriticals_lc } from '@tubular/util';
 
 function isMovie(item: LibraryItem): boolean {
@@ -21,6 +21,7 @@ function isTV(item: LibraryItem): boolean {
 })
 export class PosterViewComponent implements OnInit {
   readonly COLLECTION = VType.COLLECTION;
+  readonly hashTitle = hashTitle;
 
   private _library: VideoLibrary;
   private _filter = 'All';

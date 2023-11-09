@@ -2,12 +2,12 @@ import { Router } from 'express';
 import {
   Cut, LibraryItem, LibraryStatus, MediaInfo, MediaInfoTrack, ShowInfo, Track, VideoLibrary, VType
 } from './shared-types';
-import { forEach, isNumber, toInt, toNumber } from '@tubular/util';
+import { clone, forEach, isNumber, toInt, toNumber } from '@tubular/util';
 import { abs, min } from '@tubular/math';
 import { requestJson } from 'by-request';
 import paths from 'path';
 import { readdir, writeFile } from 'fs/promises';
-import { cacheDir, existsAsync, jsonOrJsonp, noCache, safeLstat, unref } from './vs-util';
+import { cacheDir, existsAsync, hashTitle, jsonOrJsonp, noCache, role, safeLstat, unref } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
 
 export const router = Router();
@@ -24,6 +24,9 @@ const INT_THEATRICAL = /\(.*\bInternational Theatrical\b/i;
 const SPECIAL_EDITION = /\bspecial edition\b/i;
 const UNRATED = /\bunrated\b/i;
 const THEATRICAL = /(\/|\(.*)\b(Original|Theatrical)\b/i;
+
+const guestFilter = new Set(process.env.VS_GUEST_FILTER ? process.env.VS_GUEST_FILTER.split(';') : []);
+const demoFilter = new Set(process.env.VS_DEMO_FILTER ? process.env.VS_DEMO_FILTER.split(';') : []);
 
 const libraryFile = paths.join(cacheDir, 'library.json');
 export let cachedLibrary = { status: LibraryStatus.NOT_STARTED, progress: -1 } as VideoLibrary;
@@ -518,7 +521,38 @@ export function initLibrary(): void {
     }, DAY - age));
 }
 
+function filterLibrary(items: LibraryItem[], role: string): void {
+  const filters = [guestFilter];
+
+  if (role === 'demo')
+    filters.push(demoFilter);
+
+  for (let i = items.length - 1; i >= 0; --i) {
+    const item = items[i];
+
+    for (const filter of filters) {
+      if (filter.has(item.name?.toLowerCase()) || filter.has(hashTitle(item.name))) {
+        items.splice(i, 1);
+        break;
+      }
+    }
+  }
+
+  for (const item of items) {
+    if (item.data)
+      filterLibrary(item.data, role);
+  }
+}
+
 router.get('/', async (req, res) => {
   noCache(res);
-  jsonOrJsonp(req, res, cachedLibrary);
+
+  let library = cachedLibrary;
+
+  if (role(req) !== 'admin') {
+    library = clone(cachedLibrary);
+    filterLibrary(library.array, role(req));
+  }
+
+  jsonOrJsonp(req, res, library);
 });

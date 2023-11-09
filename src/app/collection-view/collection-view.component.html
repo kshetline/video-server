@@ -11,7 +11,7 @@
       <div class="rating-wrapper">
         <app-rating *ngIf="item.voteAverage" [value]="item.voteAverage" [topValue]="10"></app-rating>
       </div>
-      <div class="title">{{item.name}}</div>
+      <div class="title">{{item.name}}</div><span class="hash">{{hashTitle(item.name)}}</span>
       <div class="year">{{item.year ? item.year : ''}}</div>
 
       <div class="clicker" (click)="onClick(item)" (mouseenter)="overview = item.overview" (mouseleave)="overview = ''"></div>

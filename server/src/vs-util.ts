@@ -116,3 +116,11 @@ export async function deleteIfPossible(path: string): Promise<boolean> {
 
   return false;
 }
+
+export function hashTitle(title: string): string {
+  return title ? checksum53(title.toLowerCase()) : '';
+}
+
+export function role(req: any): string {
+  return req.user?.role;
+}

@@ -90,3 +90,7 @@ export function getZIndex(elem: Element): number {
 
   return 0;
 }
+
+export function hashTitle(title: string): string {
+  return title ? checksum53(title.toLowerCase()) : '';
+}

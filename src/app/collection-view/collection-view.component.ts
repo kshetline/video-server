@@ -1,6 +1,6 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { LibraryItem } from '../../../server/src/shared-types';
-import { checksum53 } from '../video-ui-utils';
+import { checksum53, hashTitle } from '../video-ui-utils';
 
 function getSortTime(item: LibraryItem): number {
   if (item.airDate)
@@ -19,7 +19,7 @@ function getSortTime(item: LibraryItem): number {
   styleUrls: ['./collection-view.component.scss']
 })
 export class CollectionViewComponent {
-  readonly checksum53 = checksum53;
+  readonly hashTitle = hashTitle;
 
   private _collection: LibraryItem;
 
