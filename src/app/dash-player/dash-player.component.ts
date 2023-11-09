@@ -12,6 +12,7 @@ export class DashPlayerComponent {
   private _src: string;
 
   currentResolution = '';
+  webMUrl = '';
 
   @Output() onClose = new EventEmitter<void>();
 
@@ -19,6 +20,8 @@ export class DashPlayerComponent {
   set src(value: string) {
     if (this._src !== value) {
       this._src = value;
+      this.currentResolution = '';
+      this.webMUrl = '';
 
       if (this.player) {
         this.player.destroy();
@@ -30,13 +33,17 @@ export class DashPlayerComponent {
       else {
         const url = '/api/stream' + value.split('/').map(s => encodeForUri(s)).join('/');
 
-        this.player = MediaPlayer().create();
-        this.player.on('qualityChangeRendered', evt => {
-          const info = this.player.getBitrateInfoListFor('video')[evt.newQuality];
+        if (url.endsWith('.mpd')) {
+          this.player = MediaPlayer().create();
+          this.player.on('playbackProgress', () => {
+            const info = this.player.getBitrateInfoListFor('video')[this.player.getQualityFor('video')];
 
-          setTimeout(() => this.currentResolution = `${info.width}x${info.height}`);
-        });
-        this.player.initialize(document.querySelector('#video-player'), url, true);
+            setTimeout(() => this.currentResolution = `${info.width}x${info.height}`);
+          });
+          this.player.initialize(document.querySelector('#video-player'), url, true);
+        }
+        else
+          this.webMUrl = url;
       }
     }
   }

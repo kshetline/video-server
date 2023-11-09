@@ -320,10 +320,15 @@ function getApp(): Express {
       if (video.streamUri)
         result = video.streamUri;
       else {
-        const streamUri = video.uri.replace(/\s*\(2[DK]\)/, '').replace(/\.mkv$/, '.mpd');
+        const streamUriBase = video.uri.replace(/\.mkv$/, '').replace(/\s*\(2[DK]\)$/, '');
 
-        if (await existsAsync(paths.join(process.env.VS_VIDEO_SOURCE, streamUri)))
-          result = video.streamUri = streamUri;
+        for (const ext of ['.mpd', '.av.webm']) {
+          const streamUri = streamUriBase + ext;
+
+          if (await existsAsync(paths.join(process.env.VS_VIDEO_SOURCE, streamUri))) {
+            result = video.streamUri = streamUri;
+          }
+        }
       }
     }
 

@@ -160,10 +160,16 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
     }
     else if (!/-Extras-|Bonus Disc/i.exec(item.uri || '')) {
       if (item.uri) {
-        const streamUri = item.uri.replace(/\.mkv$/, '.mpd').replace(/\s*\(2[DK]\)/, '');
+        const streamUriBase = item.uri.replace(/\.mkv$/, '').replace(/\s*\(2[DK]\)$/, '');
 
-        if (await existsAsync(paths.join(process.env.VS_VIDEO_SOURCE, streamUri)))
-          item.streamUri = streamUri;
+        for (const ext of ['.mpd', '.av.webm']) {
+          const streamUri = streamUriBase + ext;
+
+          if (await existsAsync(paths.join(process.env.VS_VIDEO_SOURCE, streamUri))) {
+            item.streamUri = streamUri;
+            break;
+          }
+        }
       }
 
       if (DIRECTORS.test(item.uri))

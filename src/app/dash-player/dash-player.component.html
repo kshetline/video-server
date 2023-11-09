@@ -2,4 +2,7 @@
   <div class="resolution">{{currentResolution}}</div>
   <p-button icon="pi pi-times" styleClass="p-button-rounded" (click)="onClose.emit()"></p-button>
 </div>
-<video id="video-player" controls></video>
+<video id="video-player" controls [style.display]="webMUrl ? 'none' : 'block'"></video>
+<video *ngIf="webMUrl" controls autoplay>
+  <source [src]="webMUrl" type="video/webm">
+</video>

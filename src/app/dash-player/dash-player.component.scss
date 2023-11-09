@@ -21,6 +21,7 @@
 }
 
 video {
-  height: min(1080px, calc(100vh - 2em));
+  height: min(1080px, calc(100vh - 5.5em));
+  margin-top: 3.5em;
   width: min(1920px, calc(100vw - 2em));
 }
