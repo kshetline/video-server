@@ -2,8 +2,8 @@
   <div class="resolution">{{currentResolution}}</div>
   <p-button icon="pi pi-times" styleClass="p-button-rounded" (click)="onClose.emit()"></p-button>
 </div>
-<video id="video-player" controls [style.display]="webMUrl ? 'none' : 'block'"
+<video id="dash-player" controls [style.display]="webMUrl ? 'none' : 'block'"
    [style.cursor]="showHeader ? 'default' : 'none'"></video>
-<video *ngIf="webMUrl" controls autoplay [style.cursor]="showHeader ? 'default' : 'none'">
+<video *ngIf="webMUrl" id="webm-player" controls autoplay [style.cursor]="showHeader ? 'default' : 'none'">
   <source [src]="webMUrl" type="video/webm">
 </video>

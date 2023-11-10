@@ -1,6 +1,7 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { MediaPlayer, MediaPlayerClass } from 'dashjs';
-import { encodeForUri } from '@tubular/util';
+import { encodeForUri, toNumber } from '@tubular/util';
+import { max } from '@tubular/math';
 
 @Component({
   selector: 'app-dash-player',
@@ -44,6 +45,7 @@ export class DashPlayerComponent {
         this.showHeader = true;
 
         const url = '/api/stream' + (value.startsWith('/') ? '' : '/') + value.split('/').map(s => encodeForUri(s)).join('/');
+        let playerId = '#webm-player';
 
         if (url.endsWith('.mpd')) {
           this.player = MediaPlayer().create();
@@ -52,11 +54,36 @@ export class DashPlayerComponent {
 
             setTimeout(() => this.currentResolution = `${info.width}x${info.height}`);
           });
-          this.player.initialize(document.querySelector('#video-player'), url, true);
+          playerId = '#dash-player';
+          this.player.initialize(document.querySelector(playerId), url, true);
         }
         else
           this.webMUrl = url;
+
+        this.findPlayer(playerId);
       }
     }
+  }
+
+  private volumeChange = (evt: Event): void => {
+    localStorage.setItem('vs_player_volume', (evt.target as HTMLVideoElement).volume.toString());
+  };
+
+  private findPlayer(id: string, tries = 0): void {
+    const playerElem = document.querySelector(id) as HTMLVideoElement;
+
+    if (!playerElem) {
+      if (tries < 120)
+        setTimeout(() => this.findPlayer(id, tries + 1), 50);
+
+      return;
+    }
+
+    const lastVolume = localStorage.getItem('vs_player_volume');
+
+    if (lastVolume)
+      playerElem.volume = max(toNumber(lastVolume), 0.05);
+
+    playerElem.addEventListener('volumechange', this.volumeChange);
   }
 }

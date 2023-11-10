@@ -66,12 +66,14 @@ export interface LibraryItem {
   isHdr?: boolean;
   isSD?: boolean;
   logo?: string;
+  mobileUri?: string;
   overview?: string;
   parent?: LibraryItem;
   posterPath?: string;
   ratingTomatoes?: string;
   releaseDate: string;
   resolution?: string;
+  sampleUri?: string;
   season?: number;
   seasonCount?: number;
   streamUri?: string;

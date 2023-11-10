@@ -7,7 +7,7 @@ import { abs, min } from '@tubular/math';
 import { requestJson } from 'by-request';
 import paths from 'path';
 import { readdir, writeFile } from 'fs/promises';
-import { cacheDir, existsAsync, hashTitle, jsonOrJsonp, noCache, role, safeLstat, unref } from './vs-util';
+import { cacheDir, existsAsync, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat, unref } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
 
 export const router = Router();
@@ -24,9 +24,6 @@ const INT_THEATRICAL = /\(.*\bInternational Theatrical\b/i;
 const SPECIAL_EDITION = /\bspecial edition\b/i;
 const UNRATED = /\bunrated\b/i;
 const THEATRICAL = /(\/|\(.*)\b(Original|Theatrical)\b/i;
-
-const guestFilter = new Set(process.env.VS_GUEST_FILTER ? process.env.VS_GUEST_FILTER.split(';') : []);
-const demoFilter = new Set(process.env.VS_DEMO_FILTER ? process.env.VS_DEMO_FILTER.split(';') : []);
 
 const libraryFile = paths.join(cacheDir, 'library.json');
 export let cachedLibrary = { status: LibraryStatus.NOT_STARTED, progress: -1 } as VideoLibrary;
@@ -173,6 +170,11 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
             break;
           }
         }
+
+        const mobileUri = paths.join(process.env.VS_VIDEO_SOURCE, streamUriBase + '.av.mp4');
+
+        if (await existsAsync(paths.join(process.env.VS_VIDEO_SOURCE, mobileUri)))
+          item.mobileUri = mobileUri;
       }
 
       if (DIRECTORS.test(item.uri))
@@ -522,23 +524,17 @@ export function initLibrary(): void {
 }
 
 function filterLibrary(items: LibraryItem[], role: string): void {
-  const filters = [guestFilter];
-
-  if (role === 'demo')
-    filters.push(demoFilter);
-
   for (let i = items.length - 1; i >= 0; --i) {
     const item = items[i];
 
-    for (const filter of filters) {
-      if (filter.has(item.name?.toLowerCase()) || filter.has(hashTitle(item.name))) {
-        items.splice(i, 1);
-        break;
-      }
-    }
+    if (!itemAccessAllowed(item, role))
+      items.splice(i, 1);
   }
 
   for (const item of items) {
+    if (role === 'demo' && item.sampleUri)
+      item.uri = item.streamUri = item.sampleUri;
+
     if (item.data)
       filterLibrary(item.data, role);
   }

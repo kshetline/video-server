@@ -2,6 +2,10 @@ import { Request, Response } from 'express';
 import { lstat, unlink } from 'fs/promises';
 import { existsSync, mkdirSync, Stats } from 'fs';
 import paths from 'path';
+import { LibraryItem } from './shared-types';
+
+const guestFilter = new Set(process.env.VS_GUEST_FILTER ? process.env.VS_GUEST_FILTER.split(';') : []);
+const demoFilter = new Set(process.env.VS_DEMO_FILTER ? process.env.VS_DEMO_FILTER.split(';') : []);
 
 export const cacheDir = paths.join(process.cwd(), 'cache');
 export const thumbnailDir = paths.join(cacheDir, 'thumbnail');
@@ -123,4 +127,18 @@ export function hashTitle(title: string): string {
 
 export function role(req: any): string {
   return req.user?.role;
+}
+
+export function itemAccessAllowed(item: LibraryItem, role: string): boolean {
+  const filters = [guestFilter];
+
+  if (role === 'demo')
+    filters.push(demoFilter);
+
+  for (const filter of filters) {
+    if (filter.has(item.name?.toLowerCase()) || filter.has(hashTitle(item.name)))
+      return false;
+  }
+
+  return true;
 }
