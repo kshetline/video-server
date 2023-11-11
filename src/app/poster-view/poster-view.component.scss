@@ -14,7 +14,7 @@
   top: 0;
   z-index: 10;
 
-  .filter-row {
+  .filter-items {
     align-items: center;
     display: flex;
     gap: 2em;
@@ -125,4 +125,25 @@
 .dummy-item {
   height: 1px;
   width: 150px;
+}
+
+@media screen and (orientation: portrait) and (max-width: 500px) {
+  .filter-panel {
+    height: 7em;
+
+    .filter-items {
+      align-items: start;
+      flex-direction: column;
+      gap: 1em;
+      justify-content: center;
+
+      input {
+        width: 10em;
+      }
+    }
+  }
+
+  .poster-grid {
+    height: calc(100dvh - 7em);
+  }
 }

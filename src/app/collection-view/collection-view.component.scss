@@ -12,9 +12,14 @@
   height: 3.5em;
   left: 0;
   padding-left: 2em;
+  position: relative;
   right: 0;
   top: 0;
   z-index: 110;
+
+  .collection-title-alt {
+    display: none;
+  }
 }
 
 .content {
@@ -93,4 +98,20 @@
   position: fixed;
   right: 0;
   z-index: 103;
+}
+
+@media screen and (max-height: 800px) {
+  .go-back-panel .collection-title-alt {
+    display: block;
+    font-size: 1.8em;
+    left: 0;
+    pointer-events: none;
+    position: absolute;
+    right: 0;
+    text-align: center;
+  }
+
+  .content .collection-title {
+    display: none;
+  }
 }

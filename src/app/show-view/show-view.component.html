@@ -55,7 +55,7 @@
           <a [href]="downloadLink()"><div>{{startOfPath()}}</div><div>{{endOfPath()}}</div></a>
         </div>
       </div>
-      <app-dash-player [src]="playSrc" (onClose)="closePlayer()" [class.active]="!!playSrc"></app-dash-player>
     </div>
   </div>
 </div>
+<app-dash-player [src]="playSrc" (onClose)="closePlayer()" [class.active]="!!playSrc"></app-dash-player>

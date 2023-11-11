@@ -206,3 +206,49 @@
     }
   }
 }
+
+@media screen and (orientation: portrait) and (max-width: 500px) {
+  .go-back-panel {
+    height: 7em;
+  }
+
+  .content {
+    grid-template-columns: auto;
+    height: calc(100dvh - 7em);
+
+    .poster-area {
+      .logo {
+        display: none;
+      }
+
+      .poster {
+        height: 60vw;
+        width: 40vw;
+
+        img {
+          height: 60vw !important;
+          position: static !important;
+          width: 40vw !important;
+        }
+      }
+    }
+  }
+
+  .show-info-wrapper {
+    width: calc(100vw - 2em);
+
+    .show-info .file-wrapper .file {
+      flex-wrap: wrap;
+
+      a {
+        flex-basis: 100%;
+      }
+    }
+  }
+}
+
+@media screen and (max-height: 800px) {
+  .content .poster-area .logo {
+    display: none;
+  }
+}

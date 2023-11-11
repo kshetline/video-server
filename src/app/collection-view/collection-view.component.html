@@ -1,5 +1,6 @@
 <div class="go-back-panel">
   <p-button label="Back" icon="pi pi-chevron-left" (click)="goBack.emit()"/>
+  <div class="collection-title-alt">{{collection?.name}}</div>
 </div>
 <div class="content">
   <div *ngIf="overview" class="overview">{{overview}}</div>

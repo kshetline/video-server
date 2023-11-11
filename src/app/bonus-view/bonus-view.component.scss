@@ -51,3 +51,14 @@
     }
   }
 }
+
+@media screen and (orientation: portrait) and (max-width: 500px) {
+  .content .inner-content .extra {
+    flex-wrap: wrap;
+    row-gap: 0;
+
+    a {
+      flex-basis: 100%;
+    }
+  }
+}
