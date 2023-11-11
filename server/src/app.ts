@@ -324,13 +324,13 @@ function getApp(): Express {
 
       if (mobile && video?.mobileUri)
         uri = streamUri = video.mobileUri;
-      else if (!mobile && video?.uri) {
+      else if (video?.uri) {
         uri = video.uri;
         streamUri = video.streamUri;
       }
     }
 
-    if (streamUri && !demo)
+    if (streamUri)
       result = streamUri;
     else if (uri) {
       const streamUriBase = uri.replace(/\.mkv$/, '').replace(/\s*\(2[DK]\)$/, '');

@@ -25,6 +25,10 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
     this.mouseTimer = setTimeout(() => this.showHeader = false, 5000);
   }
 
+  @HostListener('window:touchstart') onTouchStart(): void {
+    this.onMouseMove();
+  }
+
   onKeyDown = (evt: KeyboardEvent): void => {
     let newQuality = -1;
 
@@ -114,7 +118,7 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
       if (this.player)
         this.player.play();
       else
-        playerElem.play().finally();
+        playerElem.play().catch(err => console.error(err));
     }, 1000);
   }
 }

@@ -5,5 +5,5 @@
 <video id="dash-player" controls [style.display]="webMUrl ? 'none' : 'block'"
    [style.cursor]="showHeader ? 'default' : 'none'"></video>
 <video *ngIf="webMUrl" id="webm-player" controls [style.cursor]="showHeader ? 'default' : 'none'">
-  <source [src]="webMUrl" type="video/webm">
+  <source [src]="webMUrl" [type]="webMUrl.endsWith('.webm') ? 'video/webm' : 'video/mp4'">
 </video>

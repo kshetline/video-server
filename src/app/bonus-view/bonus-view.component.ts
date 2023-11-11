@@ -1,6 +1,6 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { LibraryItem, VType } from '../../../server/src/shared-types';
-import { checksum53, getImageParam } from '../video-ui-utils';
+import { canPlayVP9, checksum53, getImageParam } from '../video-ui-utils';
 import { encodeForUri } from '@tubular/util';
 import { HttpClient } from '@angular/common/http';
 
@@ -32,7 +32,7 @@ export class BonusViewComponent {
           if (src.extras) {
             this.extras.push(...src.extras);
             src.extras.forEach(extra =>
-              this.httpClient.get<string>(`/api/stream-check?uri=${encodeForUri(extra)}`)
+              this.httpClient.get<string>(`/api/stream-check?uri=${encodeForUri(extra)}${canPlayVP9() ? '' : '&mobile=true'}`)
                 .subscribe(streamUri => {
                   if (streamUri)
                     this.streamUris.set(extra, streamUri);
