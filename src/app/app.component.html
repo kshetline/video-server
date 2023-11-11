@@ -15,3 +15,4 @@
 <app-bonus-view *ngIf="isLoggedIn()" [class.active]="bonusSource" [source]="bonusSource"
                 (goBack)="bonusSource = null"></app-bonus-view>
 <app-login *ngIf="isLoggedOut()"></app-login>
+<p-confirmDialog [style]="{ width: 'min(35em, calc(100vw - 4em))' }"></p-confirmDialog>

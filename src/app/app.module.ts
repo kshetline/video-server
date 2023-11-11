@@ -9,6 +9,7 @@ import { BonusViewComponent } from './bonus-view/bonus-view.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ButtonModule } from 'primeng/button';
 import { CollectionViewComponent } from './collection-view/collection-view.component';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DashPlayerComponent } from './dash-player/dash-player.component';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
@@ -35,6 +36,7 @@ import { LoginComponent } from './login/login.component';
     BrowserAnimationsModule,
     BrowserModule,
     ButtonModule,
+    ConfirmDialogModule,
     FormsModule,
     HttpClientModule,
     HttpClientJsonpModule,

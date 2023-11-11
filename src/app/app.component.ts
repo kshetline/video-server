@@ -5,11 +5,13 @@ import { checksum53, addBackLinks, getZIndex, incrementImageIndex } from './vide
 import { isEqual } from '@tubular/util';
 import { floor } from '@tubular/math';
 import { AuthService } from './auth.service';
+import { ConfirmationService } from 'primeng/api';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss']
+  styleUrls: ['./app.component.scss'],
+  providers: [ConfirmationService]
 })
 export class AppComponent implements AfterViewInit, OnInit {
   private canPoll = false;
@@ -21,7 +23,11 @@ export class AppComponent implements AfterViewInit, OnInit {
   library: VideoLibrary;
   status: ServerStatus;
 
-  constructor(private httpClient: HttpClient, private auth: AuthService) {}
+  constructor(
+    private httpClient: HttpClient,
+    private auth: AuthService,
+    private confirmationService: ConfirmationService
+  ) {}
 
   ngOnInit(): void {
     fetch('/assets/tiny_clear.png').finally();
@@ -175,8 +181,15 @@ export class AppComponent implements AfterViewInit, OnInit {
   }
 
   refresh(): void {
-    this.httpClient.post('/api/library-refresh', null).subscribe(() => {
-      setTimeout(() => this.pollStatus(), 500);
+    this.confirmationService.confirm({
+      message: 'Are you sure that you want update the server’s file scan?',
+      header: 'File Scan Update',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.httpClient.post('/api/library-refresh', null).subscribe(() => {
+          setTimeout(() => this.pollStatus(), 500);
+        });
+      }
     });
   }
 
