@@ -170,6 +170,10 @@ export class AppComponent implements AfterViewInit, OnInit {
     return this.auth.getSession()?.role === 'admin';
   }
 
+  userName(): string {
+    return this.auth.getSession()?.name;
+  }
+
   refresh(): void {
     this.httpClient.post('/api/library-refresh', null).subscribe(() => {
       setTimeout(() => this.pollStatus(), 500);

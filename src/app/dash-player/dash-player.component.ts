@@ -1,14 +1,14 @@
-import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { MediaPlayer, MediaPlayerClass } from 'dashjs';
 import { encodeForUri, toNumber } from '@tubular/util';
-import { max } from '@tubular/math';
+import { max, min } from '@tubular/math';
 
 @Component({
   selector: 'app-dash-player',
   templateUrl: './dash-player.component.html',
   styleUrls: ['./dash-player.component.scss']
 })
-export class DashPlayerComponent {
+export class DashPlayerComponent implements OnDestroy, OnInit {
   private mouseTimer: any;
   private player: MediaPlayerClass;
   private _src: string;
@@ -24,6 +24,23 @@ export class DashPlayerComponent {
     this.showHeader = true;
     this.mouseTimer = setTimeout(() => this.showHeader = false, 5000);
   }
+
+  onKeyDown = (evt: KeyboardEvent): void => {
+    let newQuality = -1;
+
+    if (this.player) {
+      if (evt.key === ']')
+        newQuality = min(this.player.getQualityFor('video') + 1, 2);
+      else if (evt.key === '[')
+        newQuality = max(this.player.getQualityFor('video') - 1, 0);
+    }
+
+    if (newQuality >= 0) {
+      this.player.setQualityFor('video', newQuality);
+      evt.stopPropagation();
+      evt.preventDefault();
+    }
+  };
 
   @Output() onClose = new EventEmitter<void>();
 
@@ -55,7 +72,7 @@ export class DashPlayerComponent {
             setTimeout(() => this.currentResolution = `${info.width}x${info.height}`);
           });
           playerId = '#dash-player';
-          this.player.initialize(document.querySelector(playerId), url, true);
+          this.player.initialize(document.querySelector(playerId), url, false);
         }
         else
           this.webMUrl = url;
@@ -63,6 +80,14 @@ export class DashPlayerComponent {
         this.findPlayer(playerId);
       }
     }
+  }
+
+  ngOnInit(): void {
+    window.addEventListener('keydown', this.onKeyDown, true);
+  }
+
+  ngOnDestroy(): void {
+    window.removeEventListener('keydown', this.onKeyDown, true);
   }
 
   private volumeChange = (evt: Event): void => {
@@ -85,5 +110,11 @@ export class DashPlayerComponent {
       playerElem.volume = max(toNumber(lastVolume), 0.05);
 
     playerElem.addEventListener('volumechange', this.volumeChange);
+    setTimeout(() => {
+      if (this.player)
+        this.player.play();
+      else
+        playerElem.play().finally();
+    }, 1000);
   }
 }

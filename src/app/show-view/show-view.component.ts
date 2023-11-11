@@ -1,6 +1,6 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { Cut, LibraryItem, VType } from '../../../server/src/shared-types';
-import { checksum53, getImageParam, getSeasonTitle } from '../video-ui-utils';
+import { canPlayVP9, checksum53, getImageParam, getSeasonTitle } from '../video-ui-utils';
 import { encodeForUri } from '@tubular/util';
 import { max, round } from '@tubular/math';
 import { HttpClient } from '@angular/common/http';
@@ -29,6 +29,7 @@ export class ShowViewComponent {
   faderOpacity = '0';
   playSrc = '';
   selection: LibraryItem;
+  streamUri: string;
   thumbnail: string;
   thumbnailWidth = '0';
   transitionDuration = FADER_TRANSITION_DURATION;
@@ -262,9 +263,11 @@ export class ShowViewComponent {
     this.videoIndex = index;
     this.video = this.videoChoices[this.videoCategory][index];
     this.selection = this.video.parent ?? this.video;
+    this.streamUri = canPlayVP9() ? this.video.streamUri : this.video.mobileUri;
 
-    if (!this.video.streamUri && !this.checkedForStream.has(this.video.id))
-      this.httpClient.get<string>(`/api/stream-check?id=${this.video.id}`).subscribe(streamUri => this.video.streamUri = streamUri);
+    if (!this.streamUri && !this.checkedForStream.has(this.video.id))
+      this.httpClient.get<string>(`/api/stream-check?id=${this.video.id}${canPlayVP9() ? '' : '&mobile=true'}`)
+        .subscribe(streamUri => this.streamUri = streamUri);
 
     if (this.show?.type === VType.TV_SEASON) {
       if (this.backgroundChangeInProgress) {
@@ -339,7 +342,7 @@ export class ShowViewComponent {
   }
 
   play(): void {
-    this.playSrc = this.video.streamUri;
+    this.playSrc = this.streamUri;
   }
 
   closePlayer(): void {

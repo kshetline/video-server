@@ -1,12 +1,17 @@
 import { Router } from 'express';
 import paths from 'path';
-import { existsAsync } from './vs-util';
+import { existsAsync, role } from './vs-util';
 
 export const router = Router();
 
 router.get('/*', async (req, res) => {
   const filePath = paths.join(process.env.VS_VIDEO_SOURCE,
     req.url.substring(1).split('/').map(s => decodeURIComponent(s)).join('/'));
+
+  if (role(req) === 'demo' && !filePath.endsWith('.sample.mp4')) {
+    res.sendStatus(403);
+    return;
+  }
 
   if (await existsAsync(filePath)) {
     if (filePath.endsWith('.audio.webm'))

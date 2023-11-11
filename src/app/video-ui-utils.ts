@@ -94,3 +94,19 @@ export function getZIndex(elem: Element): number {
 export function hashTitle(title: string): string {
   return title ? checksum53(title.toLowerCase()) : '';
 }
+
+let videoSupportChecked = false;
+let supportsVP9 = false;
+
+export function canPlayVP9(): boolean {
+  if (!videoSupportChecked) {
+    const video = document.createElement('video');
+
+    if (video.canPlayType('video/webm; codecs="vp9, vorbis"'))
+      supportsVP9 = true;
+
+    videoSupportChecked = true;
+  }
+
+  return supportsVP9;
+}

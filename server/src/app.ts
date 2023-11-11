@@ -313,6 +313,7 @@ function getApp(): Express {
     noCache(res);
 
     const demo = role(req) === 'demo';
+    const mobile = toBoolean(req.query.mobile);
     let uri = req.query.uri as string;
     let streamUri: string;
     let video: LibraryItem;
@@ -321,7 +322,9 @@ function getApp(): Express {
     if (!uri) {
       video = findVideo(toInt(req.query.id));
 
-      if (video?.uri) {
+      if (mobile && video?.mobileUri)
+        uri = streamUri = video.mobileUri;
+      else if (!mobile && video?.uri) {
         uri = video.uri;
         streamUri = video.streamUri;
       }
@@ -331,7 +334,7 @@ function getApp(): Express {
       result = streamUri;
     else if (uri) {
       const streamUriBase = uri.replace(/\.mkv$/, '').replace(/\s*\(2[DK]\)$/, '');
-      const extensions = demo ? ['.sample.mp4'] : ['.mpd', '.av.webm'];
+      const extensions = demo ? ['.sample.mp4'] : mobile ? ['.mobile.mp4'] : ['.mpd', '.av.webm'];
 
       for (const ext of extensions) {
         const streamUri = streamUriBase + ext;

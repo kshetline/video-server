@@ -125,7 +125,7 @@ export function hashTitle(title: string): string {
   return title ? checksum53(title.toLowerCase()) : '';
 }
 
-export function role(req: any): string {
+export function role(req: any): 'admin' | 'demo' | 'guest' {
   return req.user?.role;
 }
 

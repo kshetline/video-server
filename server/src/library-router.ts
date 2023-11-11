@@ -171,10 +171,15 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
           }
         }
 
-        const mobileUri = paths.join(process.env.VS_VIDEO_SOURCE, streamUriBase + '.av.mp4');
+        const mobileUri = streamUriBase + '.mobile.mp4';
 
         if (await existsAsync(paths.join(process.env.VS_VIDEO_SOURCE, mobileUri)))
           item.mobileUri = mobileUri;
+
+        const sampleUri = streamUriBase + '.sample.mp4';
+
+        if (await existsAsync(paths.join(process.env.VS_VIDEO_SOURCE, sampleUri)))
+          item.sampleUri = sampleUri;
       }
 
       if (DIRECTORS.test(item.uri))
@@ -532,8 +537,8 @@ function filterLibrary(items: LibraryItem[], role: string): void {
   }
 
   for (const item of items) {
-    if (role === 'demo' && item.sampleUri)
-      item.uri = item.streamUri = item.sampleUri;
+    if (role === 'demo' && item.uri)
+      item.uri = item.mobileUri = item.streamUri = item.sampleUri;
 
     if (item.data)
       filterLibrary(item.data, role);
