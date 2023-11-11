@@ -323,11 +323,11 @@ export class ShowViewComponent {
   }
 
   startOfPath(): string {
-    return (this.video?.uri || '').replace(/^\//, '').replace(/(.*)\/.+$/, '$1');
+    return (this.video?.shadowUri || this.video?.uri || '').replace(/^\//, '').replace(/(.*)\/.+$/, '$1');
   }
 
   endOfPath(): string {
-    return (this.video?.uri || '').replace(/.*(\/.+)$/, '$1');
+    return (this.video?.shadowUri || this.video?.uri || '').replace(/.*(\/.+)$/, '$1');
   }
 
   downloadLink(): string {

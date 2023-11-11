@@ -165,7 +165,7 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
         for (const ext of ['.mpd', '.av.webm']) {
           const streamUri = streamUriBase + ext;
 
-          if (await existsAsync(paths.join(process.env.VS_VIDEO_SOURCE, streamUri))) {
+          if (await existsAsync(paths.join(process.env.VS_STREAMING_SOURCE, streamUri))) {
             item.streamUri = streamUri;
             break;
           }
@@ -173,12 +173,12 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
 
         const mobileUri = streamUriBase + '.mobile.mp4';
 
-        if (await existsAsync(paths.join(process.env.VS_VIDEO_SOURCE, mobileUri)))
+        if (await existsAsync(paths.join(process.env.VS_STREAMING_SOURCE, mobileUri)))
           item.mobileUri = mobileUri;
 
         const sampleUri = streamUriBase + '.sample.mp4';
 
-        if (await existsAsync(paths.join(process.env.VS_VIDEO_SOURCE, sampleUri)))
+        if (await existsAsync(paths.join(process.env.VS_STREAMING_SOURCE, sampleUri)))
           item.sampleUri = sampleUri;
       }
 
@@ -537,8 +537,10 @@ function filterLibrary(items: LibraryItem[], role: string): void {
   }
 
   for (const item of items) {
-    if (role === 'demo' && item.uri)
+    if (role === 'demo' && item.uri) {
+      item.shadowUri = item.uri;
       item.uri = item.mobileUri = item.streamUri = item.sampleUri;
+    }
 
     if (item.data)
       filterLibrary(item.data, role);

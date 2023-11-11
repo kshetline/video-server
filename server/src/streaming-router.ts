@@ -5,7 +5,7 @@ import { existsAsync, role } from './vs-util';
 export const router = Router();
 
 router.get('/*', async (req, res) => {
-  const filePath = paths.join(process.env.VS_VIDEO_SOURCE,
+  const filePath = paths.join(process.env.VS_STREAMING_SOURCE,
     req.url.substring(1).split('/').map(s => decodeURIComponent(s)).join('/'));
 
   if (role(req) === 'demo' && !filePath.endsWith('.sample.mp4')) {

@@ -276,7 +276,7 @@ function getApp(): Express {
 
   theApp.get('/api/download', async (req, res) => {
     const url = (req.query.url as string) || '';
-    const filePath = paths.join(process.env.VS_VIDEO_SOURCE, url);
+    const filePath = paths.join(/\.mkv$/.test(url) ? process.env.VS_VIDEO_SOURCE : process.env.VS_STREAMING_SOURCE, url);
 
     if (await existsAsync(filePath)) {
       const fileName = paths.basename(url);
@@ -339,7 +339,7 @@ function getApp(): Express {
       for (const ext of extensions) {
         const streamUri = streamUriBase + ext;
 
-        if (await existsAsync(paths.join(process.env.VS_VIDEO_SOURCE, streamUri))) {
+        if (await existsAsync(paths.join(process.env.VS_STREAMING_SOURCE, streamUri))) {
           result = streamUri;
 
           if (video && !demo)

@@ -76,6 +76,7 @@ export interface LibraryItem {
   sampleUri?: string;
   season?: number;
   seasonCount?: number;
+  shadowUri?: string;
   streamUri?: string;
   subtitle?: Track[];
   tagLine?: string;

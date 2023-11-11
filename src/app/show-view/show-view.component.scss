@@ -164,9 +164,9 @@
 
         .file {
           align-items: center;
+          column-gap: 1em;
           display: flex;
           left: 0;
-          gap: 1em;
           position: absolute;
           right: 0;
           top: 0;
@@ -232,16 +232,20 @@
         }
       }
     }
-  }
 
-  .show-info-wrapper {
-    width: calc(100vw - 2em);
+    .show-info-wrapper {
+      width: calc(100vw - 2em);
 
-    .show-info .file-wrapper .file {
-      flex-wrap: wrap;
+      .show-info .file-wrapper {
+        height: 60px;
 
-      a {
-        flex-basis: 100%;
+        .file {
+          flex-wrap: wrap;
+
+          a {
+            flex-basis: 100%;
+          }
+        }
       }
     }
   }
