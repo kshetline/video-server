@@ -387,20 +387,29 @@ export class ShowViewComponent {
 
     for (let i = 0; i < (v.audio ? v.audio.length : 0); ++i) {
       const a = v.audio[i];
-      const codec = a.codec;
-      const chan = a?.channels;
+      let codec = a?.codec || '';
+      let chan = a?.channels || '';
+      let text: string;
 
       if (/\bmpeg\b/i.test(codec))
-        continue;
+        codec = 'MP3';
+      else if (/^ac-?3$/i.test(codec))
+        codec = 'DD';
+
+      if (/^stereo$/i.test(chan) && /\bmono\b/i.test(a.name))
+        chan = 'Mono';
 
       if (codec) {
         if (!codecs.has(codec) && a.language === v.audio[0].language)
-          b.push(codec + (chan && (i === 0 || /\bmono\b/i.test(chan) ? ' ' + chan : '')));
+          text = codec + (chan && (i === 0 || /\bmono\b/i.test(chan) ? ' ' + chan : ''));
 
         codecs.add(codec);
       }
       else if (chan && i === 0)
-        b.push(chan);
+        text = chan;
+
+      if (text && text !== 'DD')
+        b.push(text);
     }
   }
 }
