@@ -104,10 +104,14 @@
 
       .info-line {
         align-items: center;
+        column-gap: 1em;
         display: flex;
-        gap: 1em;
         margin: 0.25em 0;
         min-height: calc(1.1em + 3px);
+
+        .air-date, .duration, .homepage, .rating {
+          white-space: nowrap;
+        }
 
         .rating {
           border: white 1.5px solid;
@@ -236,14 +240,20 @@
     .show-info-wrapper {
       width: calc(100vw - 2em);
 
-      .show-info .file-wrapper {
-        height: 60px;
-
-        .file {
+      .show-info {
+        .info-line {
           flex-wrap: wrap;
+        }
 
-          a {
-            flex-basis: 100%;
+        .file-wrapper {
+          height: 60px;
+
+          .file {
+            flex-wrap: wrap;
+
+            a {
+              flex-basis: 100%;
+            }
           }
         }
       }

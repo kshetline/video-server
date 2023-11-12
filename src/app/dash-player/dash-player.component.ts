@@ -2,6 +2,7 @@ import { Component, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output
 import { MediaPlayer, MediaPlayerClass } from 'dashjs';
 import { encodeForUri, toNumber } from '@tubular/util';
 import { max, min } from '@tubular/math';
+import { AuthService } from '../auth.service';
 
 @Component({
   selector: 'app-dash-player',
@@ -16,6 +17,8 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
   currentResolution = '';
   showHeader = false;
   webMUrl = '';
+
+  constructor(private authService: AuthService) {}
 
   @HostListener('window:mousemove') onMouseMove(): void {
     if (this.mouseTimer)
@@ -70,10 +73,14 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
 
         if (url.endsWith('.mpd')) {
           this.player = MediaPlayer().create();
-          this.player.on('playbackProgress', () => {
-            const info = this.player.getBitrateInfoListFor('video')[this.player.getQualityFor('video')];
+          this.player.on('qualityChangeRendered', evt => {
+            const info = this.player.getBitrateInfoListFor('video')[evt.newQuality];
 
-            setTimeout(() => this.currentResolution = `${info.width}x${info.height}`);
+            if (info)
+              setTimeout(() => this.currentResolution = `${info.width}x${info.height}`);
+
+            if (this.authService.getSession().role === 'admin')
+              this.onMouseMove();
           });
           playerId = '#dash-player';
           this.player.initialize(document.querySelector(playerId), url, false);
@@ -113,6 +120,7 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
     if (lastVolume)
       playerElem.volume = max(toNumber(lastVolume), 0.05);
 
+    playerElem.addEventListener('fullscreenchange', () => document.fullscreenElement !== playerElem && this.onMouseMove());
     playerElem.addEventListener('volumechange', this.volumeChange);
     setTimeout(() => {
       if (this.player)
