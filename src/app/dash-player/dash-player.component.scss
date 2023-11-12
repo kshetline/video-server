@@ -22,6 +22,11 @@
 }
 
 video {
-  height: min(1080px, calc(100dvh - 2em));
+  height: auto;
   width: min(1920px, calc(100dvw - 2em));
+
+  &.narrow {
+    height: min(1080px, calc(100dvh - 2em));
+    width: auto;
+  }
 }

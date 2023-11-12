@@ -10,13 +10,15 @@ import { AuthService } from '../auth.service';
   styleUrls: ['./dash-player.component.scss']
 })
 export class DashPlayerComponent implements OnDestroy, OnInit {
+  private aspectRatio = -1;
   private mouseTimer: any;
   private player: MediaPlayerClass;
   private _src: string;
 
   currentResolution = '';
+  narrow = false;
   showHeader = false;
-  webMUrl = '';
+  videoUrl = '';
 
   constructor(private authService: AuthService) {}
 
@@ -30,6 +32,13 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
 
   @HostListener('window:touchstart') onTouchStart(): void {
     this.onMouseMove();
+  }
+
+  @HostListener('window:resize') onResize(): void {
+    const windowAspect = window.innerWidth / window.innerHeight;
+
+    if (this.aspectRatio > 0)
+      this.narrow = (windowAspect > this.aspectRatio);
   }
 
   onKeyDown = (evt: KeyboardEvent): void => {
@@ -56,7 +65,8 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
     if (this._src !== value) {
       this._src = value;
       this.currentResolution = '';
-      this.webMUrl = '';
+      this.videoUrl = '';
+      this.aspectRatio = -1;
 
       if (this.player) {
         this.player.destroy();
@@ -69,24 +79,16 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
         this.showHeader = true;
 
         const url = '/api/stream' + (value.startsWith('/') ? '' : '/') + value.split('/').map(s => encodeForUri(s)).join('/');
-        let playerId = '#webm-player';
+        let playerId = '#direct-player';
 
         if (url.endsWith('.mpd')) {
           this.player = MediaPlayer().create();
-          this.player.on('qualityChangeRendered', evt => {
-            const info = this.player.getBitrateInfoListFor('video')[evt.newQuality];
-
-            if (info)
-              setTimeout(() => this.currentResolution = `${info.width}x${info.height}`);
-
-            if (this.authService.getSession().role === 'admin')
-              this.onMouseMove();
-          });
           playerId = '#dash-player';
+          this.player.updateSettings({ streaming: { buffer: { fastSwitchEnabled: true } } });
           this.player.initialize(document.querySelector(playerId), url, false);
         }
         else
-          this.webMUrl = url;
+          this.videoUrl = url;
 
         this.findPlayer(playerId);
       }
@@ -120,7 +122,20 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
     if (lastVolume)
       playerElem.volume = max(toNumber(lastVolume), 0.05);
 
-    playerElem.addEventListener('fullscreenchange', () => document.fullscreenElement !== playerElem && this.onMouseMove());
+    playerElem.addEventListener('loadedmetadata', () => {
+      this.aspectRatio = playerElem.videoWidth / playerElem.videoHeight;
+      this.onResize();
+    });
+    playerElem.addEventListener('ended', () => this.onMouseMove());
+    playerElem.addEventListener('pause', () => this.onMouseMove());
+    playerElem.addEventListener('progress', () => {
+      const resolution = `${playerElem.videoWidth}x${playerElem.videoHeight}`;
+
+      if (this.authService.getSession().name === 'admin' && this.currentResolution !== resolution)
+        this.onMouseMove();
+
+      this.currentResolution = resolution;
+    });
     playerElem.addEventListener('volumechange', this.volumeChange);
     setTimeout(() => {
       if (this.player)
