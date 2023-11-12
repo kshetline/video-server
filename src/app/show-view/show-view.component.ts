@@ -25,6 +25,7 @@ export class ShowViewComponent {
 
   anyOverview = false;
   backgroundOverlay = '';
+  badges: string[] = [];
   categoryLabels: string[] = [];
   faderOpacity = '0';
   playSrc = '';
@@ -263,6 +264,7 @@ export class ShowViewComponent {
     this.videoIndex = index;
     this.video = this.videoChoices[this.videoCategory][index];
     this.selection = this.video.parent ?? this.video;
+    this.updateBadges();
     this.streamUri = canPlayVP9() ? this.video.streamUri : this.video.mobileUri;
 
     if (!this.streamUri && !this.checkedForStream.has(this.video.id))
@@ -360,5 +362,45 @@ export class ShowViewComponent {
         this.selectVideo(pending);
       }
     });
+  }
+
+  private updateBadges(): void {
+    const b = this.badges = [];
+    const v = this.video;
+
+    if (v.is4k)
+      b.push('4K');
+    else if (v.is3d)
+      b.push('3D');
+    else if (v.is2k || v.isFHD)
+      b.push('2K');
+    else if (v.isHD)
+      b.push('720p');
+
+    if ((v.video || [])[0]?.codec)
+      b.push(v.video[0].codec.replace(/\s+.*$/, ''));
+
+    if (v.isHdr)
+      b.push('HDR');
+
+    const codecs = new Set<string>();
+
+    for (let i = 0; i < (v.audio ? v.audio.length : 0); ++i) {
+      const a = v.audio[i];
+      const codec = a.codec;
+      const chan = a?.channels;
+
+      if (/\bmpeg\b/i.test(codec))
+        continue;
+
+      if (codec) {
+        if (!codecs.has(codec) && a.language === v.audio[0].language)
+          b.push(codec + (chan && (i === 0 || /\bmono\b/i.test(chan) ? ' ' + chan : '')));
+
+        codecs.add(codec);
+      }
+      else if (chan && i === 0)
+        b.push(chan);
+    }
   }
 }

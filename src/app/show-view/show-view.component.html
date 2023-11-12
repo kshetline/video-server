@@ -46,6 +46,9 @@
       <div *ngIf="show.tagLine" class="tag-line">{{show.tagLine}}</div>
       <div *ngIf="show.type === TV_SEASON" class="episode-title">{{selection.name}}</div>
       <div *ngIf="anyOverview" class="overview"><div>{{selection.overview}}</div></div>
+      <div *ngIf="badges?.length > 0" class="badges">
+        <div *ngFor="let badge of badges" class="badge">{{badge}}</div>
+      </div>
       <div class="file-wrapper">
         <div class="file">
           <button pButton type="button" label="Play" icon="pi pi-play" class="p-button-sm"
