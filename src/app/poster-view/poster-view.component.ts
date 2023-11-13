@@ -41,6 +41,7 @@ export class PosterViewComponent implements OnInit {
       this._library = value;
       this.items = value?.array;
       this.showThumbnail = {};
+      this.refilter();
     }
   }
 

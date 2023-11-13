@@ -169,7 +169,12 @@ export class AppComponent implements AfterViewInit, OnInit {
   }
 
   logOut(): void {
-    this.auth.logout();
+    this.confirmationService.confirm({
+      message: 'Are you sure you want to log out?',
+      header: 'Log out',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => this.httpClient.post('/api/library-refresh', null).subscribe(() => this.auth.logout())
+    });
   }
 
   isAdmin(): boolean {

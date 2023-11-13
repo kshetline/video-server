@@ -222,6 +222,8 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
     if (item.data?.length > 0) {
       if (item.type === VType.TV_SHOW)
         uri = paths.dirname(item.data[0]?.data[0]?.data[0]?.uri);
+      else if (item.type === VType.TV_SEASON)
+        uri = item.data[0]?.data[0]?.uri;
       else
         uri = item.data[0].uri;
     }

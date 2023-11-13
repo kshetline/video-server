@@ -147,3 +147,9 @@
     height: calc(100dvh - 7em);
   }
 }
+
+@media screen and (max-width: 800px) {
+  .filter-panel .filter-items input {
+    width: 10em;
+  }
+}

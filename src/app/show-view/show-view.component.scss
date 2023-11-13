@@ -117,6 +117,7 @@
           border: white 1.5px solid;
           border-radius: 0.2em;
           padding: 0.05em 0.4em;
+          user-select: none;
           white-space: nowrap;
         }
       }
@@ -146,6 +147,7 @@
           min-width: 1.75em;
           padding: 0.2em 0.25em;
           text-align: center;
+          user-select: none;
         }
       }
 
@@ -174,6 +176,7 @@
           border-radius: 0.2em;
           color: black;
           padding: 0 0.4em;
+          user-select: none;
           white-space: nowrap;
         }
       }
