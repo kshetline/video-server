@@ -3,7 +3,7 @@ import { lstat, readFile, readlink, unlink } from 'fs/promises';
 import { existsSync, mkdirSync, readFileSync, Stats } from 'fs';
 import paths from 'path';
 import { LibraryItem } from './shared-types';
-import { asLines } from '@tubular/util';
+import { asLines, toBoolean } from '@tubular/util';
 
 const guestFilter = new Set(process.env.VS_GUEST_FILTER ? process.env.VS_GUEST_FILTER.split(';') : []);
 const demoFilter = new Set(process.env.VS_DEMO_FILTER ? process.env.VS_DEMO_FILTER.split(';') : []);
@@ -12,9 +12,10 @@ export const cacheDir = paths.join(process.cwd(), 'cache');
 export const thumbnailDir = paths.join(cacheDir, 'thumbnail');
 
 const vSource = process.env.VS_VIDEO_SOURCE;
+const SYM_LINK_HACK = toBoolean(process.env.VS_SYM_LINK_HACK);
 let linkLookup = new Map<string, string>();
 
-if (process.platform === 'win32' || process.platform === 'darwin') {
+if (SYM_LINK_HACK) {
   const lines = asLines(readFileSync(paths.join(vSource, 'symlinks.txt'), 'utf8').toString());
 
   linkLookup = new Map();
@@ -100,7 +101,9 @@ export async function existsAsync(path: string): Promise<boolean> {
 }
 
 export async function safeReadLink(path: string): Promise<string> {
-  if (linkLookup)
+  if (!path)
+    return null;
+  else if (linkLookup)
     return linkLookup.get(path);
 
   try {
@@ -117,6 +120,9 @@ export async function safeReadLink(path: string): Promise<string> {
 }
 
 export async function safeLstat(path: string): Promise<Stats | null> {
+  if (!path)
+    return null;
+
   try {
     const stat = await lstat(path);
 
