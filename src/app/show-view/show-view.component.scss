@@ -237,6 +237,7 @@
   }
 
   .content {
+    gap: 1.5em;
     grid-template-columns: auto;
     height: calc(100dvh - 7em);
 
@@ -261,6 +262,14 @@
       width: calc(100vw - 2em);
 
       .show-info {
+        .show-title {
+          font-size: 1.6em;
+          max-width: calc(100% - 2em);
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
         .info-line {
           flex-wrap: wrap;
         }

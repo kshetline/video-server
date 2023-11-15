@@ -7,7 +7,7 @@ import { abs, min } from '@tubular/math';
 import { requestJson } from 'by-request';
 import paths from 'path';
 import { readdir, writeFile } from 'fs/promises';
-import { cacheDir, existsAsync, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat, unref } from './vs-util';
+import { cacheDir, existsAsync, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat, safeReadLink, unref } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
 
 export const router = Router();
@@ -26,6 +26,9 @@ const UNRATED = /\bunrated\b/i;
 const THEATRICAL = /(\/|\(.*)\b(Original|Theatrical)\b/i;
 
 const libraryFile = paths.join(cacheDir, 'library.json');
+const vSource = process.env.VS_VIDEO_SOURCE;
+const sSource = process.env.VS_STREAMING_SOURCE;
+
 export let cachedLibrary = { status: LibraryStatus.NOT_STARTED, progress: -1 } as VideoLibrary;
 export let pendingLibrary: VideoLibrary;
 
@@ -165,7 +168,7 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
         for (const ext of ['.mpd', '.av.webm']) {
           const streamUri = streamUriBase + ext;
 
-          if (await existsAsync(paths.join(process.env.VS_STREAMING_SOURCE, streamUri))) {
+          if (await existsAsync(paths.join(sSource, streamUri))) {
             item.streamUri = streamUri;
             break;
           }
@@ -173,12 +176,12 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
 
         const mobileUri = streamUriBase + '.mobile.mp4';
 
-        if (await existsAsync(paths.join(process.env.VS_STREAMING_SOURCE, mobileUri)))
+        if (await existsAsync(paths.join(sSource, mobileUri)))
           item.mobileUri = mobileUri;
 
         const sampleUri = streamUriBase + '.sample.mp4';
 
-        if (await existsAsync(paths.join(process.env.VS_STREAMING_SOURCE, sampleUri)))
+        if (await existsAsync(paths.join(sSource, sampleUri)))
           item.sampleUri = sampleUri;
       }
 
@@ -229,14 +232,14 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
     }
 
     if (uri && (item.type === VType.MOVIE || item.type === VType.TV_SHOW || item.type === VType.TV_SEASON)) {
-      const basePath = paths.dirname(paths.join(process.env.VS_VIDEO_SOURCE, uri));
+      const basePath = paths.dirname(paths.join(vSource, uri));
 
       for (const bonusDir of Array.from(bonusDirs)) {
         const checkPath = paths.join(basePath, bonusDir);
 
         if (directoryMap.has(checkPath))
           item.extras = directoryMap.get(checkPath).map(
-            file => paths.join(checkPath, file).substring(process.env.VS_VIDEO_SOURCE.length).replace(/\\/g, '/'));
+            file => paths.join(checkPath, file).substring(vSource.length).replace(/\\/g, '/'));
       }
     }
 
@@ -471,6 +474,25 @@ function fixVideoFlags(items: LibraryItem[]): void {
   }
 }
 
+async function addAliases(dir: string): Promise<void> {
+  const topLevel = (await readdir(dir)).filter(f => !f.startsWith('.'));
+
+  for (const topItem of topLevel) {
+    const path = paths.join(dir, topItem);
+    const stat = await safeLstat(path);
+    const isLink = stat.isSymbolicLink();
+    const path2 = isLink ? await safeReadLink(path) : path;
+    const isDir = isLink ? (await safeLstat(path2))?.isDirectory() : stat.isDirectory();
+
+    if (isDir && /•[•~]$/.test(topItem)) {
+      if (isLink || topItem.endsWith('~'))
+        console.log('%s -> %s', path, path2);
+      else
+        console.log(path);
+    }
+  }
+}
+
 export async function updateLibrary(): Promise<void> {
   if (pendingUpdate) {
     clearTimeout(pendingUpdate);
@@ -493,10 +515,11 @@ export async function updateLibrary(): Promise<void> {
     cachedLibrary = pendingLibrary;
 
   const directoryMap = new Map<string, string[]>();
-  await getDirectories(process.env.VS_VIDEO_SOURCE, bonusDirs, directoryMap);
+  await getDirectories(vSource, bonusDirs, directoryMap);
   pendingLibrary.progress = 24.5;
   pendingLibrary.status = LibraryStatus.BONUS_MATERIAL_LINKED;
   await getChildren(pendingLibrary.array, bonusDirs, directoryMap);
+  await addAliases(vSource);
   pendingLibrary.progress = 39.7;
   pendingLibrary.status = LibraryStatus.ALL_VIDEOS;
   await getMediaInfo(pendingLibrary.array);
