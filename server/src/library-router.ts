@@ -1,7 +1,5 @@
 import { Router } from 'express';
-import {
-  Cut, LibraryItem, LibraryStatus, MediaInfo, MediaInfoTrack, ShowInfo, Track, VideoLibrary, VType
-} from './shared-types';
+import { Cut, LibraryItem, LibraryStatus, MediaInfo, MediaInfoTrack, ShowInfo, Track, VideoLibrary, VType } from './shared-types';
 import { clone, forEach, isNumber, toInt, toNumber } from '@tubular/util';
 import { abs, min } from '@tubular/math';
 import { requestJson } from 'by-request';
@@ -474,23 +472,88 @@ function fixVideoFlags(items: LibraryItem[]): void {
   }
 }
 
+function findMatchingUri(items: LibraryItem[], uri: string, parent?: LibraryItem): LibraryItem {
+  for (const item of items) {
+    if (item.type < 0)
+      continue;
+    else if (parent && item.uri && paths.dirname(item.uri) === uri)
+      return parent;
+    else if (item.data?.length > 0) {
+      const match = findMatchingUri(item.data, uri, item);
+
+      if (match) {
+        if (match.type === VType.TV_EPISODE && parent.type === VType.TV_SEASON)
+          return parent;
+        else
+          return match;
+      }
+    }
+  }
+
+  return null;
+}
+
 async function addAliases(dir: string): Promise<void> {
   const topLevel = (await readdir(dir)).filter(f => !f.startsWith('.'));
+  const aliases: LibraryItem[] = [];
 
   for (const topItem of topLevel) {
     const path = paths.join(dir, topItem);
     const stat = await safeLstat(path);
     const isLink = stat.isSymbolicLink();
-    const path2 = isLink ? await safeReadLink(path) : path;
-    const isDir = isLink ? (await safeLstat(path2))?.isDirectory() : stat.isDirectory();
+    const target = isLink ? await safeReadLink(path) : path;
+    const isDir = isLink ? (await safeLstat(target))?.isDirectory() : stat.isDirectory();
 
-    if (isDir && /•[•~]$/.test(topItem)) {
+    if (!isDir)
+      continue;
+
+    if (/•[•~]$/.test(topItem)) {
       if (isLink || topItem.endsWith('~'))
-        console.log('%s -> %s', path, path2);
+        console.log('%s -> %s', path, target);
       else
         console.log(path);
     }
+    else if (topItem.endsWith('~')) {
+      const item = findMatchingUri(pendingLibrary.array,
+        target.substring(vSource.length).replace(/\\/g, '/').replace(/\/$/, ''));
+
+      if (item) {
+        const name = topItem.replace(/[ •~]+$/, '').replace(/\s+\((2D|4K|3D|LD|SD)\)$/, '').replace(' - ', ': ');
+
+        if (!pendingLibrary.array.find(i => name.startsWith(i.name.replace(/\s+Collection$/, '')))) {
+          const copy = clone(item);
+
+          copy.type = VType.ALIAS;
+          copy.originalName = copy.name;
+          copy.name = name;
+          aliases.push(copy);
+        }
+      }
+    }
   }
+
+  pendingLibrary.array.push(...aliases);
+}
+
+function sortForm(s: string): string {
+  let $ = /^((A|The)\s+)(.*)$/.exec(s);
+
+  if ($)
+    s = $[3] + ', ' + $[2];
+
+  $ = /^(\d+)\b(.*)$/.exec(s);
+
+  if ($)
+    s = $[1].padStart(8, '0') + $[2];
+
+  return s;
+}
+
+function librarySorter(a: LibraryItem, b: LibraryItem): number {
+  const sa = sortForm(a.name);
+  const sb = sortForm(b.name);
+
+  return comparator(sa, sb);
 }
 
 export async function updateLibrary(): Promise<void> {
@@ -519,7 +582,6 @@ export async function updateLibrary(): Promise<void> {
   pendingLibrary.progress = 24.5;
   pendingLibrary.status = LibraryStatus.BONUS_MATERIAL_LINKED;
   await getChildren(pendingLibrary.array, bonusDirs, directoryMap);
-  await addAliases(vSource);
   pendingLibrary.progress = 39.7;
   pendingLibrary.status = LibraryStatus.ALL_VIDEOS;
   await getMediaInfo(pendingLibrary.array);
@@ -527,6 +589,8 @@ export async function updateLibrary(): Promise<void> {
   pendingLibrary.progress = 77.8;
   pendingLibrary.status = LibraryStatus.MEDIA_DETAILS;
   await getShowInfo(pendingLibrary.array);
+  await addAliases(vSource);
+  await pendingLibrary.array.sort(librarySorter);
   pendingLibrary.status = LibraryStatus.DONE;
   pendingLibrary.lastUpdate = new Date().toISOString();
   pendingLibrary.progress = 100;

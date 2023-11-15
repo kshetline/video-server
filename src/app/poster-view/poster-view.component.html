@@ -35,7 +35,7 @@
     <div class="rating-wrapper">
       <app-rating *ngIf="item.voteAverage" [value]="item.voteAverage" [topValue]="10"></app-rating>
     </div>
-    <div class="title">{{item.name}}</div>
+    <div class="title" [style.font-style]="item.type < 0 ? 'italic' : 'plain'">{{item.name}}</div>
 
     <div class="clicker" (mouseenter)="overview = item.overview" (mouseleave)="overview = ''" (click)="onClick(item)"></div>
   </div>

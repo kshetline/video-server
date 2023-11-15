@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { VideoLibrary, LibraryItem, ServerStatus, VType } from '../../server/src/shared-types';
-import { checksum53, addBackLinks, getZIndex, incrementImageIndex } from './video-ui-utils';
+import { LibraryItem, ServerStatus, VideoLibrary, VType } from '../../server/src/shared-types';
+import { addBackLinks, checksum53, getZIndex, incrementImageIndex } from './video-ui-utils';
 import { isEqual } from '@tubular/util';
 import { floor } from '@tubular/math';
 import { AuthService } from './auth.service';
@@ -138,7 +138,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   itemClicked(item: LibraryItem): void {
     if (item?.type === VType.COLLECTION || item?.type === VType.TV_SHOW || item?.type === VType.TV_COLLECTION)
       this.currentCollection = item;
-    else if (item?.type === VType.MOVIE || item?.type === VType.TV_SEASON)
+    else if (item?.type === VType.MOVIE || item?.type === VType.TV_SEASON || item?.type === VType.ALIAS)
       this.currentShow = item;
   }
 
@@ -200,7 +200,7 @@ export class AppComponent implements AfterViewInit, OnInit {
 
   private pollStatus = (): void => {
     if (!this.canPoll)
-      setTimeout(() => this.pollStatus(), 100);
+      setTimeout(() => this.pollStatus(), 250);
     else {
       this.httpClient.get<ServerStatus>('/api/status').subscribe({
         next: status => {
@@ -211,9 +211,9 @@ export class AppComponent implements AfterViewInit, OnInit {
               (this.library && status.lastUpdate && new Date(this.library.lastUpdate) < new Date(status.lastUpdate)))
             this.pollLibrary();
 
-          setTimeout(() => this.pollStatus(), this.status.updateProgress < 0 ? 60000 : 1000);
+          setTimeout(() => this.pollStatus(), this.status.updateProgress < 0 ? 60000 : 2000);
         },
-        error: () => setTimeout(() => this.pollStatus(), 100)
+        error: () => setTimeout(() => this.pollStatus(), 1000)
       });
     }
   };

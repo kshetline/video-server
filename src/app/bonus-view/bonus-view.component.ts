@@ -60,7 +60,7 @@ export class BonusViewComponent {
       show = show.parent;
 
     if (show)
-      return `url("/api/img/backdrop?id=${show.id}&cs=${checksum53(show.name)}${getImageParam()}")`;
+      return `url("/api/img/backdrop?id=${show.id}&cs=${checksum53(show.originalName || show.name)}${getImageParam()}")`;
     else
       return null;
   }

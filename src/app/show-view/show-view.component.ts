@@ -213,7 +213,7 @@ export class ShowViewComponent {
   }
 
   getPosterUrl(item: LibraryItem): string {
-    return `/api/img/poster?id=${item.id}&cs=${checksum53(item.name)}&w=300&h=450`;
+    return `/api/img/poster?id=${item.id}&cs=${checksum53(item.originalName || item.name)}&w=300&h=450`;
   }
 
   getBackground(): string {
@@ -226,7 +226,8 @@ export class ShowViewComponent {
   private getBackgroundAux(ignoreEpisode = false): string {
     const id2 = !ignoreEpisode && this.show?.type === VType.TV_SEASON && this.video?.parent.id;
 
-    return `/api/img/backdrop?id=${this.show.id}${id2 ? '&id2=' + id2 : ''}&cs=${checksum53(this.show.name)}${getImageParam()}`;
+    return `/api/img/backdrop?id=${this.show.id}${id2 ? '&id2=' + id2 : ''}&cs=${checksum53(this.show.originalName ||
+      this.show.name)}${getImageParam()}`;
   }
 
   hasBonusMaterial(): boolean {

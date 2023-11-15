@@ -70,6 +70,7 @@ export interface LibraryItem {
   isSD?: boolean;
   logo?: string;
   mobileUri?: string;
+  originalName?: string;
   overview?: string;
   parent?: LibraryItem;
   posterPath?: string;

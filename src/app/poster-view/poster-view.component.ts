@@ -101,7 +101,7 @@ export class PosterViewComponent implements OnInit {
   }
 
   getPosterUrl(item: LibraryItem): string {
-    return `/api/img/poster?id=${item.id}&cs=${checksum53(item.name)}&w=300&h=450`;
+    return `/api/img/poster?id=${item.id}&cs=${checksum53(item.originalName || item.name)}&w=300&h=450`;
   }
 
   private refilter(): void {

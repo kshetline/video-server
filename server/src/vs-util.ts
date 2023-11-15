@@ -20,7 +20,7 @@ if (process.platform === 'win32' || process.platform === 'darwin') {
   linkLookup = new Map();
 
   for (let i = 0; i < lines.length - 1; i += 2) {
-    const link = paths.join(vSource, lines[i].substring(2).replace('/', paths.sep));
+    const link = paths.join(vSource, lines[i].substring(2).replace(/\//g, paths.sep));
     const target = paths.join(vSource, lines[i + 1].replace(/^\.\.\//g, '').replace('/', paths.sep));
 
     linkLookup.set(link, target);
