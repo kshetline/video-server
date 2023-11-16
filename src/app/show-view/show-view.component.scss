@@ -23,7 +23,7 @@
   background-size: cover;
   display: grid;
   grid-template-columns: min-content 1fr;
-  gap: 4em;
+  gap: clamp(1em, calc(1em + calc(100vw - 600px) / 14), 4em);
   height: calc(100dvh - 3.5em);
   padding: 1em;
 
@@ -65,8 +65,8 @@
     }
 
     .poster {
-      height: calc(min(24vw, 38vh) * 1.5);
-      width: min(24vw, 38vh);
+      height: calc(min(calc(100vw - 33em), 33vh) * 1.5);
+      width: min(calc(100vw - 33em), 33vh);
 
       img {
         box-shadow: 8px 8px 3px 3px rgba(black, 40%);
@@ -247,7 +247,6 @@
   }
 
   .content {
-    gap: 1.5em;
     grid-template-columns: auto;
     height: calc(100dvh - 7em);
 
@@ -257,13 +256,13 @@
       }
 
       .poster {
-        height: auto !important;
-        width: 40vw;
+        height: calc(100vh - 32em);
+        width: auto;
 
         img {
-          height: 60vw !important;
+          height: calc(100vh - 32em) !important;
           position: static !important;
-          width: 40vw !important;
+          width: auto !important;
         }
       }
     }
@@ -305,11 +304,7 @@
 }
 
 @media screen and (max-height: 800px) {
-  .content {
-    gap: 1.5em;
-
-    .poster-area .logo {
-      display: none;
-    }
+  .content .poster-area .logo {
+    display: none;
   }
 }

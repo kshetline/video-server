@@ -536,7 +536,7 @@ async function addAliases(dir: string): Promise<void> {
 }
 
 function sortForm(s: string): string {
-  let $ = /^((A|The)\s+)(.*)$/.exec(s);
+  let $ = /^((A|An|The)\s+)(.*)$/.exec(s);
 
   if ($)
     s = $[3] + ', ' + $[2];
