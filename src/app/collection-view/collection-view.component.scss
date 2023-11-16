@@ -106,10 +106,14 @@
     display: block;
     font-size: 1.8em;
     left: 0;
+    padding: 0 6em;
+    overflow: hidden;
     pointer-events: none;
     position: absolute;
     right: 0;
     text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .content .collection-title {

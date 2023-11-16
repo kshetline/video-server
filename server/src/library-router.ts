@@ -590,7 +590,7 @@ export async function updateLibrary(): Promise<void> {
   pendingLibrary.status = LibraryStatus.MEDIA_DETAILS;
   await getShowInfo(pendingLibrary.array);
   await addAliases(vSource);
-  await pendingLibrary.array.sort(librarySorter);
+  pendingLibrary.array.sort(librarySorter);
   pendingLibrary.status = LibraryStatus.DONE;
   pendingLibrary.lastUpdate = new Date().toISOString();
   pendingLibrary.progress = 100;

@@ -27,7 +27,7 @@
         <span *ngIf="video.duration" class="duration">{{getDuration()}}</span>
         <span *ngIf="show.homepage" class="homepage">
           <a [href]="show.homepage" target="_blank">
-            <i class="pi pi-home"><span class="blank">&nbsp;</span></i>Homepage</a>
+            <i class="pi pi-home"><span class="blank">&nbsp;</span></i><span class="text">Homepage</span></a>
         </span>
       </div>
       <div *ngIf="getGenres()" class="genres">{{getGenres()}}</div>
