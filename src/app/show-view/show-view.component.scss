@@ -65,9 +65,13 @@
     }
 
     .poster {
-      box-shadow: 8px 8px 3px 3px rgba(black, 40%);
-      max-height: calc(min(24vw, 38vh) * 1.5);
+      height: calc(min(24vw, 38vh) * 1.5);
       width: min(24vw, 38vh);
+
+      img {
+        box-shadow: 8px 8px 3px 3px rgba(black, 40%);
+        height: auto !important;
+      }
     }
   }
 
@@ -237,7 +241,7 @@
   }
 }
 
-@media screen and (orientation: portrait) and (max-width: 500px) {
+@media screen and (orientation: portrait) and (max-width: 620px) {
   .go-back-panel {
     height: 7em;
   }
@@ -253,8 +257,7 @@
       }
 
       .poster {
-        height: 60vw;
-        max-height: unset;
+        height: auto !important;
         width: 40vw;
 
         img {
@@ -308,11 +311,5 @@
     .poster-area .logo {
       display: none;
     }
-  }
-}
-
-@media screen and (orientation: landscape) and (max-height: 500px) {
-  .content .poster-area .poster img {
-    height: auto !important;
   }
 }
