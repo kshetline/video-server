@@ -75,7 +75,7 @@ export interface LibraryItem {
   parent?: LibraryItem;
   posterPath?: string;
   ratingTomatoes?: string;
-  releaseDate: string;
+  releaseDate?: string;
   resolution?: string;
   sampleUri?: string;
   season?: number;

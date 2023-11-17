@@ -47,7 +47,7 @@ export function getTitle(item: LibraryItem, baseItem?: LibraryItem): string {
     return item.name;
   else if (item.parent)
     return getTitle(item.parent, baseItem ?? item);
-  else if (baseItem && baseItem.type !== VType.COLLECTION)
+  else if (baseItem && baseItem.type !== VType.COLLECTION && baseItem.type !== VType.ALIAS_COLLECTION)
     return baseItem.name;
   else
     return '';

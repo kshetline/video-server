@@ -351,7 +351,7 @@ async function getShowInfo(items: LibraryItem[]): Promise<void> {
     }
 
     if (item.type === VType.MOVIE || item.type === VType.TV_SHOW ||
-      item.type === VType.TV_SEASON || item.type === VType.TV_COLLECTION) {
+        item.type === VType.TV_SEASON || item.type === VType.TV_COLLECTION) {
       const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getDetail?id=${item.id}`;
       const showInfo: ShowInfo = await requestJson(url);
       const topInfo = showInfo.aggregation?.aggregation;
@@ -499,6 +499,14 @@ function findMatchingUri(items: LibraryItem[], uri: string, parent?: LibraryItem
   return null;
 }
 
+function cleanUpName(s: string): string {
+  return s.replace(/[ •~]+$/, '').replace(/\s+\((2D|4K|3D|LD|SD)\)$/, '').replace(' - ', ': ');
+}
+
+function cleanUpPath(s: string): string {
+  return s.substring(vSource.length).replace(/\\/g, '/').replace(/\/$/, '');
+}
+
 async function addAliases(dir: string): Promise<void> {
   const topLevel = (await readdir(dir)).filter(f => !f.startsWith('.'));
   const aliases: LibraryItem[] = [];
@@ -514,17 +522,37 @@ async function addAliases(dir: string): Promise<void> {
       continue;
 
     if (/•[•~]$/.test(topItem)) {
-      if (isLink || topItem.endsWith('~'))
-        console.log('%s -> %s', path, target);
-      else
-        console.log(path);
+      const files = (await readdir(target)).filter(f => !f.startsWith('.'));
+      const items: LibraryItem[] = [];
+
+      for (const file of files) {
+        const path = paths.join(target, file);
+        const stat = await safeLstat(path);
+        const isLink = stat.isSymbolicLink();
+        const innerTarget = isLink ? await safeReadLink(path) : path;
+        const item = findMatchingUri(pendingLibrary.array, cleanUpPath(innerTarget));
+
+        if (item)
+          items.push(item);
+      }
+
+      if (items.length > 0) {
+        const collection: LibraryItem = {
+          type: VType.ALIAS_COLLECTION, name: cleanUpName(topItem), data: [],
+          id: -1, parentId: -1, collectionId: -1, aggregationId: -1
+        };
+
+        for (const item of items)
+          collection.data.push(clone(item));
+
+        aliases.push(collection);
+      }
     }
     else if (topItem.endsWith('~')) {
-      const item = findMatchingUri(pendingLibrary.array,
-        target.substring(vSource.length).replace(/\\/g, '/').replace(/\/$/, ''));
+      const item = findMatchingUri(pendingLibrary.array, cleanUpPath(target));
 
       if (item) {
-        const name = topItem.replace(/[ •~]+$/, '').replace(/\s+\((2D|4K|3D|LD|SD)\)$/, '').replace(' - ', ': ');
+        const name = cleanUpName(topItem);
 
         if (!pendingLibrary.array.find(i => name.startsWith(i.name.replace(/\s+Collection$/, '')))) {
           const copy = clone(item);

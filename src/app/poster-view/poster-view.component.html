@@ -28,7 +28,7 @@
     <ng-template #notCollection><span class="hash">{{hashTitle(item.name)}}</span></ng-template>
 
     <div [attr.data-thumbnail]="'t-' + i" class="poster-thumbnail-wrapper">
-      <div class="loading">Loading...</div>
+      <div *ngIf="item.type !== ALIAS_COLLECTION" class="loading">Loading...</div>
       <img *ngIf="i < 100 || showThumbnail['t-' + i]"
            [ngSrc]="getPosterUrl(item)" width="150" height="225" alt="{{item.id}}" priority>
     </div>

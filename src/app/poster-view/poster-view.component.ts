@@ -1,11 +1,12 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { VideoLibrary, LibraryItem, VType } from '../../../server/src/shared-types';
+import { LibraryItem, VideoLibrary, VType } from '../../../server/src/shared-types';
 import { checksum53, hashTitle } from '../video-ui-utils';
 import { stripDiacriticals_lc } from '@tubular/util';
 
 function isMovie(item: LibraryItem): boolean {
   return item.type === VType.MOVIE ||
-    (item.type === VType.COLLECTION && item.data?.length > 0 && item.data[0].type === VType.MOVIE);
+    ((item.type === VType.COLLECTION || item.type === VType.ALIAS_COLLECTION) &&
+      item.data?.length > 0 && item.data[0].type === VType.MOVIE);
 }
 
 function isTV(item: LibraryItem): boolean {
@@ -20,6 +21,7 @@ function isTV(item: LibraryItem): boolean {
   styleUrls: ['./poster-view.component.scss']
 })
 export class PosterViewComponent implements OnInit {
+  readonly ALIAS_COLLECTION = VType.ALIAS_COLLECTION;
   readonly COLLECTION = VType.COLLECTION;
   readonly hashTitle = hashTitle;
 
@@ -101,7 +103,10 @@ export class PosterViewComponent implements OnInit {
   }
 
   getPosterUrl(item: LibraryItem): string {
-    return `/api/img/poster?id=${item.id}&cs=${checksum53(item.originalName || item.name)}&w=300&h=450`;
+    if (item.type === VType.ALIAS_COLLECTION)
+      return '/assets/folder.svg';
+    else
+      return `/api/img/poster?id=${item.id}&cs=${checksum53(item.originalName || item.name)}&w=300&h=450`;
   }
 
   private refilter(): void {
