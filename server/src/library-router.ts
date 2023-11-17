@@ -428,10 +428,16 @@ async function getShowInfo(items: LibraryItem[]): Promise<void> {
   }
 }
 
-function fixVideoFlags(items: LibraryItem[]): void {
+function fixVideoFlagsAndEncoding(items: LibraryItem[]): void {
   for (const item of items) {
+    if (item.uri)
+      item.uri = item.uri.normalize();
+
+    if (item.logo)
+      item.logo = item.logo.normalize();
+
     if (item.data?.length > 0)
-      fixVideoFlags(item.data);
+      fixVideoFlagsAndEncoding(item.data);
   }
 
   for (const item of items) {
@@ -585,7 +591,7 @@ export async function updateLibrary(): Promise<void> {
   pendingLibrary.progress = 39.7;
   pendingLibrary.status = LibraryStatus.ALL_VIDEOS;
   await getMediaInfo(pendingLibrary.array);
-  fixVideoFlags(pendingLibrary.array);
+  fixVideoFlagsAndEncoding(pendingLibrary.array);
   pendingLibrary.progress = 77.8;
   pendingLibrary.status = LibraryStatus.MEDIA_DETAILS;
   await getShowInfo(pendingLibrary.array);

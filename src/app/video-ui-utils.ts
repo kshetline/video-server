@@ -16,6 +16,8 @@ export function checksum53(s: string, seed = 0): string {
   let h1 = 0xdeadbeef ^ seed;
   let h2 = 0x41c6ce57 ^ seed;
 
+  s = s.normalize();
+
   for (let i = 0, ch: number; i < s.length; ++i) {
     ch = s.charCodeAt(i);
     h1 = Math.imul(h1 ^ ch, 2654435761);

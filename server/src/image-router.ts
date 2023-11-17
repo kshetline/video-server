@@ -81,7 +81,7 @@ router.get('/backdrop', async (req, res) => {
 });
 
 router.get('/logo', async (req, res) => {
-  const url = (req.query.url as string) || '';
+  const url = ((req.query.url as string) || '').normalize();
   const ext = (/(\.\w+)$/.exec(url) ?? [])[1] || '.png';
   const cs = checksum53(url);
   const imagePath = paths.join(cacheDir, 'logo', `${cs}${ext}`);
