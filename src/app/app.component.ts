@@ -174,7 +174,7 @@ export class AppComponent implements AfterViewInit, OnInit {
       message: 'Are you sure you want to log out?',
       header: 'Log out',
       icon: 'pi pi-exclamation-triangle',
-      accept: () => this.httpClient.post('/api/library-refresh', null).subscribe(() => this.auth.logout())
+      accept: () => this.auth.logout()
     });
   }
 

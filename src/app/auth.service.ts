@@ -1,4 +1,4 @@
-import { EventEmitter, Injectable } from '@angular/core';
+import { ApplicationRef, EventEmitter, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { toInt } from '@tubular/util';
 import { Observable } from 'rxjs/internal/Observable';
@@ -10,7 +10,7 @@ import { UserSession } from '../../server/src/shared-types';
 export class AuthService {
   private currentSession: UserSession;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private appRef: ApplicationRef) {}
 
   loginStatus = new EventEmitter<boolean>();
 
@@ -21,6 +21,7 @@ export class AuthService {
       next: (session: UserSession) => {
         this.setSession(session);
         this.loginStatus.next(true);
+        this.appRef.tick();
       },
       error: () => this.loginStatus.next(false)
     });
@@ -40,10 +41,11 @@ export class AuthService {
     this.currentSession = undefined;
     localStorage.removeItem('vs_expires_at');
     localStorage.removeItem('vs_session');
+    this.appRef.tick();
   }
 
   isLoggedIn(): boolean {
-    return Date.now() < this.getExpiration();
+    return this.currentSession && Date.now() < this.getExpiration();
   }
 
   isLoggedOut(): boolean {

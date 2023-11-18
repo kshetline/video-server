@@ -1,5 +1,6 @@
 <label for="username">User</label>
-<input id="username" type="text" pInputText [(ngModel)]="user" (keydown.enter)="login()"/>
+<input id="username" type="text" pInputText [(ngModel)]="user" autocapitalize=off autocomplete=off autofocus
+       (keydown.enter)="login()"/>
 <label for="password">Password</label>
 <p-password id="password" [(ngModel)]="password" [feedback]="false" (keydown.enter)="login()"></p-password>
 <p-button label="Login" icon="pi pi-sign-in" (click)="login()" (keydown.enter)="login()"/>
