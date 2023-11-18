@@ -2,7 +2,7 @@
   <p-progressBar *ngIf="status?.updateProgress >= 0" [value]="status?.updateProgress"
                  [showValue]="false" class="narrow-progress"></p-progressBar>
   <p-button *ngIf="isAdmin()" [disabled]="status?.updateProgress >= 0" icon="pi pi-refresh"
-            styleClass="p-button-rounded p-button-sm p-button-danger" (click)="refresh()"></p-button>
+            styleClass="p-button-rounded p-button-sm p-button-danger" (click)="showRefreshDialog = true"></p-button>
   <span>{{userName()}}</span>
   <p-button icon="pi pi-sign-out" styleClass="p-button-rounded" (click)="logOut()"></p-button>
 </div>
@@ -16,3 +16,18 @@
                 (goBack)="bonusSource = null"></app-bonus-view>
 <app-login *ngIf="isLoggedOut()"></app-login>
 <p-confirmDialog [style]="{ width: 'min(35em, calc(100vw - 4em))' }"></p-confirmDialog>
+<p-dialog header="Header" [(visible)]="showRefreshDialog" [style]="{ width: 'min(35em, calc(100vw - 4em))' }">
+  <ng-template pTemplate="header">
+    <span class="p-dialog-title">Refresh Video Library</span>
+  </ng-template>
+  <p>
+    Refresh the video library?
+  </p>
+  <ng-template pTemplate="footer">
+    <div class="p-dialog-footer">
+      <button pButton icon="pi pi-refresh" (click)="refresh()" label="Full"></button>
+      <button pButton icon="pi pi-check" (click)="refresh(true)" label="Quick"></button>
+      <button pButton icon="pi pi-times" (click)="showRefreshDialog = false" label="Cancel"></button>
+    </div>
+  </ng-template>
+</p-dialog>

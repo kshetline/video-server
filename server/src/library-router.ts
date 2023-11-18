@@ -485,13 +485,19 @@ function findMatchingUri(items: LibraryItem[], uri: string, parent?: LibraryItem
     else if (parent && item.uri && paths.dirname(item.uri) === uri)
       return parent;
     else if (item.data?.length > 0) {
-      const match = findMatchingUri(item.data, uri, item);
+      let match = findMatchingUri(item.data, uri, item);
 
       if (match) {
         if (match.type === VType.TV_EPISODE && parent.type === VType.TV_SEASON)
           return parent;
-        else
+        else {
+          if (match.type === VType.TV_SEASON && (match.name === 'Miniseries' || /^Season \d/.test(match.name))) {
+            match = clone(match);
+            match.name = parent.name;
+          }
+
           return match;
+        }
       }
     }
   }
@@ -504,7 +510,7 @@ function cleanUpName(s: string): string {
 }
 
 function cleanUpPath(s: string): string {
-  return s.substring(vSource.length).replace(/\\/g, '/').replace(/\/$/, '');
+  return s.substring(vSource.length).replace(/^([^/])/, '/$1').replace(/\\/g, '/').replace(/\/$/, '');
 }
 
 async function addAliases(dir: string): Promise<void> {
@@ -609,7 +615,7 @@ function librarySorter(a: LibraryItem, b: LibraryItem): number {
   return comparator(sa, sb);
 }
 
-export async function updateLibrary(): Promise<void> {
+export async function updateLibrary(quick = false): Promise<void> {
   if (pendingUpdate) {
     clearTimeout(pendingUpdate);
     pendingUpdate = undefined;
@@ -632,7 +638,7 @@ export async function updateLibrary(): Promise<void> {
 
   const directoryMap = new Map<string, string[]>();
 
-  if (Date.now() > 0) { // TODO: Remove!
+  if (quick) {
     pendingLibrary = clone(cachedLibrary);
     pendingLibrary.array = pendingLibrary.array.filter(i =>
       i.type !== VType.ALIAS && i.type !== VType.ALIAS_COLLECTION);

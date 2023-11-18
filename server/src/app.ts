@@ -355,7 +355,7 @@ function getApp(): Express {
     if (role(req) !== 'admin')
       res.sendStatus(403);
     else {
-      updateLibrary().finally();
+      updateLibrary(toBoolean(req.query.quick)).finally();
       res.json(null);
     }
   });

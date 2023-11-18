@@ -21,6 +21,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   currentCollection: LibraryItem;
   currentShow: LibraryItem;
   library: VideoLibrary;
+  showRefreshDialog = false;
   status: ServerStatus;
 
   constructor(
@@ -186,16 +187,10 @@ export class AppComponent implements AfterViewInit, OnInit {
     return this.auth.getSession()?.name;
   }
 
-  refresh(): void {
-    this.confirmationService.confirm({
-      message: 'Are you sure that you want update the server’s file scan?',
-      header: 'File Scan Update',
-      icon: 'pi pi-exclamation-triangle',
-      accept: () => {
-        this.httpClient.post('/api/library-refresh', null).subscribe(() => {
-          setTimeout(() => this.pollStatus(), 500);
-        });
-      }
+  refresh(quick = false): void {
+    this.showRefreshDialog = false;
+    this.httpClient.post(`/api/library-refresh${quick ? '?quick=true' : ''}`, null).subscribe(() => {
+      setTimeout(() => this.pollStatus(), 500);
     });
   }
 

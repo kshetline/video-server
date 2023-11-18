@@ -11,6 +11,7 @@ import { ButtonModule } from 'primeng/button';
 import { CollectionViewComponent } from './collection-view/collection-view.component';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DashPlayerComponent } from './dash-player/dash-player.component';
+import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { PosterViewComponent } from './poster-view/poster-view.component';
@@ -37,6 +38,7 @@ import { LoginComponent } from './login/login.component';
     BrowserModule,
     ButtonModule,
     ConfirmDialogModule,
+    DialogModule,
     FormsModule,
     HttpClientModule,
     HttpClientJsonpModule,

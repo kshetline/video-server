@@ -7,7 +7,9 @@ function getSortTime(item: LibraryItem): number {
     return +new Date(item.airDate);
   else if (item.releaseDate)
     return +new Date(item.releaseDate);
-  if (item.year)
+  else if (!item.year && (item.data || [])[0]?.year)
+    return +new Date(item.data[0].year + '-06-01');
+  else if (item.year)
     return +new Date(item.year + '-06-01');
   else
     return 0;
