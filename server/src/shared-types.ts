@@ -89,6 +89,7 @@ export interface LibraryItem {
   tvName?: string;
   tvType?: string;
   uri?: string;
+  useSameArtwork?: boolean;
   video?: Track[];
   videoinfo?: VideoInfo;
   voteAverage?: number;

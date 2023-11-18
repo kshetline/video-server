@@ -103,7 +103,7 @@ export class PosterViewComponent implements OnInit {
   }
 
   getPosterUrl(item: LibraryItem): string {
-    if (item.type === VType.ALIAS_COLLECTION) {
+    if (item.type === VType.ALIAS_COLLECTION && !item.useSameArtwork) {
       if (item.aliasPosterPath)
         return `/api/img/poster?uri=${encodeForUri(item.aliasPosterPath)}&w=300&h=450`;
       else

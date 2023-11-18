@@ -35,7 +35,7 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
   }
 
   @HostListener('window:resize') onResize(): void {
-    const windowAspect = window.innerWidth / window.innerHeight;
+    const windowAspect = (window.innerWidth - 28) / (window.innerHeight - 28);
 
     if (this.aspectRatio > 0)
       this.narrow = (windowAspect > this.aspectRatio);

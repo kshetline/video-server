@@ -4,8 +4,8 @@ import { clone, forEach, isNumber, toInt, toNumber } from '@tubular/util';
 import { abs, min } from '@tubular/math';
 import { requestJson } from 'by-request';
 import paths from 'path';
-import { readdir, writeFile } from 'fs/promises';
-import { cacheDir, existsAsync, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat, safeReadLink, unref } from './vs-util';
+import { readdir, readFile, writeFile } from 'fs/promises';
+import { cacheDir, existsAsync, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat, unref } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
 
 export const router = Router();
@@ -31,6 +31,16 @@ export let cachedLibrary = { status: LibraryStatus.NOT_STARTED, progress: -1 } a
 export let pendingLibrary: VideoLibrary;
 
 let pendingUpdate: any;
+
+interface Alias {
+  collection?: string;
+  name: string;
+  path?: string;
+}
+
+interface Mappings {
+  aliases: Alias[]
+}
 
 function formatAspectRatio(track: MediaInfoTrack): string {
   if (!track)
@@ -505,88 +515,35 @@ function findMatchingUri(items: LibraryItem[], uri: string, parent?: LibraryItem
   return null;
 }
 
-function cleanUpName(s: string): string {
-  return s.replace(/[ •~]+$/, '').replace(/\s+\((2D|4K|3D|LD|SD)\)$/, '').replace(' - ', ': ');
-}
-
-function cleanUpPath(s: string): string {
-  return s.substring(vSource.length).replace(/^([^/])/, '/$1').replace(/\\/g, '/').replace(/\/$/, '');
-}
-
-async function addAliases(dir: string): Promise<void> {
-  const topLevel = (await readdir(dir)).filter(f => !f.startsWith('.'));
+async function addMappings(): Promise<void> {
   const aliases: LibraryItem[] = [];
+  const mappings = JSON.parse(await readFile(paths.join(vSource, 'mappings.json'), 'utf8')) as Mappings;
 
-  for (const topItem of topLevel) {
-    const path = paths.join(dir, topItem);
-    const stat = await safeLstat(path);
-    const isLink = stat.isSymbolicLink();
-    const target = isLink ? await safeReadLink(path) : path;
-    const isDir = isLink ? (await safeLstat(target))?.isDirectory() : stat.isDirectory();
-
-    if (!isDir)
-      continue;
-
-    if (/•[•~]$/.test(topItem)) {
-      const files = (await readdir(target)).filter(f => !f.startsWith('.'));
-      const items: LibraryItem[] = [];
-      let poster: string;
-
-      for (const file of files) {
-        const path = paths.join(target, file);
-        const stat = await safeLstat(path);
-        const isLink = stat.isSymbolicLink();
-        const innerTarget = isLink ? await safeReadLink(path) : path;
-        const item = (isLink || stat.isDirectory()) && findMatchingUri(pendingLibrary.array, cleanUpPath(innerTarget));
-
-        if (item)
-          items.push(item);
-        else if (file.endsWith('.col.txt')) {
-          const collection = file.slice(0, -8);
-          const item = pendingLibrary.array.find(i =>
-            (i.type === VType.COLLECTION || i.type === VType.TV_SHOW) && i.name === collection);
-
-          if (item) {
-            const copy = clone(item);
-
-            copy.type = VType.ALIAS_COLLECTION;
-            copy.name = collection;
-            items.push(copy);
-          }
-        }
-        else if (/^poster\.(jpg|png)$/.test(file))
-          poster = path.substring(vSource.length);
-      }
-
-      if (items.length > 0) {
-        const collection: LibraryItem = {
-          type: VType.ALIAS_COLLECTION, name: cleanUpName(topItem), data: [],
-          id: -1, parentId: -1, collectionId: -1, aggregationId: -1
-        };
-
-        if (poster)
-          collection.aliasPosterPath = poster;
-
-        for (const item of items)
-          collection.data.push(clone(item));
-
-        aliases.push(collection);
-      }
-    }
-    else if (topItem.endsWith('~')) {
-      const item = findMatchingUri(pendingLibrary.array, cleanUpPath(target));
+  for (const alias of mappings.aliases || []) {
+    if (alias.path) {
+      const item = findMatchingUri(pendingLibrary.array, alias.path);
 
       if (item) {
-        const name = cleanUpName(topItem);
+        const copy = clone(item);
 
-        if (!pendingLibrary.array.find(i => name.startsWith(i.name.replace(/\s+Collection$/, '')))) {
-          const copy = clone(item);
+        copy.type = VType.ALIAS;
+        copy.originalName = copy.name;
+        copy.name = alias.name;
+        aliases.push(copy);
+      }
+    }
+    else if (alias.collection) {
+      const item = pendingLibrary.array.find(i =>
+        (i.type === VType.COLLECTION || i.type === VType.TV_SHOW) && i.name === alias.collection);
 
-          copy.type = VType.ALIAS;
-          copy.originalName = copy.name;
-          copy.name = name;
-          aliases.push(copy);
-        }
+      if (item) {
+        const copy = clone(item);
+
+        copy.type = VType.ALIAS_COLLECTION;
+        copy.originalName = copy.name;
+        copy.name = alias.name;
+        copy.useSameArtwork = true;
+        aliases.push(copy);
       }
     }
   }
@@ -624,48 +581,54 @@ export async function updateLibrary(quick = false): Promise<void> {
   if (pendingLibrary)
     return;
 
-  const url = process.env.VS_ZIDOO_CONNECT + 'Poster/v2/getFilterAggregations?type=0&start=0';
-  const bonusDirs = new Set(['-Extras-']);
+  try {
+    const url = process.env.VS_ZIDOO_CONNECT + 'Poster/v2/getFilterAggregations?type=0&start=0';
+    const bonusDirs = new Set(['-Extras-']);
 
-  pendingLibrary = await requestJson(url) as VideoLibrary;
-  pendingLibrary.status = LibraryStatus.INITIALIZED;
-  pendingLibrary.progress = 0;
-  pendingLibrary.mainFileCount = 0;
-  pendingLibrary.bonusFileCount = 0;
+    pendingLibrary = await requestJson(url) as VideoLibrary;
+    pendingLibrary.status = LibraryStatus.INITIALIZED;
+    pendingLibrary.progress = 0;
+    pendingLibrary.mainFileCount = 0;
+    pendingLibrary.bonusFileCount = 0;
 
-  if (cachedLibrary.status === LibraryStatus.NOT_STARTED)
+    if (cachedLibrary.status === LibraryStatus.NOT_STARTED)
+      cachedLibrary = pendingLibrary;
+
+    const directoryMap = new Map<string, string[]>();
+
+    if (quick) {
+      pendingLibrary = clone(cachedLibrary);
+      pendingLibrary.array = pendingLibrary.array.filter(i =>
+        i.type !== VType.ALIAS && i.type !== VType.ALIAS_COLLECTION);
+    }
+    else {
+      await getDirectories(vSource, bonusDirs, directoryMap);
+      pendingLibrary.progress = 24.5;
+      pendingLibrary.status = LibraryStatus.BONUS_MATERIAL_LINKED;
+      await getChildren(pendingLibrary.array, bonusDirs, directoryMap);
+      pendingLibrary.progress = 39.7;
+      pendingLibrary.status = LibraryStatus.ALL_VIDEOS;
+      await getMediaInfo(pendingLibrary.array);
+      fixVideoFlagsAndEncoding(pendingLibrary.array);
+      pendingLibrary.progress = 77.8;
+      pendingLibrary.status = LibraryStatus.MEDIA_DETAILS;
+      await getShowInfo(pendingLibrary.array);
+    }
+
+    await addMappings();
+    pendingLibrary.array.sort(librarySorter);
+    pendingLibrary.status = LibraryStatus.DONE;
+    pendingLibrary.lastUpdate = new Date().toISOString();
+    pendingLibrary.progress = 100;
     cachedLibrary = pendingLibrary;
 
-  const directoryMap = new Map<string, string[]>();
-
-  if (quick) {
-    pendingLibrary = clone(cachedLibrary);
-    pendingLibrary.array = pendingLibrary.array.filter(i =>
-      i.type !== VType.ALIAS && i.type !== VType.ALIAS_COLLECTION);
+    await writeFile(libraryFile, JSON.stringify(cachedLibrary), 'utf8');
   }
-  else {
-    await getDirectories(vSource, bonusDirs, directoryMap);
-    pendingLibrary.progress = 24.5;
-    pendingLibrary.status = LibraryStatus.BONUS_MATERIAL_LINKED;
-    await getChildren(pendingLibrary.array, bonusDirs, directoryMap);
-    pendingLibrary.progress = 39.7;
-    pendingLibrary.status = LibraryStatus.ALL_VIDEOS;
-    await getMediaInfo(pendingLibrary.array);
-    fixVideoFlagsAndEncoding(pendingLibrary.array);
-    pendingLibrary.progress = 77.8;
-    pendingLibrary.status = LibraryStatus.MEDIA_DETAILS;
-    await getShowInfo(pendingLibrary.array);
+  catch (e) {
+    console.log('Mappings update failed:', e);
   }
 
-  await addAliases(vSource);
-  pendingLibrary.array.sort(librarySorter);
-  pendingLibrary.status = LibraryStatus.DONE;
-  pendingLibrary.lastUpdate = new Date().toISOString();
-  pendingLibrary.progress = 100;
-  cachedLibrary = pendingLibrary;
   pendingLibrary = undefined;
-
-  await writeFile(libraryFile, JSON.stringify(cachedLibrary), 'utf8');
 }
 
 export function initLibrary(): void {

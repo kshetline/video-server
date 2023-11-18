@@ -151,6 +151,8 @@ export class AppComponent implements AfterViewInit, OnInit {
     this.gettingLibrary = true;
     this.httpClient.get<VideoLibrary>('/api/library').subscribe({
       next: library => {
+        this.gettingLibrary = false;
+
         if (!isEqual(this.library, library, { keysToIgnore: ['lastUpdate', 'parent'] })) {
           addBackLinks(library.array);
           this.library = library;
@@ -158,7 +160,7 @@ export class AppComponent implements AfterViewInit, OnInit {
         else
           this.library.lastUpdate = library.lastUpdate;
       },
-      complete: () => this.gettingLibrary = false
+      error: () => { this.gettingLibrary = false; setTimeout(() => this.pollLibrary(), 2000); }
     });
   }
 

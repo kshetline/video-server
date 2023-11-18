@@ -1,7 +1,7 @@
 <div *ngIf="isLoggedIn()" class="status-panel">
-  <p-progressBar *ngIf="status?.updateProgress >= 0" [value]="status?.updateProgress"
+  <p-progressBar *ngIf="status && status?.updateProgress >= 0" [value]="status?.updateProgress"
                  [showValue]="false" class="narrow-progress"></p-progressBar>
-  <p-button *ngIf="isAdmin()" [disabled]="status?.updateProgress >= 0" icon="pi pi-refresh"
+  <p-button *ngIf="isAdmin()" [disabled]="status && status?.updateProgress >= 0" icon="pi pi-refresh"
             styleClass="p-button-rounded p-button-sm p-button-danger" (click)="showRefreshDialog = true"></p-button>
   <span>{{userName()}}</span>
   <p-button icon="pi pi-sign-out" styleClass="p-button-rounded" (click)="logOut()"></p-button>
