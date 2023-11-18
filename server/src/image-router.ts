@@ -11,15 +11,20 @@ export const router = Router();
 /* cspell:disable-next-line */ // noinspection SpellCheckingInspection
 const TRANSPARENT_PIXEL = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
   'base64');
+const vSource = process.env.VS_VIDEO_SOURCE;
 
 async function getImage(imageType: string, apiPath: string, req: Request, res: Response): Promise<void> {
+  const uri = req.query.uri as string;
   const id = req.query.id;
   let id2 = req.query.id2;
   let fullSize: Buffer;
   let imagePath: string;
 
   for (let i = 0; i < 2; ++i) {
-    imagePath = paths.join(cacheDir, imageType, `${id}${id2 ? '-' + id2 : ''}-${req.query.cs || 'x'}.jpg`);
+    if (uri)
+      imagePath = paths.join(vSource, uri);
+    else
+      imagePath = paths.join(cacheDir, imageType, `${id}${id2 ? '-' + id2 : ''}-${req.query.cs || 'x'}.jpg`);
 
     const stat = await safeLstat(imagePath);
 
@@ -28,7 +33,7 @@ async function getImage(imageType: string, apiPath: string, req: Request, res: R
       continue;
     }
 
-    if (!stat) {
+    if (!stat && !uri) {
       const url = `${process.env.VS_ZIDOO_CONNECT}${apiPath}?id=${id2 || id}`;
 
       fullSize = await requestBinary(url);
@@ -61,7 +66,9 @@ async function getImage(imageType: string, apiPath: string, req: Request, res: R
     return;
   }
 
-  const thumbnailPath = paths.join(thumbnailDir, imageType, `${req.query.id}-${req.query.cs}-${req.query.w}-${req.query.h}.jpg`);
+  const thumbnailPath = uri ?
+    paths.join(thumbnailDir, imageType, `${checksum53(uri)}-${req.query.w}-${req.query.h}.jpg`) :
+    paths.join(thumbnailDir, imageType, `${req.query.id}-${req.query.cs}-${req.query.w}-${req.query.h}.jpg`);
 
   if (!await existsAsync(thumbnailPath)) {
     Jimp.read((fullSize || imagePath) as any).then(image =>

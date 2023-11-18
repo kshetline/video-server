@@ -45,6 +45,7 @@ export interface LibraryItem {
     profilePath: string;
   }[];
   airDate?: string;
+  aliasPosterPath?: string;
   aspectRatio?: string;
   audio?: Track[];
   backdropPath?: string;

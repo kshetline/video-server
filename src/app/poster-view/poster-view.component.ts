@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { LibraryItem, VideoLibrary, VType } from '../../../server/src/shared-types';
 import { checksum53, hashTitle } from '../video-ui-utils';
-import { stripDiacriticals_lc } from '@tubular/util';
+import { encodeForUri, stripDiacriticals_lc } from '@tubular/util';
 
 function isMovie(item: LibraryItem): boolean {
   return item.type === VType.MOVIE ||
@@ -103,8 +103,12 @@ export class PosterViewComponent implements OnInit {
   }
 
   getPosterUrl(item: LibraryItem): string {
-    if (item.type === VType.ALIAS_COLLECTION)
-      return '/assets/folder.svg';
+    if (item.type === VType.ALIAS_COLLECTION) {
+      if (item.aliasPosterPath)
+        return `/api/img/poster?uri=${encodeForUri(item.aliasPosterPath)}&w=300&h=450`;
+      else
+        return '/assets/folder.svg';
+    }
     else
       return `/api/img/poster?id=${item.id}&cs=${checksum53(item.originalName || item.name)}&w=300&h=450`;
   }

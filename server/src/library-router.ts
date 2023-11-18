@@ -524,16 +524,32 @@ async function addAliases(dir: string): Promise<void> {
     if (/•[•~]$/.test(topItem)) {
       const files = (await readdir(target)).filter(f => !f.startsWith('.'));
       const items: LibraryItem[] = [];
+      let poster: string;
 
       for (const file of files) {
         const path = paths.join(target, file);
         const stat = await safeLstat(path);
         const isLink = stat.isSymbolicLink();
         const innerTarget = isLink ? await safeReadLink(path) : path;
-        const item = findMatchingUri(pendingLibrary.array, cleanUpPath(innerTarget));
+        const item = (isLink || stat.isDirectory()) && findMatchingUri(pendingLibrary.array, cleanUpPath(innerTarget));
 
         if (item)
           items.push(item);
+        else if (file.endsWith('.col.txt')) {
+          const collection = file.slice(0, -8);
+          const item = pendingLibrary.array.find(i =>
+            (i.type === VType.COLLECTION || i.type === VType.TV_SHOW) && i.name === collection);
+
+          if (item) {
+            const copy = clone(item);
+
+            copy.type = VType.ALIAS_COLLECTION;
+            copy.name = collection;
+            items.push(copy);
+          }
+        }
+        else if (/^poster\.(jpg|png)$/.test(file))
+          poster = path.substring(vSource.length);
       }
 
       if (items.length > 0) {
@@ -541,6 +557,9 @@ async function addAliases(dir: string): Promise<void> {
           type: VType.ALIAS_COLLECTION, name: cleanUpName(topItem), data: [],
           id: -1, parentId: -1, collectionId: -1, aggregationId: -1
         };
+
+        if (poster)
+          collection.aliasPosterPath = poster;
 
         for (const item of items)
           collection.data.push(clone(item));
@@ -612,17 +631,26 @@ export async function updateLibrary(): Promise<void> {
     cachedLibrary = pendingLibrary;
 
   const directoryMap = new Map<string, string[]>();
-  await getDirectories(vSource, bonusDirs, directoryMap);
-  pendingLibrary.progress = 24.5;
-  pendingLibrary.status = LibraryStatus.BONUS_MATERIAL_LINKED;
-  await getChildren(pendingLibrary.array, bonusDirs, directoryMap);
-  pendingLibrary.progress = 39.7;
-  pendingLibrary.status = LibraryStatus.ALL_VIDEOS;
-  await getMediaInfo(pendingLibrary.array);
-  fixVideoFlagsAndEncoding(pendingLibrary.array);
-  pendingLibrary.progress = 77.8;
-  pendingLibrary.status = LibraryStatus.MEDIA_DETAILS;
-  await getShowInfo(pendingLibrary.array);
+
+  if (Date.now() > 0) { // TODO: Remove!
+    pendingLibrary = clone(cachedLibrary);
+    pendingLibrary.array = pendingLibrary.array.filter(i =>
+      i.type !== VType.ALIAS && i.type !== VType.ALIAS_COLLECTION);
+  }
+  else {
+    await getDirectories(vSource, bonusDirs, directoryMap);
+    pendingLibrary.progress = 24.5;
+    pendingLibrary.status = LibraryStatus.BONUS_MATERIAL_LINKED;
+    await getChildren(pendingLibrary.array, bonusDirs, directoryMap);
+    pendingLibrary.progress = 39.7;
+    pendingLibrary.status = LibraryStatus.ALL_VIDEOS;
+    await getMediaInfo(pendingLibrary.array);
+    fixVideoFlagsAndEncoding(pendingLibrary.array);
+    pendingLibrary.progress = 77.8;
+    pendingLibrary.status = LibraryStatus.MEDIA_DETAILS;
+    await getShowInfo(pendingLibrary.array);
+  }
+
   await addAliases(vSource);
   pendingLibrary.array.sort(librarySorter);
   pendingLibrary.status = LibraryStatus.DONE;

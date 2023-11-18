@@ -10,7 +10,16 @@ import { UserSession } from '../../server/src/shared-types';
 export class AuthService {
   private currentSession: UserSession;
 
-  constructor(private http: HttpClient, private appRef: ApplicationRef) {}
+  constructor(private http: HttpClient, private appRef: ApplicationRef) {
+    const lastSession = localStorage.getItem('vs_session');
+
+    if (lastSession) {
+      try {
+        this.currentSession = JSON.parse(atob(lastSession));
+      }
+      catch {}
+    }
+  }
 
   loginStatus = new EventEmitter<boolean>();
 

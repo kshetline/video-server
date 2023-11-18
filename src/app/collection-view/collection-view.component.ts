@@ -1,5 +1,5 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
-import { LibraryItem } from '../../../server/src/shared-types';
+import { LibraryItem, VType } from '../../../server/src/shared-types';
 import { checksum53, hashTitle } from '../video-ui-utils';
 
 function getSortTime(item: LibraryItem): number {
@@ -48,7 +48,10 @@ export class CollectionViewComponent {
   }
 
   onClick(item: LibraryItem): void {
-    this.showSelected.emit(item);
+    if (item.type === VType.COLLECTION || item.type < 0) {
+    }
+    else
+      this.showSelected.emit(item);
   }
 
   getPosterUrl(item: LibraryItem): string {
