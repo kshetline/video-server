@@ -9,7 +9,7 @@
 <app-poster-view [library]="library" (itemClicked)="itemClicked($event)"></app-poster-view>
 <app-collection-view *ngIf="isLoggedIn()" [class.active]="currentCollection" [collection]=currentCollection
   (goBack)="currentCollection = null" (showSelected)="currentShow = $event"
-  [currentShow]=currentShow></app-collection-view>
+  [currentShow]="currentShow"></app-collection-view>
 <app-show-view *ngIf="isLoggedIn()" [class.active]="currentShow" [show]="currentShow" (goBack)="currentShow = null"
                (viewBonus)="bonusSource = $event" [currentBonus]="bonusSource"></app-show-view>
 <app-bonus-view *ngIf="isLoggedIn()" [class.active]="bonusSource" [source]="bonusSource"

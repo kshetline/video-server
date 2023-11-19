@@ -37,6 +37,7 @@ interface Alias {
   hideOriginal?: boolean;
   name: string;
   path?: string;
+  season?: string;
 }
 
 interface Collection {
@@ -456,6 +457,10 @@ function fixVideoFlagsAndEncoding(items: LibraryItem[]): void {
 
     if (item.data?.length > 0)
       fixVideoFlagsAndEncoding(item.data);
+
+    // Identify year of collection or TV show by the earliest item/season.
+    if ((item.type === VType.TV_SHOW || item.type === VType.COLLECTION) && item.data?.length > 0) // TODO: Add year range?
+      item.year = min(item.year, ...item.data.filter(i => i.year).map(i => i.year));
   }
 
   for (const item of items) {
@@ -527,36 +532,40 @@ function matchAliases(aliases: Alias[]): LibraryItem[] {
   const aliasedItems: LibraryItem[] = [];
 
   for (const alias of aliases || []) {
+    let item: LibraryItem;
+    let type: VType;
+
     if (alias.path) {
-      const item = findMatchingUri(pendingLibrary.array, alias.path);
-
-      if (item) {
-        const copy = clone(item);
-
-        copy.type = VType.ALIAS;
-        copy.originalName = copy.name;
-        copy.name = alias.name || copy.name;
-        aliasedItems.push(copy);
-      }
-      else
-        console.error('Not found:', alias.name, alias.path);
+      type = VType.ALIAS;
+      item = findMatchingUri(pendingLibrary.array, alias.path);
     }
     else if (alias.collection) {
-      const item = pendingLibrary.array.find(i =>
+      type = VType.ALIAS;
+      item = pendingLibrary.array.find(i =>
         (i.type === VType.COLLECTION || i.type === VType.TV_SHOW) && i.name === alias.collection);
-
-      if (item) {
-        const copy = clone(item);
-
-        copy.type = VType.ALIAS_COLLECTION;
-        copy.originalName = copy.name;
-        copy.name = alias.name;
-        copy.useSameArtwork = true;
-        aliasedItems.push(copy);
-      }
-      else
-        console.error('Not found:', alias.name, alias.path);
     }
+    else if (alias.season) {
+      type = VType.TV_SEASON;
+      item = pendingLibrary.array.find(i => i.type === VType.TV_SEASON && i.name === alias.season);
+    }
+
+    if (item) {
+      const copy = clone(item);
+
+      copy.type = type;
+      copy.originalName = copy.name;
+      copy.name = alias.name || copy.name;
+
+      if (type === VType.ALIAS_COLLECTION)
+        copy.useSameArtwork = true;
+
+      if (alias.hideOriginal)
+        item.hide = true;
+
+      aliasedItems.push(copy);
+    }
+    else
+      console.error('Not found:', alias.name, alias.path || alias.collection);
   }
 
   return aliasedItems;
@@ -634,6 +643,7 @@ export async function updateLibrary(quick = false): Promise<void> {
       pendingLibrary = clone(cachedLibrary);
       pendingLibrary.array = pendingLibrary.array.filter(i =>
         i.type !== VType.ALIAS && i.type !== VType.ALIAS_COLLECTION);
+      pendingLibrary.array.forEach(i => delete i.hide);
     }
     else {
       await getDirectories(vSource, bonusDirs, directoryMap);
@@ -704,12 +714,12 @@ function filterLibrary(items: LibraryItem[], role: string): void {
 router.get('/', async (req, res) => {
   noCache(res);
 
-  let library = cachedLibrary;
+  const library = clone(cachedLibrary);
 
-  if (role(req) !== 'admin') {
-    library = clone(cachedLibrary);
+  library.array = library.array.filter(i => !i.hide);
+
+  if (role(req) !== 'admin')
     filterLibrary(library.array, role(req));
-  }
 
   jsonOrJsonp(req, res, library);
 });

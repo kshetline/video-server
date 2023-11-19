@@ -19,4 +19,7 @@
       <div class="clicker" (click)="onClick(item)" (mouseenter)="overview = item.overview" (mouseleave)="overview = ''"></div>
     </div>
   </div>
+  <app-collection-view *ngIf="collection"
+                       [class.active]="subCollection" [collection]=subCollection
+                       (goBack)="subCollection = null" (showSelected)="showSelected.emit($event)"></app-collection-view>
 </div>

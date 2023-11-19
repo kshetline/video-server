@@ -27,6 +27,7 @@ export class CollectionViewComponent {
 
   items: LibraryItem[];
   overview = '';
+  subCollection: LibraryItem;
 
   @Input() get collection(): LibraryItem { return this._collection; }
   set collection(value: LibraryItem) {
@@ -50,8 +51,8 @@ export class CollectionViewComponent {
   }
 
   onClick(item: LibraryItem): void {
-    if (item.type === VType.COLLECTION || item.type < 0) {
-    }
+    if (item.type === VType.COLLECTION || item.type < 0)
+      this.subCollection = item;
     else
       this.showSelected.emit(item);
   }
