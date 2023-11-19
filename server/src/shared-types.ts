@@ -61,6 +61,7 @@ export interface LibraryItem {
   extras?: string[];
   frameRate?: number;
   genres?: string[];
+  hide?: boolean;
   homepage?: string;
   is2k?: boolean;
   is3d?: boolean;

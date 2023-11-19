@@ -34,12 +34,20 @@ let pendingUpdate: any;
 
 interface Alias {
   collection?: string;
+  hideOriginal?: boolean;
   name: string;
   path?: string;
 }
 
-interface Mappings {
+interface Collection {
+  name: string;
+  poster: string;
   aliases: Alias[]
+}
+
+interface Mappings {
+  aliases: Alias[],
+  collections: Collection[]
 }
 
 function formatAspectRatio(track: MediaInfoTrack): string {
@@ -515,11 +523,10 @@ function findMatchingUri(items: LibraryItem[], uri: string, parent?: LibraryItem
   return null;
 }
 
-async function addMappings(): Promise<void> {
-  const aliases: LibraryItem[] = [];
-  const mappings = JSON.parse(await readFile(paths.join(vSource, 'mappings.json'), 'utf8')) as Mappings;
+function matchAliases(aliases: Alias[]): LibraryItem[] {
+  const aliasedItems: LibraryItem[] = [];
 
-  for (const alias of mappings.aliases || []) {
+  for (const alias of aliases || []) {
     if (alias.path) {
       const item = findMatchingUri(pendingLibrary.array, alias.path);
 
@@ -528,9 +535,11 @@ async function addMappings(): Promise<void> {
 
         copy.type = VType.ALIAS;
         copy.originalName = copy.name;
-        copy.name = alias.name;
-        aliases.push(copy);
+        copy.name = alias.name || copy.name;
+        aliasedItems.push(copy);
       }
+      else
+        console.error('Not found:', alias.name, alias.path);
     }
     else if (alias.collection) {
       const item = pendingLibrary.array.find(i =>
@@ -543,12 +552,37 @@ async function addMappings(): Promise<void> {
         copy.originalName = copy.name;
         copy.name = alias.name;
         copy.useSameArtwork = true;
-        aliases.push(copy);
+        aliasedItems.push(copy);
       }
+      else
+        console.error('Not found:', alias.name, alias.path);
     }
   }
 
-  pendingLibrary.array.push(...aliases);
+  return aliasedItems;
+}
+
+async function addMappings(): Promise<void> {
+  const mappings = JSON.parse(await readFile(paths.join(vSource, 'mappings.json'), 'utf8')) as Mappings;
+  const aliasedItems = matchAliases(mappings.aliases);
+
+  for (const collection of mappings.collections || []) {
+    const collectionItem: LibraryItem = {
+      type: VType.ALIAS_COLLECTION,
+      name: collection.name,
+      id: -1, parentId: -1, collectionId: -1, aggregationId: -1,
+      data: matchAliases(collection.aliases)
+    };
+
+    if (collectionItem.data.length > 0) {
+      if (collection.poster)
+        collectionItem.aliasPosterPath = collection.poster;
+
+      aliasedItems.push(collectionItem);
+    }
+  }
+
+  pendingLibrary.array.push(...aliasedItems);
 }
 
 function sortForm(s: string): string {
