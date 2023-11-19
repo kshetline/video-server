@@ -51,7 +51,7 @@ export class CollectionViewComponent {
   }
 
   onClick(item: LibraryItem): void {
-    if (item.type === VType.COLLECTION || item.type < 0)
+    if (item.type === VType.COLLECTION || item.type === VType.ALIAS_COLLECTION)
       this.subCollection = item;
     else
       this.showSelected.emit(item);

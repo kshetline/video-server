@@ -10,7 +10,7 @@ function isMovie(item: LibraryItem): boolean {
 }
 
 function isTV(item: LibraryItem): boolean {
-  return item.type === VType.TV_SHOW || item.type === VType.TV_SEASON ||
+  return item.isTV || item.type === VType.TV_SHOW || item.type === VType.TV_SEASON ||
       item.type === VType.TV_EPISODE || item.type === VType.TV_COLLECTION ||
       (item.type === VType.COLLECTION && item.data?.length > 0 && isTV(item.data[0]));
 }

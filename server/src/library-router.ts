@@ -35,20 +35,23 @@ let pendingUpdate: any;
 interface Alias {
   collection?: string;
   hideOriginal?: boolean;
+  isTV?: boolean;
   name: string;
   path?: string;
   season?: string;
 }
 
 interface Collection {
+  altNames?: string[],
+  isTV?: boolean;
   name: string;
-  poster: string;
+  poster?: string;
   aliases: Alias[]
 }
 
 interface Mappings {
-  aliases: Alias[],
-  collections: Collection[]
+  aliases?: Alias[],
+  collections?: Collection[]
 }
 
 function formatAspectRatio(track: MediaInfoTrack): string {
@@ -559,6 +562,9 @@ function matchAliases(aliases: Alias[]): LibraryItem[] {
       if (type === VType.ALIAS_COLLECTION)
         copy.useSameArtwork = true;
 
+      if (alias.isTV || item.type === VType.TV_SEASON || item.type === VType.TV_SHOW)
+        copy.isTV = true;
+
       if (alias.hideOriginal)
         item.hide = true;
 
@@ -579,6 +585,7 @@ async function addMappings(): Promise<void> {
     const collectionItem: LibraryItem = {
       type: VType.ALIAS_COLLECTION,
       name: collection.name,
+      isTV: !!collection.isTV,
       id: -1, parentId: -1, collectionId: -1, aggregationId: -1,
       data: matchAliases(collection.aliases)
     };
@@ -588,6 +595,15 @@ async function addMappings(): Promise<void> {
         collectionItem.aliasPosterPath = collection.poster;
 
       aliasedItems.push(collectionItem);
+
+      if (collection.altNames) {
+        for (const name of collection.altNames) {
+          const altCopy = clone(collectionItem);
+
+          altCopy.name = name;
+          aliasedItems.push(altCopy);
+        }
+      }
     }
   }
 

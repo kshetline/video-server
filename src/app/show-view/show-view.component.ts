@@ -67,7 +67,7 @@ export class ShowViewComponent {
         return;
 
       const choices: LibraryItem[] = [];
-      const isTV = (value.type === VType.TV_SEASON);
+      const isTV = (value.type === VType.TV_SEASON || value.isTV);
       let count2k = 0;
       let count4k = 0;
       let count3d = 0;
@@ -135,7 +135,7 @@ export class ShowViewComponent {
       let lastEpisode = -1;
 
       this.videoLabels = choices.map((vc, i) => {
-        if (this.show.type === VType.TV_SEASON && episodes.size > 1) {
+        if ((this.show.type === VType.TV_SEASON || this.show.isTV) && episodes.size > 1) {
           if (!hasDuplicateEpisodes)
             return vc.parent.episode.toString();
 

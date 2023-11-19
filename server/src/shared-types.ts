@@ -70,6 +70,7 @@ export interface LibraryItem {
   isHD?: boolean;
   isHdr?: boolean;
   isSD?: boolean;
+  isTV?: boolean;
   logo?: string;
   mobileUri?: string;
   originalName?: string;

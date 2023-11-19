@@ -55,6 +55,7 @@
 
       .loading {
         background-color: rgba(blue, 0.25);
+        border-radius: 0.33em;
         font-style: italic;
         left: 1px;
         line-height: 223px;
@@ -69,6 +70,10 @@
 
       .rating-wrapper {
         height: 19px;
+      }
+
+      img {
+        border-radius: 0.33em;
       }
 
       .title, .year {
