@@ -12,6 +12,7 @@ import { CollectionViewComponent } from './collection-view/collection-view.compo
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DashPlayerComponent } from './dash-player/dash-player.component';
 import { DialogModule } from 'primeng/dialog';
+import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { PosterViewComponent } from './poster-view/poster-view.component';
@@ -39,6 +40,7 @@ import { LoginComponent } from './login/login.component';
     ButtonModule,
     ConfirmDialogModule,
     DialogModule,
+    FontAwesomeModule,
     FormsModule,
     HttpClientModule,
     HttpClientJsonpModule,
@@ -53,4 +55,4 @@ import { LoginComponent } from './login/login.component';
   bootstrap: [AppComponent]
 })
 
-export class AppModule { }
+export class AppModule {}

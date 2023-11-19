@@ -2,6 +2,8 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { LibraryItem, VideoLibrary, VType } from '../../../server/src/shared-types';
 import { checksum53, hashTitle } from '../video-ui-utils';
 import { encodeForUri, stripDiacriticals_lc } from '@tubular/util';
+import { faFolderOpen } from '@fortawesome/free-regular-svg-icons';
+import { faShare } from '@fortawesome/free-solid-svg-icons';
 
 function isMovie(item: LibraryItem): boolean {
   return item.type === VType.MOVIE ||
@@ -21,8 +23,11 @@ function isTV(item: LibraryItem): boolean {
   styleUrls: ['./poster-view.component.scss']
 })
 export class PosterViewComponent implements OnInit {
+  readonly ALIAS = VType.ALIAS;
   readonly ALIAS_COLLECTION = VType.ALIAS_COLLECTION;
   readonly COLLECTION = VType.COLLECTION;
+  readonly faFolderOpen = faFolderOpen;
+  readonly faShare = faShare;
   readonly hashTitle = hashTitle;
 
   private _library: VideoLibrary;

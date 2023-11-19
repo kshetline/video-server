@@ -107,6 +107,13 @@
     top: 1px;
     z-index: -1;
   }
+
+  fa-icon {
+    color: white;
+    position: absolute;
+    right: -0.3em;
+    top: calc(227px - 0.7em);
+  }
 }
 
 .clicker {

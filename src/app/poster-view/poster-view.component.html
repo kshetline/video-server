@@ -31,6 +31,9 @@
       <div *ngIf="item.type !== ALIAS_COLLECTION" class="loading">Loading...</div>
       <img *ngIf="i < 100 || showThumbnail['t-' + i]"
            [ngSrc]="getPosterUrl(item)" width="150" height="225" alt="{{item.id}}" priority>
+      <fa-icon *ngIf="item.type === ALIAS" [icon]="faShare"
+               class="fa-xl fa-rotate-by" style="--fa-rotate-angle: -45deg;"></fa-icon>
+      <fa-icon *ngIf="item.type === ALIAS_COLLECTION" [icon]="faFolderOpen" class="fa-xl"></fa-icon>
     </div>
     <div class="rating-wrapper">
       <app-rating *ngIf="item.voteAverage" [value]="item.voteAverage" [topValue]="10"></app-rating>
