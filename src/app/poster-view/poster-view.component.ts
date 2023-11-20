@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { LibraryItem, VideoLibrary, VType } from '../../../server/src/shared-types';
-import { checksum53, hashTitle } from '../video-ui-utils';
+import { checksum53, hashTitle, librarySorter } from '../video-ui-utils';
 import { clone, encodeForUri, stripDiacriticals_lc } from '@tubular/util';
 import { faFolderOpen } from '@fortawesome/free-regular-svg-icons';
 import { faShare } from '@fortawesome/free-solid-svg-icons';
@@ -139,52 +139,68 @@ export class PosterViewComponent implements OnInit {
 
   private refilter(): void {
     this.showThumbnail = {};
-
     document.querySelector('.poster-grid').scrollTop = 0;
+
+    if (!this.searchText && this.filter === 'All') {
+      this.items = this.library.array;
+      return;
+    }
 
     let matchFunction: (item: LibraryItem) => boolean;
 
     switch (this.filter) {
       case 'All':
-        this.items = this.library.array.filter(item => this.matchesSearch(item));
+        matchFunction = (_item: LibraryItem): boolean => true;
         break;
       case 'Movies':
         matchFunction = containsMovie;
-        this.items = this.library.array.filter(item => this.matchesSearch(item) && matchFunction(item));
         break;
       case 'TV':
         matchFunction = containsTV;
-        this.items = this.library.array.filter(item => this.matchesSearch(item) && matchFunction(item));
         break;
       case '4K':
-        this.items = this.library.array.filter(item => this.matchesSearch(item) && item.is4k);
+        matchFunction = (item: LibraryItem): boolean => item.is4k;
         break;
       case '3D':
-        this.items = this.library.array.filter(item => this.matchesSearch(item) && item.is3d);
+        matchFunction = (item: LibraryItem): boolean => item.is3d;
         break;
     }
 
-    if (matchFunction) {
-      let hasBeenCloned = false;
+    const matches = (item: LibraryItem): boolean => this.matchesSearch(item) && matchFunction(item);
 
-      for (let i = 0; i < this.items.length; ++i) {
-        const item = this.items[i];
+    this.items = clone(this.library.array).filter(item => matches(item));
 
-        if (item.type === VType.COLLECTION) {
-          const innerCount = item.data.reduce((sum, child) => sum + (matchFunction(child) ? 1 : 0), 0);
+    for (let i = 0; i < this.items.length; ++i) {
+      const item = this.items[i];
 
-          if (innerCount === 1)
-            this.items[i] = item.data.find(c => matchFunction(c));
-          else if (innerCount < item.data.length) {
-            if (!hasBeenCloned) {
-              this.items = clone(this.items);
-              hasBeenCloned = true;
-            }
+      if (item.type === VType.COLLECTION) {
+        const innerCount = item.data.reduce((sum, child) => sum + (matches(child) ? 1 : 0), 0);
 
-            item.data = item.data.filter(c => matchFunction(c));
-          }
-        }
+        // If only one match within a collection, surface that one match and eliminate the collection
+        if (innerCount === 1)
+          this.items[i] = item.data.find(c => matches(c));
+        // If multiple matches within a collection, filter collection items that don't match.
+        else if (innerCount < item.data.length)
+          item.data = item.data.filter(c => matches(c));
       }
+    }
+
+    this.items.sort(librarySorter);
+
+    // Purge duplicate results
+    let lastID = -1;
+
+    for (let i = this.items.length - 1; i >= 0; --i) {
+      const item = this.items[i];
+
+      if (item.id === lastID && lastID >= 0) {
+        if (item.isAlias)
+          this.items.splice(i, 1);
+        else
+          this.items.splice(i + 1, 1);
+      }
+
+      lastID = item.id;
     }
   }
 

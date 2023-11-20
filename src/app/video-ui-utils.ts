@@ -114,3 +114,28 @@ export function canPlayVP9(): boolean {
 
   return supportsVP9;
 }
+
+// noinspection DuplicatedCode
+function sortForm(s: string): string {
+  let $ = /^((A|An|The)\s+)(.*)$/.exec(s);
+
+  if ($)
+    s = $[3] + ', ' + $[2];
+
+  $ = /^(\d+)\b(.*)$/.exec(s);
+
+  if ($)
+    s = $[1].padStart(8, '0') + $[2];
+
+  return s;
+}
+
+const comparator = new Intl.Collator('en', { caseFirst: 'upper' }).compare;
+
+// noinspection DuplicatedCode
+export function librarySorter(a: LibraryItem, b: LibraryItem): number {
+  const sa = sortForm(a.name);
+  const sb = sortForm(b.name);
+
+  return comparator(sa, sb);
+}
