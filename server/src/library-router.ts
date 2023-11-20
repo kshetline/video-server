@@ -506,7 +506,7 @@ function fixVideoFlagsAndEncoding(items: LibraryItem[]): void {
 
 function findMatchingUri(items: LibraryItem[], uri: string, parent?: LibraryItem): LibraryItem {
   for (const item of items) {
-    if (item.type < 0)
+    if (item.isAlias)
       continue;
     else if (parent && item.uri && paths.dirname(item.uri) === uri)
       return parent;
@@ -536,31 +536,22 @@ function matchAliases(aliases: Alias[]): LibraryItem[] {
 
   for (const alias of aliases || []) {
     let item: LibraryItem;
-    let type: VType;
 
-    if (alias.path) {
-      type = VType.ALIAS;
+    if (alias.path)
       item = findMatchingUri(pendingLibrary.array, alias.path);
-    }
-    else if (alias.collection) {
-      type = VType.ALIAS;
+    else if (alias.collection)
       item = pendingLibrary.array.find(i =>
         (i.type === VType.COLLECTION || i.type === VType.TV_SHOW) && i.name === alias.collection);
-    }
-    else if (alias.season) {
-      type = VType.TV_SEASON;
+    else if (alias.season)
       item = pendingLibrary.array.find(i => i.type === VType.TV_SEASON && i.name === alias.season);
-    }
 
     if (item) {
       const copy = clone(item);
 
-      copy.type = type;
+      copy.isAlias = true;
       copy.originalName = copy.name;
       copy.name = alias.name || copy.name;
-
-      if (type === VType.ALIAS_COLLECTION)
-        copy.useSameArtwork = true;
+      copy.isLink = true;
 
       if (alias.isTV || item.type === VType.TV_SEASON || item.type === VType.TV_SHOW)
         copy.isTV = true;
@@ -583,7 +574,8 @@ async function addMappings(): Promise<void> {
 
   for (const collection of mappings.collections || []) {
     const collectionItem: LibraryItem = {
-      type: VType.ALIAS_COLLECTION,
+      type: VType.COLLECTION,
+      isAlias: true,
       name: collection.name,
       isTV: !!collection.isTV,
       id: -1, parentId: -1, collectionId: -1, aggregationId: -1,
@@ -657,8 +649,7 @@ export async function updateLibrary(quick = false): Promise<void> {
 
     if (quick) {
       pendingLibrary = clone(cachedLibrary);
-      pendingLibrary.array = pendingLibrary.array.filter(i =>
-        i.type !== VType.ALIAS && i.type !== VType.ALIAS_COLLECTION);
+      pendingLibrary.array = pendingLibrary.array.filter(i => !i.isAlias);
       pendingLibrary.array.forEach(i => delete i.hide);
     }
     else {

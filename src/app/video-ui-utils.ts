@@ -47,7 +47,7 @@ export function getTitle(item: LibraryItem, baseItem?: LibraryItem): string {
     return item.name;
   else if (item.parent)
     return getTitle(item.parent, baseItem ?? item);
-  else if (baseItem && baseItem.type !== VType.COLLECTION && baseItem.type !== VType.ALIAS_COLLECTION)
+  else if (baseItem && baseItem.type !== VType.COLLECTION)
     return baseItem.name;
   else
     return '';
@@ -58,7 +58,7 @@ export function getSeasonTitle(item: LibraryItem): string {
 
   if (!item)
     return '';
-  else if (item?.type === VType.MOVIE || item?.type === VType.ALIAS)
+  else if (item?.type === VType.MOVIE)
     return name;
   else if (item?.type === VType.TV_SEASON && item.parent?.name &&
            stripDiacriticals_lc(name).includes(stripDiacriticals_lc(item.parent.name)))

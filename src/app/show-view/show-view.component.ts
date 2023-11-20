@@ -67,7 +67,7 @@ export class ShowViewComponent {
         return;
 
       const choices: LibraryItem[] = [];
-      const isTV = (value.type === VType.TV_SEASON || value.isTV);
+      const isTV = (value.type === VType.TV_SEASON);
       let count2k = 0;
       let count4k = 0;
       let count3d = 0;

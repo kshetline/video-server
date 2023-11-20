@@ -1,8 +1,5 @@
 export enum Cut { NA, THEATRICAL, INT_THEATRICAL, UNRATED, EXTENDED, DIRECTORS, FINAL, SPECIAL_EDITION }
-export enum VType {
-  ALIAS_COLLECTION = -2, ALIAS = -1,
-  FILE = 0, MOVIE, COLLECTION, TV_SHOW, TV_SEASON, TV_EPISODE, TV_COLLECTION
-}
+export enum VType { FILE = 0, MOVIE, COLLECTION, TV_SHOW, TV_SEASON, TV_EPISODE, TV_COLLECTION }
 export enum LibraryStatus { NOT_STARTED, INITIALIZED, BONUS_MATERIAL_LINKED, ALL_VIDEOS, MEDIA_DETAILS, DONE = 100 }
 
 export interface ServerStatus {
@@ -66,9 +63,11 @@ export interface LibraryItem {
   is2k?: boolean;
   is3d?: boolean;
   is4k?: boolean;
+  isAlias?: boolean;
   isFHD?: boolean;
   isHD?: boolean;
   isHdr?: boolean;
+  isLink?: boolean;
   isSD?: boolean;
   isTV?: boolean;
   logo?: string;
@@ -91,7 +90,6 @@ export interface LibraryItem {
   tvName?: string;
   tvType?: string;
   uri?: string;
-  useSameArtwork?: boolean;
   video?: Track[];
   videoinfo?: VideoInfo;
   voteAverage?: number;

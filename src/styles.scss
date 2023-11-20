@@ -46,3 +46,8 @@ app-dash-player {
   display: none;
   position: absolute;
 }
+
+fa-icon.stroke-path > svg > path {
+  stroke: white;
+  stroke-width: 20px;
+}

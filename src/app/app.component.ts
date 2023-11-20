@@ -137,10 +137,9 @@ export class AppComponent implements AfterViewInit, OnInit {
   }
 
   itemClicked(item: LibraryItem): void {
-    if (item?.type === VType.COLLECTION || item?.type === VType.ALIAS_COLLECTION ||
-        item?.type === VType.TV_SHOW || item?.type === VType.TV_COLLECTION)
+    if (item?.type === VType.COLLECTION || item?.type === VType.TV_SHOW || item?.type === VType.TV_COLLECTION)
       this.currentCollection = item;
-    else if (item?.type === VType.MOVIE || item?.type === VType.TV_SEASON || item?.type === VType.ALIAS)
+    else if (item?.type === VType.MOVIE || item?.type === VType.TV_SEASON)
       this.currentShow = item;
   }
 

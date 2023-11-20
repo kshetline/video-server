@@ -7,8 +7,7 @@ import { faShare } from '@fortawesome/free-solid-svg-icons';
 
 function isMovie(item: LibraryItem): boolean {
   return item.type === VType.MOVIE ||
-    ((item.type === VType.COLLECTION || item.type === VType.ALIAS_COLLECTION) &&
-      item.data?.length > 0 && item.data[0].type === VType.MOVIE);
+    (item.type === VType.COLLECTION && item.data?.length > 0 && item.data[0].type === VType.MOVIE);
 }
 
 function isTV(item: LibraryItem): boolean {
@@ -23,8 +22,6 @@ function isTV(item: LibraryItem): boolean {
   styleUrls: ['./poster-view.component.scss']
 })
 export class PosterViewComponent implements OnInit {
-  readonly ALIAS = VType.ALIAS;
-  readonly ALIAS_COLLECTION = VType.ALIAS_COLLECTION;
   readonly COLLECTION = VType.COLLECTION;
   readonly faFolderOpen = faFolderOpen;
   readonly faShare = faShare;
@@ -108,12 +105,10 @@ export class PosterViewComponent implements OnInit {
   }
 
   getPosterUrl(item: LibraryItem): string {
-    if (item.type === VType.ALIAS_COLLECTION && !item.useSameArtwork) {
-      if (item.aliasPosterPath)
-        return `/api/img/poster?uri=${encodeForUri(item.aliasPosterPath)}&w=300&h=450`;
-      else
-        return '/assets/folder.svg';
-    }
+    if (item.aliasPosterPath)
+      return `/api/img/poster?uri=${encodeForUri(item.aliasPosterPath)}&w=300&h=450`;
+    else if (item.isAlias && !item.isLink)
+      return '/assets/folder.svg';
     else
       return `/api/img/poster?id=${item.id}&cs=${checksum53(item.originalName || item.name)}&w=300&h=450`;
   }
