@@ -166,26 +166,40 @@ export class PosterViewComponent implements OnInit {
         break;
     }
 
-    const matches = (item: LibraryItem): boolean => this.matchesSearch(item) && matchFunction(item);
+    const isAMatch = (item: LibraryItem): boolean => this.matchesSearch(item) && matchFunction(item);
 
-    this.items = clone(this.library.array).filter(item => matches(item));
+    this.items = clone(this.library.array).filter(item => isAMatch(item));
 
-    for (let i = 0; i < this.items.length; ++i) {
-      const item = this.items[i];
+    const deepFilter = (items: LibraryItem[]): void => {
+      for (let i = 0; i < items.length; ++i) {
+        const item = items[i];
 
-      if (item.type === VType.COLLECTION) {
-        const innerCount = item.data.reduce((sum, child) => sum + (matches(child) ? 1 : 0), 0);
+        if (item.type === VType.COLLECTION) {
+          deepFilter(item.data);
 
-        // If only one match within a collection, surface that one match and eliminate the collection
-        if (innerCount === 1)
-          this.items[i] = item.data.find(c => matches(c));
-        // If multiple matches within a collection, filter collection items that don't match.
-        else if (innerCount < item.data.length)
-          item.data = item.data.filter(c => matches(c));
+          const innerCount = item.data.reduce((sum, child) => sum + (isAMatch(child) ? 1 : 0), 0);
+
+          // If only one match within a collection, surface that one match and eliminate the collection
+          if (innerCount === 1)
+            items[i] = item.data.find(c => isAMatch(c));
+          // If multiple matches within a collection, filter collection items that don't match.
+          else if (innerCount < item.data.length)
+            item.data = item.data.filter(c => isAMatch(c));
+        }
       }
-    }
+    };
 
+    deepFilter(this.items);
     this.items.sort(librarySorter);
+
+    const reassignParents = (items: LibraryItem[], newParent?: LibraryItem): void => {
+      for (const item of items) {
+        item.parent = newParent;
+        reassignParents(item.data || [], item);
+      }
+    };
+
+    reassignParents(this.items);
 
     // Purge duplicate results
     let lastID = -1;
@@ -194,17 +208,47 @@ export class PosterViewComponent implements OnInit {
       const item = this.items[i];
 
       if (item.id === lastID && lastID >= 0) {
-        if (item.isAlias)
+        if (!this.matchesSearch(item, true))
           this.items.splice(i, 1);
-        else
-          this.items.splice(i + 1, 1);
+        else {
+          const other = this.items[i + 1];
+
+          if (!other.isAlias && this.matchesSearch(other, true))
+            this.items.splice(i, 1);
+          else
+            this.items.splice(i + 1, 1);
+        }
       }
 
       lastID = item.id;
     }
+
+    // Purge items included in a displayed collection
+    const currentCollections = new Set(this.items.filter(i => i.type === VType.COLLECTION));
+
+    for (let i = this.items.length - 1; i >= 0; --i) {
+      const item = this.items[i];
+
+      if (item.type !== VType.COLLECTION && currentCollections.has(item.parent))
+        this.items.splice(i, 1);
+    }
   }
 
-  private matchesSearch(item: LibraryItem): boolean {
+  private findItemById(id: number, items = this.items): LibraryItem {
+    for (const item of items) {
+      if (item.id === id)
+        return item;
+
+      const match = this.findItemById(id, item.data || []);
+
+      if (match)
+        return match;
+    }
+
+    return null;
+  }
+
+  private matchesSearch(item: LibraryItem, simpleMatch = false): boolean {
     if (!this.searchText)
       return true;
     else if (!item.name || item.type === VType.TV_EPISODE || item.type === VType.FILE)
@@ -214,6 +258,18 @@ export class PosterViewComponent implements OnInit {
 
     if (stripDiacriticals_lc(item.name).includes(text))
       return true;
+    else if (simpleMatch || item.isAlias)
+      return false;
+    else { // Does the name of an ancestor collection match?
+      let testItem = this.findItemById(item.id)?.parent;
+
+      while (testItem) {
+        if (testItem.type === VType.COLLECTION && stripDiacriticals_lc(testItem.name).includes(text))
+          return true;
+
+        testItem = testItem.parent;
+      }
+    }
 
     for (const child of (item.data || [])) {
       if (this.matchesSearch(child))
