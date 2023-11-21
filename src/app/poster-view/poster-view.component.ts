@@ -175,7 +175,7 @@ export class PosterViewComponent implements OnInit {
 
     const deepFilter = (items: LibraryItem[], matcher = isAMatch): void => {
       for (let i = 0; i < items.length; ++i) {
-        const item = items[i];
+        let item = items[i];
 
         if (item.type === VType.COLLECTION || (item.type === VType.TV_SHOW && filterSeasons)) {
           if (item.type === VType.TV_SHOW)
@@ -186,8 +186,12 @@ export class PosterViewComponent implements OnInit {
           const innerCount = item.data.reduce((sum, child) => sum + (matcher(child) ? 1 : 0), 0);
 
           // If only one match within a collection, surface that one match and eliminate the collection
-          if (innerCount === 1)
-            items[i] = item.data.find(c => matcher(c));
+          if (innerCount === 1) {
+            items[i] = item = item.data.find(c => matcher(c));
+
+            if (item.type === VType.TV_SEASON && !this.matchesSearch(item, true))
+              item.name = item.parent.name + ' • ' + item.name;
+          }
           // If multiple matches within a collection, filter collection items that don't match.
           else if (innerCount < item.data.length)
             item.data = item.data.filter(c => matcher(c));
