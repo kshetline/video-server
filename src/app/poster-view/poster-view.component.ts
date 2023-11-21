@@ -178,7 +178,9 @@ export class PosterViewComponent implements OnInit {
         let item = items[i];
 
         if (item.type === VType.COLLECTION || (item.type === VType.TV_SHOW && filterSeasons)) {
-          if (item.type === VType.TV_SHOW)
+          const saveMatcher = matcher;
+
+          if (this.matchesSearch(item, true))
             matcher = matchFunction;
 
           deepFilter(item.data, matcher);
@@ -192,9 +194,11 @@ export class PosterViewComponent implements OnInit {
             if (item.type === VType.TV_SEASON && !this.matchesSearch(item, true))
               item.name = item.parent.name + ' • ' + item.name;
           }
-          // If multiple matches within a collection, filter collection items that don't match.
+          // If multiple but partial matches within a collection, filter collection items that don't match.
           else if (innerCount < item.data.length)
             item.data = item.data.filter(c => matcher(c));
+
+          matcher = saveMatcher;
         }
       }
     };
@@ -237,16 +241,23 @@ export class PosterViewComponent implements OnInit {
     const currentCollections = new Set(this.items.filter(i => i.type === VType.COLLECTION));
 
     for (let i = this.items.length - 1; i >= 0; --i) {
-      const item = this.items[i];
+      let item = this.items[i];
 
-      if (item.type !== VType.COLLECTION && currentCollections.has(item.parent))
-        this.items.splice(i, 1);
+      if (item.type !== VType.COLLECTION) {
+        if (item.isAlias)
+          item = this.findItemById(item.id);
+
+        if (item && currentCollections.has(item.parent))
+          this.items.splice(i, 1);
+      }
     }
   }
 
   private findItemById(id: number, items = this.items): LibraryItem {
     for (const item of items) {
-      if (item.id === id)
+      if (item.isAlias && !item.parent)
+        continue;
+      else if (item.id === id)
         return item;
 
       const match = this.findItemById(id, item.data || []);
