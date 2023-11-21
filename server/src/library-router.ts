@@ -51,6 +51,7 @@ interface Collection {
 
 interface Mappings {
   aliases?: Alias[],
+  tvMovies?: Alias[],
   collections?: Collection[]
 }
 
@@ -531,7 +532,7 @@ function findMatchingUri(items: LibraryItem[], uri: string, parent?: LibraryItem
   return null;
 }
 
-function matchAliases(aliases: Alias[]): LibraryItem[] {
+function matchAliases(aliases: Alias[], flagAsTvMovie = false): LibraryItem[] {
   const aliasedItems: LibraryItem[] = [];
 
   for (const alias of aliases || []) {
@@ -542,24 +543,38 @@ function matchAliases(aliases: Alias[]): LibraryItem[] {
     else if (alias.collection)
       item = pendingLibrary.array.find(i =>
         (i.type === VType.COLLECTION || i.type === VType.TV_SHOW) && i.name === alias.collection);
-    else if (alias.season)
-      item = pendingLibrary.array.find(i => i.type === VType.TV_SEASON && i.name === alias.season);
+    else if (alias.season) {
+      const parts = alias.season.split('\t');
+
+      if (parts.length < 2)
+        item = pendingLibrary.array.find(i => i.type === VType.TV_SEASON && i.name === alias.season);
+      else {
+        const show = pendingLibrary.array.find(i => i.type === VType.TV_SHOW && i.name === parts[0]);
+
+        if (show && show.data)
+          item = show.data.find(i => i.name === parts[1]);
+      }
+    }
 
     if (item) {
-      const copy = clone(item);
+      if (flagAsTvMovie)
+        item.isTvMovie = true;
+      else {
+        const copy = clone(item);
 
-      copy.isAlias = true;
-      copy.originalName = copy.name;
-      copy.name = alias.name || copy.name;
-      copy.isLink = true;
+        copy.isAlias = true;
+        copy.originalName = copy.name;
+        copy.name = alias.name || copy.name;
+        copy.isLink = true;
 
-      if (alias.isTV || item.type === VType.TV_SEASON || item.type === VType.TV_SHOW)
-        copy.isTV = true;
+        if (alias.isTV || item.type === VType.TV_SEASON || item.type === VType.TV_SHOW)
+          copy.isTV = true;
 
-      if (alias.hideOriginal)
-        item.hide = true;
+        if (alias.hideOriginal)
+          item.hide = true;
 
-      aliasedItems.push(copy);
+        aliasedItems.push(copy);
+      }
     }
     else
       console.error('Not found:', alias.name, alias.path || alias.collection);
@@ -571,6 +586,8 @@ function matchAliases(aliases: Alias[]): LibraryItem[] {
 async function addMappings(): Promise<void> {
   const mappings = JSON.parse(await readFile(paths.join(vSource, 'mappings.json'), 'utf8')) as Mappings;
   const aliasedItems = matchAliases(mappings.aliases);
+
+  matchAliases(mappings.tvMovies, true);
 
   for (const collection of mappings.collections || []) {
     const collectionItem: LibraryItem = {

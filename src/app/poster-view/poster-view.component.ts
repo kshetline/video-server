@@ -6,8 +6,8 @@ import { faFolderOpen } from '@fortawesome/free-regular-svg-icons';
 import { faShare } from '@fortawesome/free-solid-svg-icons';
 
 function isMovie(item: LibraryItem): boolean {
-  return item.type === VType.MOVIE ||
-    (item.type === VType.COLLECTION && item.data?.length > 0 && item.data[0].type === VType.MOVIE);
+  return item.isTvMovie || item.type === VType.MOVIE ||
+    (item.type === VType.COLLECTION && item.data?.length > 0 && !!item.data.find(i => isMovie(i)));
 }
 
 function containsMovie(item: LibraryItem): boolean {
@@ -23,9 +23,9 @@ function containsMovie(item: LibraryItem): boolean {
 }
 
 function isTV(item: LibraryItem): boolean {
-  return item.isTV || item.type === VType.TV_SHOW || item.type === VType.TV_SEASON ||
+  return item.isTV || item.isTvMovie || item.type === VType.TV_SHOW || item.type === VType.TV_SEASON ||
       item.type === VType.TV_EPISODE || item.type === VType.TV_COLLECTION ||
-      (item.type === VType.COLLECTION && item.data?.length > 0 && isTV(item.data[0]));
+      (item.type === VType.COLLECTION && item.data?.length > 0 && !!item.data.find(i => isTV(i)));
 }
 
 function containsTV(item: LibraryItem): boolean {
@@ -147,13 +147,16 @@ export class PosterViewComponent implements OnInit {
     }
 
     let matchFunction: (item: LibraryItem) => boolean;
+    let filterSeasons = false;
 
     switch (this.filter) {
       case 'All':
         matchFunction = (_item: LibraryItem): boolean => true;
+        filterSeasons = true;
         break;
       case 'Movies':
         matchFunction = containsMovie;
+        filterSeasons = true;
         break;
       case 'TV':
         matchFunction = containsTV;
@@ -170,21 +173,24 @@ export class PosterViewComponent implements OnInit {
 
     this.items = clone(this.library.array).filter(item => isAMatch(item));
 
-    const deepFilter = (items: LibraryItem[]): void => {
+    const deepFilter = (items: LibraryItem[], matcher = isAMatch): void => {
       for (let i = 0; i < items.length; ++i) {
         const item = items[i];
 
-        if (item.type === VType.COLLECTION) {
-          deepFilter(item.data);
+        if (item.type === VType.COLLECTION || (item.type === VType.TV_SHOW && filterSeasons)) {
+          if (item.type === VType.TV_SHOW)
+            matcher = matchFunction;
 
-          const innerCount = item.data.reduce((sum, child) => sum + (isAMatch(child) ? 1 : 0), 0);
+          deepFilter(item.data, matcher);
+
+          const innerCount = item.data.reduce((sum, child) => sum + (matcher(child) ? 1 : 0), 0);
 
           // If only one match within a collection, surface that one match and eliminate the collection
           if (innerCount === 1)
-            items[i] = item.data.find(c => isAMatch(c));
+            items[i] = item.data.find(c => matcher(c));
           // If multiple matches within a collection, filter collection items that don't match.
           else if (innerCount < item.data.length)
-            item.data = item.data.filter(c => isAMatch(c));
+            item.data = item.data.filter(c => matcher(c));
         }
       }
     };

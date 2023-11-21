@@ -70,6 +70,7 @@ export interface LibraryItem {
   isLink?: boolean;
   isSD?: boolean;
   isTV?: boolean;
+  isTvMovie?: boolean;
   logo?: string;
   mobileUri?: string;
   originalName?: string;
