@@ -7,6 +7,7 @@ import paths from 'path';
 import { readdir, readFile, writeFile } from 'fs/promises';
 import { cacheDir, existsAsync, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat, unref } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
+import { librarySorter } from './shared-utils';
 
 export const router = Router();
 
@@ -617,27 +618,6 @@ async function addMappings(): Promise<void> {
   }
 
   pendingLibrary.array.push(...aliasedItems);
-}
-
-function sortForm(s: string): string {
-  let $ = /^((A|An|The)\s+)(.*)$/.exec(s);
-
-  if ($)
-    s = $[3] + ', ' + $[2];
-
-  $ = /^(\d+)\b(.*)$/.exec(s);
-
-  if ($)
-    s = $[1].padStart(8, '0') + $[2];
-
-  return s;
-}
-
-function librarySorter(a: LibraryItem, b: LibraryItem): number {
-  const sa = sortForm(a.name);
-  const sb = sortForm(b.name);
-
-  return comparator(sa, sb);
 }
 
 export async function updateLibrary(quick = false): Promise<void> {

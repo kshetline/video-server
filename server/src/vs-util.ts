@@ -3,6 +3,7 @@ import { lstat, unlink } from 'fs/promises';
 import { existsSync, mkdirSync, Stats } from 'fs';
 import paths from 'path';
 import { LibraryItem } from './shared-types';
+import { hashTitle } from './shared-utils';
 
 const guestFilter = new Set(process.env.VS_GUEST_FILTER ? process.env.VS_GUEST_FILTER.split(';') : []);
 const demoFilter = new Set(process.env.VS_DEMO_FILTER ? process.env.VS_DEMO_FILTER.split(';') : []);
@@ -97,25 +98,6 @@ export async function safeLstat(path: string): Promise<Stats | null> {
   return null;
 }
 
-// noinspection DuplicatedCode
-export function checksum53(s: string, seed = 0): string {
-  let h1 = 0xdeadbeef ^ seed;
-  let h2 = 0x41c6ce57 ^ seed;
-
-  s = s.normalize();
-
-  for (let i = 0, ch: number; i < s.length; ++i) {
-    ch = s.charCodeAt(i);
-    h1 = Math.imul(h1 ^ ch, 2654435761);
-    h2 = Math.imul(h2 ^ ch, 1597334677);
-  }
-
-  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-
-  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).toUpperCase().padStart(14, '0');
-}
-
 export async function deleteIfPossible(path: string): Promise<boolean> {
   try {
     await unlink(path);
@@ -124,10 +106,6 @@ export async function deleteIfPossible(path: string): Promise<boolean> {
   catch {}
 
   return false;
-}
-
-export function hashTitle(title: string): string {
-  return title ? checksum53(title.toLowerCase()) : '';
 }
 
 export function role(req: any): 'admin' | 'demo' | 'guest' {

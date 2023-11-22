@@ -1,6 +1,6 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { LibraryItem, VType } from '../../../server/src/shared-types';
-import { checksum53, hashTitle } from '../video-ui-utils';
+import { checksum53, hashTitle } from '../../../server/src/shared-utils';
 
 function getSortTime(item: LibraryItem): number {
   if (item.airDate)

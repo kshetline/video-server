@@ -1,9 +1,10 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { Cut, LibraryItem, VType } from '../../../server/src/shared-types';
-import { canPlayVP9, checksum53, getImageParam, getSeasonTitle } from '../video-ui-utils';
+import { canPlayVP9, getImageParam, getSeasonTitle } from '../video-ui-utils';
 import { encodeForUri } from '@tubular/util';
 import { max, round } from '@tubular/math';
 import { HttpClient } from '@angular/common/http';
+import { checksum53 } from '../../../server/src/shared-utils';
 
 const FADER_TRANSITION_DURATION = '0.75s';
 

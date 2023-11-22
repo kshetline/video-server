@@ -1,8 +1,9 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { LibraryItem, VType } from '../../../server/src/shared-types';
-import { canPlayVP9, checksum53, getImageParam } from '../video-ui-utils';
+import { canPlayVP9, getImageParam } from '../video-ui-utils';
 import { encodeForUri } from '@tubular/util';
 import { HttpClient } from '@angular/common/http';
+import { checksum53 } from '../../../server/src/shared-utils';
 
 @Component({
   selector: 'app-bonus-view',

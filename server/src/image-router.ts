@@ -1,10 +1,11 @@
 import { Request, Response, Router } from 'express';
 import paths from 'path';
-import { cacheDir, checksum53, deleteIfPossible, escapeForRegex, existsAsync, safeLstat, thumbnailDir } from './vs-util';
+import { cacheDir, deleteIfPossible, escapeForRegex, existsAsync, safeLstat, thumbnailDir } from './vs-util';
 import { requestBinary } from 'by-request';
 import { isValidJson, toInt } from '@tubular/util';
 import { readdir, writeFile } from 'fs/promises';
 import Jimp from 'jimp';
+import { checksum53 } from './shared-utils';
 
 export const router = Router();
 

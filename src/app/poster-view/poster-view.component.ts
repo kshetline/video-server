@@ -1,9 +1,9 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { LibraryItem, VideoLibrary, VType } from '../../../server/src/shared-types';
-import { checksum53, hashTitle, librarySorter } from '../video-ui-utils';
 import { clone, encodeForUri, stripDiacriticals_lc } from '@tubular/util';
 import { faFolderOpen } from '@fortawesome/free-regular-svg-icons';
 import { faShare } from '@fortawesome/free-solid-svg-icons';
+import { checksum53, hashTitle, librarySorter } from '../../../server/src/shared-utils';
 
 function isMovie(item: LibraryItem): boolean {
   return item.isTvMovie || item.type === VType.MOVIE ||
