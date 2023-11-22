@@ -1,10 +1,10 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
-import { Cut, LibraryItem, VType } from '../../../server/src/shared-types';
+import { Cut, LibraryItem } from '../../../server/src/shared-types';
 import { canPlayVP9, getImageParam, getSeasonTitle } from '../video-ui-utils';
 import { encodeForUri } from '@tubular/util';
 import { max, round } from '@tubular/math';
 import { HttpClient } from '@angular/common/http';
-import { checksum53 } from '../../../server/src/shared-utils';
+import { checksum53, isFile, isMovie, isTvSeason } from '../../../server/src/shared-utils';
 
 const FADER_TRANSITION_DURATION = '0.75s';
 
@@ -15,7 +15,7 @@ const FADER_TRANSITION_DURATION = '0.75s';
 })
 export class ShowViewComponent {
   readonly getSeasonTitle = getSeasonTitle;
-  readonly TV_SEASON = VType.TV_SEASON;
+  readonly isTvSeason = isTvSeason;
 
   private _show: LibraryItem;
   private backgroundMain = '';
@@ -68,7 +68,7 @@ export class ShowViewComponent {
         return;
 
       const choices: LibraryItem[] = [];
-      const isTV = (value.type === VType.TV_SEASON);
+      const isTV = isTvSeason(value);
       let count2k = 0;
       let count4k = 0;
       let count3d = 0;
@@ -77,7 +77,7 @@ export class ShowViewComponent {
       const episodes = new Set<number>();
       let hasDuplicateEpisodes = false;
       const gatherVideos = (item: LibraryItem): void => {
-        if (item.type === VType.FILE) {
+        if (isFile(item)) {
           choices.push(item);
 
           if (item.cut)
@@ -136,7 +136,7 @@ export class ShowViewComponent {
       let lastEpisode = -1;
 
       this.videoLabels = choices.map((vc, i) => {
-        if ((this.show.type === VType.TV_SEASON || this.show.isTV) && episodes.size > 1) {
+        if ((isTvSeason(this.show) || this.show.isTV) && episodes.size > 1) {
           if (!hasDuplicateEpisodes)
             return vc.parent.episode.toString();
 
@@ -218,14 +218,14 @@ export class ShowViewComponent {
   }
 
   getBackground(): string {
-    if (this.show?.type !== VType.TV_SEASON || !this.backgroundMain)
+    if (!isTvSeason(this.show) || !this.backgroundMain)
       return (this.backgroundMain = this.getBackgroundAux());
     else
       return this.backgroundMain;
   }
 
   private getBackgroundAux(ignoreEpisode = false): string {
-    const id2 = !ignoreEpisode && this.show?.type === VType.TV_SEASON && this.video?.parent.id;
+    const id2 = !ignoreEpisode && isTvSeason(this.show) && this.video?.parent.id;
 
     return `/api/img/backdrop?id=${this.show.id}${id2 ? '&id2=' + id2 : ''}&cs=${checksum53(this.show.originalName ||
       this.show.name)}${getImageParam()}`;
@@ -236,11 +236,11 @@ export class ShowViewComponent {
   }
 
   hasYear(): boolean {
-    return this.show.year && this.show.type === VType.MOVIE;
+    return this.show.year && isMovie(this.show);
   }
 
   hasAirDate(): boolean {
-    return this.selection.airDate && this.show.type === VType.TV_SEASON && !this.hasYear();
+    return this.selection.airDate && isTvSeason(this.show) && !this.hasYear();
   }
 
   getDuration(): string {
@@ -273,7 +273,7 @@ export class ShowViewComponent {
       this.httpClient.get<string>(`/api/stream-check?id=${this.video.id}${canPlayVP9() ? '' : '&mobile=true'}`)
         .subscribe(streamUri => this.streamUri = streamUri);
 
-    if (this.show?.type === VType.TV_SEASON) {
+    if (isTvSeason(this.show)) {
       if (this.backgroundChangeInProgress) {
         this.pendingBackgroundIndex = index;
         return;

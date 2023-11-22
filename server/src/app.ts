@@ -31,9 +31,10 @@ import fs from 'fs';
 import { cachedLibrary, initLibrary, pendingLibrary, router as libraryRouter, updateLibrary } from './library-router';
 import { router as imageRouter } from './image-router';
 import { router as streamingRouter } from './streaming-router';
-import { LibraryItem, LibraryStatus, ServerStatus, User, UserSession, VType } from './shared-types';
+import { LibraryItem, LibraryStatus, ServerStatus, User, UserSession } from './shared-types';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import { isFile } from './shared-utils';
 
 const debug = require('debug')('express:server');
 
@@ -295,7 +296,7 @@ function getApp(): Express {
     if (!item)
       item = { id: -1, data: cachedLibrary.array } as LibraryItem;
 
-    if (item.type === VType.FILE && item.id === id)
+    if (isFile(item) && item.id === id)
       return item;
     else if (item.data) {
       for (const child of item.data) {

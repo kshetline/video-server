@@ -1,4 +1,40 @@
-import { LibraryItem } from './shared-types';
+import { LibraryItem, VType } from './shared-types';
+import { isObject } from '@tubular/util';
+
+export function isAnyCollection(x: LibraryItem | number): boolean {
+  if (isObject(x))
+    x = x?.type;
+
+  return x === VType.COLLECTION || x === VType.TV_COLLECTION;
+}
+
+export function isCollection(x: LibraryItem | number): boolean {
+  return (isObject(x) ? x?.type : x) === VType.COLLECTION;
+}
+
+export function isFile(x: LibraryItem | number): boolean {
+  return (isObject(x) ? x?.type : x) === VType.FILE;
+}
+
+export function isMovie(x: LibraryItem | number): boolean {
+  return (isObject(x) ? x?.type : x) === VType.MOVIE;
+}
+
+export function isTvCollection(x: LibraryItem | number): boolean {
+  return (isObject(x) ? x?.type : x) === VType.TV_COLLECTION;
+}
+
+export function isTvEpisode(x: LibraryItem | number): boolean {
+  return (isObject(x) ? x?.type : x) === VType.TV_EPISODE;
+}
+
+export function isTvSeason(x: LibraryItem | number): boolean {
+  return (isObject(x) ? x?.type : x) === VType.TV_SEASON;
+}
+
+export function isTvShow(x: LibraryItem | number): boolean {
+  return (isObject(x) ? x?.type : x) === VType.TV_SHOW;
+}
 
 export function checksum53(s: string, seed = 0): string {
   let h1 = 0xDEADBEEF ^ seed;

@@ -1,5 +1,6 @@
-import { LibraryItem, VType } from '../../server/src/shared-types';
+import { LibraryItem } from '../../server/src/shared-types';
 import { stripDiacriticals_lc } from '@tubular/util';
+import { isCollection, isMovie, isTvSeason, isTvShow } from '../../server/src/shared-utils';
 
 let imageIndex = 0;
 
@@ -24,11 +25,11 @@ export function addBackLinks(children: LibraryItem[], parent?:LibraryItem): void
 export function getTitle(item: LibraryItem, baseItem?: LibraryItem): string {
   if (!item)
     return '';
-  else if (item.type === VType.MOVIE || item.type === VType.TV_SHOW)
+  else if (isMovie(item) || isTvShow(item))
     return item.name;
   else if (item.parent)
     return getTitle(item.parent, baseItem ?? item);
-  else if (baseItem && baseItem.type !== VType.COLLECTION)
+  else if (baseItem && !isCollection(baseItem))
     return baseItem.name;
   else
     return '';
@@ -39,9 +40,9 @@ export function getSeasonTitle(item: LibraryItem): string {
 
   if (!item)
     return '';
-  else if (item?.type === VType.MOVIE)
+  else if (isMovie(item))
     return name;
-  else if (item?.type === VType.TV_SEASON && item.parent?.name &&
+  else if (isTvSeason(item) && item.parent?.name &&
            stripDiacriticals_lc(name).includes(stripDiacriticals_lc(item.parent.name)))
     return name;
 
@@ -51,7 +52,7 @@ export function getSeasonTitle(item: LibraryItem): string {
   const innerTitle = item.data && item.data[0] && item.data[0].data && item.data[0].data[0] && item.data[0].data[0].title;
   const $ = /^([^•]+)/.exec(innerTitle);
 
-  if (item.type === VType.TV_SEASON && !/\bMiniseries|Season\b/i.test(season) && item.season)
+  if (isTvSeason(item) && !/\bMiniseries|Season\b/i.test(season) && item.season)
     season += ` (Season ${item.season})`;
 
   if ($ && !$[1].includes('/'))

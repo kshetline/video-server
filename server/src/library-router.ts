@@ -7,7 +7,7 @@ import paths from 'path';
 import { readdir, readFile, writeFile } from 'fs/promises';
 import { cacheDir, existsAsync, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat, unref } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
-import { librarySorter } from './shared-utils';
+import { isCollection, isFile, isMovie, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter } from './shared-utils';
 
 export const router = Router();
 
@@ -225,7 +225,7 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
         item.cut = Cut.NA;
     }
 
-    if (item.type === VType.TV_EPISODE && item.data?.length > 0) {
+    if (isTvEpisode(item) && item.data?.length > 0) {
       const video = item.data[0];
       let $ = SEASON_EPISODE.exec(video.title) || SEASON_EPISODE.exec(video.name) || SEASON_EPISODE.exec(video.uri);
 
@@ -239,21 +239,21 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
       }
     }
 
-    if (item.data?.length > 0 && item.type === VType.TV_SEASON)
+    if (item.data?.length > 0 && isTvSeason(item))
       item.data.sort((a, b) => (a.episode || 0) - (b.episode || 0));
 
     let uri: string;
 
     if (item.data?.length > 0) {
-      if (item.type === VType.TV_SHOW)
+      if (isTvShow(item))
         uri = paths.dirname(item.data[0]?.data[0]?.data[0]?.uri);
-      else if (item.type === VType.TV_SEASON)
+      else if (isTvSeason(item))
         uri = item.data[0]?.data[0]?.uri;
       else
         uri = item.data[0].uri;
     }
 
-    if (uri && (item.type === VType.MOVIE || item.type === VType.TV_SHOW || item.type === VType.TV_SEASON)) {
+    if (uri && (isMovie(item) || isTvShow(item) || isTvSeason(item))) {
       const basePath = paths.dirname(paths.join(vSource, uri));
 
       for (const bonusDir of Array.from(bonusDirs)) {
@@ -272,7 +272,7 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
 
 async function getMediaInfo(items: LibraryItem[]): Promise<void> {
   for (const item of (items || [])) {
-    if (item.type === VType.FILE) {
+    if (isFile(item)) {
       const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getVideoInfo?id=${item.aggregationId}`;
       const data: any = await requestJson(url);
       const mediaInfo: MediaInfo = JSON.parse(data.mediaJson || 'null');
@@ -374,8 +374,7 @@ async function getShowInfo(items: LibraryItem[]): Promise<void> {
       delete (item as any).seasonNumber;
     }
 
-    if (item.type === VType.MOVIE || item.type === VType.TV_SHOW ||
-        item.type === VType.TV_SEASON || item.type === VType.TV_COLLECTION) {
+    if (isMovie(item) || isTvShow(item) || isTvSeason(item) || isTvCollection(item)) {
       const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getDetail?id=${item.id}`;
       const showInfo: ShowInfo = await requestJson(url);
       const topInfo = showInfo.aggregation?.aggregation;
@@ -397,7 +396,7 @@ async function getShowInfo(items: LibraryItem[]): Promise<void> {
           item.tvType = showInfo.tv.type;
       }
 
-      if (item.type === VType.MOVIE) {
+      if (isMovie(item)) {
         if (topInfo) {
           forEach(topInfo, (key, value) => {
             if (MOVIE_DETAILS.has(key) && value)
@@ -441,7 +440,7 @@ async function getShowInfo(items: LibraryItem[]): Promise<void> {
       if (showInfo.genres)
         item.genres = showInfo.genres.map(g => g.name);
 
-      if (item.type === VType.TV_COLLECTION || item.type === VType.TV_SHOW)
+      if (isTvCollection(item) || isTvShow(item))
         await getShowInfo(item.data);
     }
     else
@@ -464,14 +463,14 @@ function fixVideoFlagsAndEncoding(items: LibraryItem[]): void {
       fixVideoFlagsAndEncoding(item.data);
 
     // Identify year of collection or TV show by the earliest item/season.
-    if ((item.type === VType.TV_SHOW || item.type === VType.COLLECTION) && item.data?.length > 0) // TODO: Add year range?
+    if ((isTvShow(item) || isCollection(item)) && item.data?.length > 0) // TODO: Add year range?
       item.year = min(item.year, ...item.data.filter(i => i.year).map(i => i.year));
   }
 
   for (const item of items) {
     delete item.is2k;
 
-    if (item.type === VType.FILE) {
+    if (isFile(item)) {
       if (!item.is3d || item.uri.endsWith('(2D).mkv'))
         delete item.is3d;
 
@@ -516,10 +515,10 @@ function findMatchingUri(items: LibraryItem[], uri: string, parent?: LibraryItem
       let match = findMatchingUri(item.data, uri, item);
 
       if (match) {
-        if (match.type === VType.TV_EPISODE && parent.type === VType.TV_SEASON)
+        if (isTvEpisode(match) && isTvSeason(parent))
           return parent;
         else {
-          if (match.type === VType.TV_SEASON && (match.name === 'Miniseries' || /^Season \d/.test(match.name))) {
+          if (isTvSeason(match) && (match.name === 'Miniseries' || /^Season \d/.test(match.name))) {
             match = clone(match);
             match.name = parent.name;
           }
@@ -542,15 +541,14 @@ function matchAliases(aliases: Alias[], flagAsTvMovie = false): LibraryItem[] {
     if (alias.path)
       item = findMatchingUri(pendingLibrary.array, alias.path);
     else if (alias.collection)
-      item = pendingLibrary.array.find(i =>
-        (i.type === VType.COLLECTION || i.type === VType.TV_SHOW) && i.name === alias.collection);
+      item = pendingLibrary.array.find(i => (isCollection(i) || isTvShow(i)) && i.name === alias.collection);
     else if (alias.season) {
       const parts = alias.season.split('\t');
 
       if (parts.length < 2)
-        item = pendingLibrary.array.find(i => i.type === VType.TV_SEASON && i.name === alias.season);
+        item = pendingLibrary.array.find(i => isTvSeason(i) && i.name === alias.season);
       else {
-        const show = pendingLibrary.array.find(i => i.type === VType.TV_SHOW && i.name === parts[0]);
+        const show = pendingLibrary.array.find(i => isTvShow(i) && i.name === parts[0]);
 
         if (show && show.data)
           item = show.data.find(i => i.name === parts[1]);
@@ -568,7 +566,7 @@ function matchAliases(aliases: Alias[], flagAsTvMovie = false): LibraryItem[] {
         copy.name = alias.name || copy.name;
         copy.isLink = true;
 
-        if (alias.isTV || item.type === VType.TV_SEASON || item.type === VType.TV_SHOW)
+        if (alias.isTV || isTvSeason(item) || isTvShow(item))
           copy.isTV = true;
 
         if (alias.hideOriginal)

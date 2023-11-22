@@ -1,6 +1,6 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
-import { LibraryItem, VType } from '../../../server/src/shared-types';
-import { checksum53, hashTitle } from '../../../server/src/shared-utils';
+import { LibraryItem } from '../../../server/src/shared-types';
+import { checksum53, hashTitle, isCollection, isTvShow } from '../../../server/src/shared-utils';
 
 function getSortTime(item: LibraryItem): number {
   if (item.airDate)
@@ -51,7 +51,7 @@ export class CollectionViewComponent {
   }
 
   onClick(item: LibraryItem): void {
-    if (item.type === VType.COLLECTION || item.type === VType.TV_SHOW)
+    if (isCollection(item) || isTvShow(item))
       this.subCollection = item;
     else
       this.showSelected.emit(item);

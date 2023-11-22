@@ -1,12 +1,12 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { LibraryItem, ServerStatus, VideoLibrary, VType } from '../../server/src/shared-types';
+import { LibraryItem, ServerStatus, VideoLibrary } from '../../server/src/shared-types';
 import { addBackLinks, getZIndex, incrementImageIndex } from './video-ui-utils';
 import { isEqual } from '@tubular/util';
 import { floor } from '@tubular/math';
 import { AuthService } from './auth.service';
 import { ConfirmationService } from 'primeng/api';
-import { checksum53 } from '../../server/src/shared-utils';
+import { checksum53, isAnyCollection, isMovie, isTvSeason, isTvShow } from '../../server/src/shared-utils';
 
 @Component({
   selector: 'app-root',
@@ -138,9 +138,9 @@ export class AppComponent implements AfterViewInit, OnInit {
   }
 
   itemClicked(item: LibraryItem): void {
-    if (item?.type === VType.COLLECTION || item?.type === VType.TV_SHOW || item?.type === VType.TV_COLLECTION)
+    if (isAnyCollection(item) || isTvShow(item))
       this.currentCollection = item;
-    else if (item?.type === VType.MOVIE || item?.type === VType.TV_SEASON)
+    else if (isMovie(item) || isTvSeason(item))
       this.currentShow = item;
   }
 

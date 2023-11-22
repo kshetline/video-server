@@ -1,9 +1,9 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
-import { LibraryItem, VType } from '../../../server/src/shared-types';
+import { LibraryItem } from '../../../server/src/shared-types';
 import { canPlayVP9, getImageParam } from '../video-ui-utils';
 import { encodeForUri } from '@tubular/util';
 import { HttpClient } from '@angular/common/http';
-import { checksum53 } from '../../../server/src/shared-utils';
+import { checksum53, isMovie, isTvShow } from '../../../server/src/shared-utils';
 
 @Component({
   selector: 'app-bonus-view',
@@ -57,7 +57,7 @@ export class BonusViewComponent {
   getBackgroundUrl(): string {
     let show = this.source;
 
-    while (show && show.type !== VType.MOVIE && show.type !== VType.TV_SEASON)
+    while (show && !isMovie(show) && !isTvShow(show))
       show = show.parent;
 
     if (show)

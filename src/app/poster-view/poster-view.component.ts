@@ -1,17 +1,20 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { LibraryItem, VideoLibrary, VType } from '../../../server/src/shared-types';
+import { LibraryItem, VideoLibrary } from '../../../server/src/shared-types';
 import { clone, encodeForUri, stripDiacriticals_lc } from '@tubular/util';
 import { faFolderOpen } from '@fortawesome/free-regular-svg-icons';
 import { faShare } from '@fortawesome/free-solid-svg-icons';
-import { checksum53, hashTitle, librarySorter } from '../../../server/src/shared-utils';
+import {
+  checksum53, hashTitle, isCollection, isFile, isMovie, isTvCollection, isTvEpisode,
+  isTvSeason, isTvShow, librarySorter
+} from '../../../server/src/shared-utils';
 
-function isMovie(item: LibraryItem): boolean {
-  return item.isTvMovie || item.type === VType.MOVIE ||
-    (item.type === VType.COLLECTION && item.data?.length > 0 && !!item.data.find(i => isMovie(i)));
+function isAMovie(item: LibraryItem): boolean {
+  return item.isTvMovie || isMovie(item) ||
+    (isCollection(item) && item.data?.length > 0 && !!item.data.find(i => isAMovie(i)));
 }
 
 function containsMovie(item: LibraryItem): boolean {
-  if (isMovie(item))
+  if (isAMovie(item))
     return true;
 
   for (const child of (item.data || [])) {
@@ -23,9 +26,9 @@ function containsMovie(item: LibraryItem): boolean {
 }
 
 function isTV(item: LibraryItem): boolean {
-  return item.isTV || item.isTvMovie || item.type === VType.TV_SHOW || item.type === VType.TV_SEASON ||
-      item.type === VType.TV_EPISODE || item.type === VType.TV_COLLECTION ||
-      (item.type === VType.COLLECTION && item.data?.length > 0 && !!item.data.find(i => isTV(i)));
+  return item.isTV || item.isTvMovie || isTvShow(item) || isTvSeason(item) ||
+      isTvEpisode(item) || isTvCollection(item) ||
+      (isCollection(item) && item.data?.length > 0 && !!item.data.find(i => isTV(i)));
 }
 
 function containsTV(item: LibraryItem): boolean {
@@ -46,7 +49,7 @@ function containsTV(item: LibraryItem): boolean {
   styleUrls: ['./poster-view.component.scss']
 })
 export class PosterViewComponent implements OnInit {
-  readonly COLLECTION = VType.COLLECTION;
+  readonly isCollection = isCollection;
   readonly faFolderOpen = faFolderOpen;
   readonly faShare = faShare;
   readonly hashTitle = hashTitle;
@@ -177,7 +180,7 @@ export class PosterViewComponent implements OnInit {
       for (let i = 0; i < items.length; ++i) {
         let item = items[i];
 
-        if (item.type === VType.COLLECTION || (item.type === VType.TV_SHOW && filterSeasons)) {
+        if (isCollection(item) || (isTvShow(item) && filterSeasons)) {
           const saveMatcher = matcher;
 
           if (this.matchesSearch(item, true))
@@ -191,7 +194,7 @@ export class PosterViewComponent implements OnInit {
           if (innerCount === 1) {
             items[i] = item = item.data.find(c => matcher(c));
 
-            if (item.type === VType.TV_SEASON && !this.matchesSearch(item, true))
+            if (isTvSeason(item) && !this.matchesSearch(item, true))
               item.name = item.parent.name + ' • ' + item.name;
           }
           // If multiple but partial matches within a collection, filter collection items that don't match.
@@ -238,12 +241,12 @@ export class PosterViewComponent implements OnInit {
     }
 
     // Purge items included in a displayed collection
-    const currentCollections = new Set(this.items.filter(i => i.type === VType.COLLECTION));
+    const currentCollections = new Set(this.items.filter(i => isCollection(i)));
 
     for (let i = this.items.length - 1; i >= 0; --i) {
       let item = this.items[i];
 
-      if (item.type !== VType.COLLECTION) {
+      if (isCollection(item)) {
         if (item.isAlias)
           item = this.findItemById(item.id);
 
@@ -272,7 +275,7 @@ export class PosterViewComponent implements OnInit {
   private matchesSearch(item: LibraryItem, simpleMatch = false): boolean {
     if (!this.searchText)
       return true;
-    else if (!item.name || item.type === VType.TV_EPISODE || item.type === VType.FILE)
+    else if (!item.name || isTvEpisode(item) || isFile(item))
       return false;
 
     const text = stripDiacriticals_lc(this.searchText);
@@ -285,7 +288,7 @@ export class PosterViewComponent implements OnInit {
       let testItem = this.findItemById(item.id)?.parent;
 
       while (testItem) {
-        if (testItem.type === VType.COLLECTION && stripDiacriticals_lc(testItem.name).includes(text))
+        if (isCollection(testItem) && stripDiacriticals_lc(testItem.name).includes(text))
           return true;
 
         testItem = testItem.parent;
