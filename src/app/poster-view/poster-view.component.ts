@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { LibraryItem, VideoLibrary } from '../../../server/src/shared-types';
+import { floor } from '@tubular/math';
 import { clone, encodeForUri, stripDiacriticals_lc } from '@tubular/util';
 import { faFolderOpen } from '@fortawesome/free-regular-svg-icons';
 import { faShare } from '@fortawesome/free-solid-svg-icons';
@@ -52,6 +53,7 @@ export class PosterViewComponent implements OnInit {
   readonly isCollection = isCollection;
   readonly faFolderOpen = faFolderOpen;
   readonly faShare = faShare;
+  readonly floor = floor;
   readonly hashTitle = hashTitle;
 
   private _library: VideoLibrary;

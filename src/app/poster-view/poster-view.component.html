@@ -33,7 +33,7 @@
            [ngSrc]="getPosterUrl(item)" width="150" height="225" alt="{{item.id}}" priority>
       <fa-icon *ngIf="item.isLink" [icon]="faShare"
                class="fa-xl fa-rotate-by stroke-path" style="--fa-rotate-angle: -45deg;"></fa-icon>
-      <fa-icon *ngIf="item.isAlias && !item.isLink" [icon]="faFolderOpen" class="fa-xl stroke-path"></fa-icon>
+      <fa-icon *ngIf="item.id !== floor(item.id) && !item.isLink" [icon]="faFolderOpen" class="fa-xl stroke-path"></fa-icon>
     </div>
     <div class="rating-wrapper">
       <app-rating *ngIf="item.voteAverage" [value]="item.voteAverage" [topValue]="10"></app-rating>

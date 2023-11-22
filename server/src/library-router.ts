@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { Cut, LibraryItem, LibraryStatus, MediaInfo, MediaInfoTrack, ShowInfo, Track, VideoLibrary, VType } from './shared-types';
 import { clone, forEach, isNumber, toInt, toNumber } from '@tubular/util';
-import { abs, min } from '@tubular/math';
+import { abs, floor, min } from '@tubular/math';
 import { requestJson } from 'by-request';
 import paths from 'path';
 import { readdir, readFile, writeFile } from 'fs/promises';
@@ -34,6 +34,7 @@ export let cachedLibrary = { status: LibraryStatus.NOT_STARTED, progress: -1 } a
 export let pendingLibrary: VideoLibrary;
 
 let pendingUpdate: any;
+let nextId: number;
 
 interface Alias {
   collection?: string;
@@ -598,14 +599,15 @@ async function addMappings(): Promise<void> {
   const aliasedItems = matchAliases(mappings.aliases);
 
   matchAliases(mappings.typeChanges, true);
+  nextId = 0.5;
 
   for (const collection of mappings.collections || []) {
     const collectionItem: LibraryItem = {
       type: VType.COLLECTION,
       name: collection.name,
       isTV: !!collection.isTV,
-      id: -1, parentId: -1, collectionId: -1, aggregationId: -1,
-      data: matchAliases(collection.aliases)
+      id: ++nextId, parentId: -1, collectionId: -1, aggregationId: -1,
+      data: matchAliases(collection.aliases).map(a => { a.parentId = nextId; return a; })
     };
 
     if (collectionItem.data.length > 0) {
@@ -654,7 +656,7 @@ export async function updateLibrary(quick = false): Promise<void> {
 
     if (quick) {
       pendingLibrary = clone(cachedLibrary);
-      pendingLibrary.array = pendingLibrary.array.filter(i => !i.isAlias);
+      pendingLibrary.array = pendingLibrary.array.filter(i => !i.isAlias && i.id === floor(i.id));
       pendingLibrary.array.forEach(i => delete i.hide);
     }
     else {
