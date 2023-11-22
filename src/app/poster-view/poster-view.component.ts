@@ -187,6 +187,12 @@ export class PosterViewComponent implements OnInit {
 
           if (this.matchesSearch(item, true))
             matcher = matchFunction;
+          else if (item.isAlias) {
+            const orig = (item.parent ? (item.parent.data || []) : this.items).find(i => !i.isAlias && i.id === item.id);
+
+            if (orig && this.matchesSearch(orig, true))
+              matcher = matchFunction;
+          }
 
           deepFilter(item.data, matcher);
 
@@ -243,7 +249,7 @@ export class PosterViewComponent implements OnInit {
     }
 
     // Purge items included in a displayed collection
-    const currentCollections = new Set(this.items.filter(i => isCollection(i)));
+    const currentCollections = new Set(this.items.filter(i => isCollection(i)).map(i => i.id));
 
     for (let i = this.items.length - 1; i >= 0; --i) {
       let item = this.items[i];
@@ -252,7 +258,7 @@ export class PosterViewComponent implements OnInit {
         if (item.isAlias)
           item = this.findItemById(item.id);
 
-        if (item && currentCollections.has(item.parent))
+        if (item && currentCollections.has(item.parent.id))
           this.items.splice(i, 1);
       }
     }
@@ -288,7 +294,7 @@ export class PosterViewComponent implements OnInit {
     else if (simpleMatch || item.isAlias)
       return false;
     else { // Does the name of an ancestor collection match?
-      let testItem = this.findItemById(item.id)?.parent;
+      let testItem = item.parent && this.findItemById(item.id)?.parent;
 
       while (testItem) {
         const itemText = (testItem.name && testItem.title ? testItem.name + ';' + testItem.title : testItem.name || testItem.title || '');

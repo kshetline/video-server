@@ -621,6 +621,7 @@ async function addMappings(): Promise<void> {
           const altCopy = clone(collectionItem);
 
           altCopy.name = name;
+          altCopy.isAlias = true;
           aliasedItems.push(altCopy);
         }
       }
