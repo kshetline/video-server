@@ -92,3 +92,7 @@ export function canPlayVP9(): boolean {
 
   return supportsVP9;
 }
+
+export function searchForm(s: string): string {
+  return stripDiacriticals_lc(s.trim()).replace(/[^ 0-9a-z]/i, '').replace(/s+/, ' ');
+}

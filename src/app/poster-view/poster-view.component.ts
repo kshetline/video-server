@@ -1,13 +1,14 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { LibraryItem, VideoLibrary } from '../../../server/src/shared-types';
 import { floor } from '@tubular/math';
-import { clone, encodeForUri, stripDiacriticals_lc } from '@tubular/util';
+import { clone, encodeForUri } from '@tubular/util';
 import { faFolderOpen } from '@fortawesome/free-regular-svg-icons';
 import { faShare } from '@fortawesome/free-solid-svg-icons';
 import {
   checksum53, hashTitle, isCollection, isFile, isMovie, isTvCollection, isTvEpisode,
   isTvSeason, isTvShow, librarySorter
 } from '../../../server/src/shared-utils';
+import { searchForm } from '../video-ui-utils';
 
 function isAMovie(item: LibraryItem): boolean {
   return item.isTvMovie || isMovie(item) ||
@@ -286,10 +287,10 @@ export class PosterViewComponent implements OnInit {
     else if ((!item.name && !item.title) || isTvEpisode(item) || isFile(item))
       return false;
 
-    const text = stripDiacriticals_lc(this.searchText);
+    const text = searchForm(this.searchText);
     const itemText = (item.name && item.title ? item.name + ';' + item.title : item.name || item.title || '');
 
-    if (stripDiacriticals_lc(itemText).includes(text))
+    if (searchForm(itemText).includes(text))
       return true;
     else if (simpleMatch || item.isAlias)
       return false;
@@ -299,7 +300,7 @@ export class PosterViewComponent implements OnInit {
       while (testItem) {
         const itemText = (testItem.name && testItem.title ? testItem.name + ';' + testItem.title : testItem.name || testItem.title || '');
 
-        if (isCollection(testItem) && stripDiacriticals_lc(itemText).includes(text))
+        if (isCollection(testItem) && searchForm(itemText).includes(text))
           return true;
 
         testItem = testItem.parent;
