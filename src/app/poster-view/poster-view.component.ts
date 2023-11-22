@@ -275,12 +275,13 @@ export class PosterViewComponent implements OnInit {
   private matchesSearch(item: LibraryItem, simpleMatch = false): boolean {
     if (!this.searchText)
       return true;
-    else if (!item.name || isTvEpisode(item) || isFile(item))
+    else if ((!item.name && !item.title) || isTvEpisode(item) || isFile(item))
       return false;
 
     const text = stripDiacriticals_lc(this.searchText);
+    const itemText = (item.name && item.title ? item.name + ';' + item.title : item.name || item.title || '');
 
-    if (stripDiacriticals_lc(item.name).includes(text))
+    if (stripDiacriticals_lc(itemText).includes(text))
       return true;
     else if (simpleMatch || item.isAlias)
       return false;
@@ -288,7 +289,9 @@ export class PosterViewComponent implements OnInit {
       let testItem = this.findItemById(item.id)?.parent;
 
       while (testItem) {
-        if (isCollection(testItem) && stripDiacriticals_lc(testItem.name).includes(text))
+        const itemText = (testItem.name && testItem.title ? testItem.name + ';' + testItem.title : testItem.name || testItem.title || '');
+
+        if (isCollection(testItem) && stripDiacriticals_lc(itemText).includes(text))
           return true;
 
         testItem = testItem.parent;

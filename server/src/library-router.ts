@@ -7,7 +7,9 @@ import paths from 'path';
 import { readdir, readFile, writeFile } from 'fs/promises';
 import { cacheDir, existsAsync, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat, unref } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
-import { isCollection, isFile, isMovie, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter } from './shared-utils';
+import {
+  isAnyCollection, isCollection, isFile, isMovie, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter
+} from './shared-utils';
 
 export const router = Router();
 
@@ -37,8 +39,10 @@ interface Alias {
   collection?: string;
   hideOriginal?: boolean;
   isTV?: boolean;
-  name: string;
+  name?: string;
+  newType?: number;
   path?: string;
+  poster?: string;
   season?: string;
 }
 
@@ -52,7 +56,7 @@ interface Collection {
 
 interface Mappings {
   aliases?: Alias[],
-  tvMovies?: Alias[],
+  typeChanges?: Alias[],
   collections?: Collection[]
 }
 
@@ -532,7 +536,7 @@ function findMatchingUri(items: LibraryItem[], uri: string, parent?: LibraryItem
   return null;
 }
 
-function matchAliases(aliases: Alias[], flagAsTvMovie = false): LibraryItem[] {
+function matchAliases(aliases: Alias[], changeType = false): LibraryItem[] {
   const aliasedItems: LibraryItem[] = [];
 
   for (const alias of aliases || []) {
@@ -541,7 +545,7 @@ function matchAliases(aliases: Alias[], flagAsTvMovie = false): LibraryItem[] {
     if (alias.path)
       item = findMatchingUri(pendingLibrary.array, alias.path);
     else if (alias.collection)
-      item = pendingLibrary.array.find(i => (isCollection(i) || isTvShow(i)) && i.name === alias.collection);
+      item = pendingLibrary.array.find(i => (isAnyCollection(i) || isTvShow(i)) && i.name === alias.collection);
     else if (alias.season) {
       const parts = alias.season.split('\t');
 
@@ -556,8 +560,12 @@ function matchAliases(aliases: Alias[], flagAsTvMovie = false): LibraryItem[] {
     }
 
     if (item) {
-      if (flagAsTvMovie)
-        item.isTvMovie = true;
+      if (changeType) {
+        if (alias.newType != null)
+          item.type = alias.newType;
+        else
+          item.isTvMovie = true;
+      }
       else {
         const copy = clone(item);
 
@@ -571,6 +579,9 @@ function matchAliases(aliases: Alias[], flagAsTvMovie = false): LibraryItem[] {
 
         if (alias.hideOriginal)
           item.hide = true;
+
+        if (alias.poster)
+          copy.aliasPosterPath = alias.poster;
 
         aliasedItems.push(copy);
       }
@@ -586,12 +597,11 @@ async function addMappings(): Promise<void> {
   const mappings = JSON.parse(await readFile(paths.join(vSource, 'mappings.json'), 'utf8')) as Mappings;
   const aliasedItems = matchAliases(mappings.aliases);
 
-  matchAliases(mappings.tvMovies, true);
+  matchAliases(mappings.typeChanges, true);
 
   for (const collection of mappings.collections || []) {
     const collectionItem: LibraryItem = {
       type: VType.COLLECTION,
-      isAlias: true,
       name: collection.name,
       isTV: !!collection.isTV,
       id: -1, parentId: -1, collectionId: -1, aggregationId: -1,
