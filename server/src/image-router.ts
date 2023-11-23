@@ -121,7 +121,7 @@ router.post('/refresh', async (req, res) => {
 
     for (const thumbnail of thumbnails) {
       if (match.test(thumbnail))
-        await deleteIfPossible(thumbnail);
+        await deleteIfPossible(paths.join(thumbnailDir, type, thumbnail));
     }
   }
 

@@ -18,6 +18,8 @@ function isAMovie(item: LibraryItem): boolean {
 function containsMovie(item: LibraryItem): boolean {
   if (isAMovie(item))
     return true;
+  else if (isTvCollection(item))
+    return false;
 
   for (const child of (item.data || [])) {
     if (containsMovie(child))
@@ -288,7 +290,7 @@ export class PosterViewComponent implements OnInit {
       return false;
 
     const text = searchForm(this.searchText);
-    const itemText = (item.name && item.title ? item.name + ';' + item.title : item.name || item.title || '');
+    const itemText = (item.name && item.title ? item.name + '_' + item.title : item.name || item.title || '');
 
     if (searchForm(itemText).includes(text))
       return true;

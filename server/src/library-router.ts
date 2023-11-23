@@ -578,6 +578,9 @@ function matchAliases(aliases: Alias[], changeType = false): LibraryItem[] {
         if (alias.isTV || isTvSeason(item) || isTvShow(item))
           copy.isTV = true;
 
+        if (alias.newType)
+          copy.type = alias.newType;
+
         if (alias.hideOriginal)
           item.hide = true;
 
