@@ -17,11 +17,12 @@ export class ShowViewComponent {
   readonly getSeasonTitle = getSeasonTitle;
   readonly isTvSeason = isTvSeason;
 
-  private _show: LibraryItem;
   private backgroundMain = '';
   private backgroundChangeInProgress = false;
   private checkedForStream = new Set<number>();
   private pendingBackgroundIndex = -1;
+  private _playSrc = '';
+  private _show: LibraryItem;
   private thumbnailMode = false;
 
   anyOverview = false;
@@ -29,7 +30,6 @@ export class ShowViewComponent {
   badges: string[] = [];
   categoryLabels: string[] = [];
   faderOpacity = '0';
-  playSrc = '';
   selection: LibraryItem;
   streamUri: string;
   thumbnail: string;
@@ -195,10 +195,19 @@ export class ShowViewComponent {
     }
   }
 
+  @Input() get playSrc(): string { return this._playSrc; }
+  set playSrc(value: string) {
+    if (this._playSrc !== value) {
+      this._playSrc = value;
+      this.playing.emit(!!value);
+    }
+  }
+
   @Input() currentBonus: LibraryItem;
 
   @Output() goBack: EventEmitter<void> = new EventEmitter();
   @Output() viewBonus: EventEmitter<LibraryItem> = new EventEmitter();
+  @Output() playing: EventEmitter<boolean> = new EventEmitter();
 
   @HostListener('window:keydown', ['$event']) onKeyDown(event: KeyboardEvent): void {
     if (this.show && !this.currentBonus && event.key === 'Escape')

@@ -22,6 +22,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   currentCollection: LibraryItem;
   currentShow: LibraryItem;
   library: VideoLibrary;
+  playing = false;
   showRefreshDialog = false;
   status: ServerStatus;
 
@@ -172,12 +173,19 @@ export class AppComponent implements AfterViewInit, OnInit {
     return this.auth.isLoggedOut();
   }
 
+  goHome(): void {
+    this.bonusSource = this.currentCollection = this.currentShow = undefined;
+  }
+
   logOut(): void {
     this.confirmationService.confirm({
       message: 'Are you sure you want to log out?',
       header: 'Log out',
       icon: 'pi pi-exclamation-triangle',
-      accept: () => this.auth.logout()
+      accept: () => {
+        this.goHome();
+        this.auth.logout();
+      }
     });
   }
 
@@ -194,6 +202,10 @@ export class AppComponent implements AfterViewInit, OnInit {
     this.httpClient.post(`/api/library-refresh${quick ? '?quick=true' : ''}`, null).subscribe(() => {
       setTimeout(() => this.pollStatus(), 500);
     });
+  }
+
+  posterWallHidden(): boolean {
+    return !!(this.bonusSource || this.currentCollection || this.currentShow);
   }
 
   private pollStatus = (): void => {

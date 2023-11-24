@@ -11,13 +11,21 @@ import { checksum53, isMovie, isTvShow } from '../../../server/src/shared-utils'
   styleUrls: ['./bonus-view.component.scss']
 })
 export class BonusViewComponent {
+  private _playSrc = '';
   private _source: LibraryItem;
 
   extras: string[] = [];
-  playSrc = '';
   streamUris = new Map<string, string>();
 
   constructor(private httpClient: HttpClient) {}
+
+  @Input() get playSrc(): string { return this._playSrc; }
+  set playSrc(value: string) {
+    if (this._playSrc !== value) {
+      this._playSrc = value;
+      this.playing.emit(!!value);
+    }
+  }
 
   @Input() get source(): LibraryItem { return this._source; }
   set source(value: LibraryItem) {
@@ -48,6 +56,7 @@ export class BonusViewComponent {
   }
 
   @Output() goBack: EventEmitter<void> = new EventEmitter();
+  @Output() playing: EventEmitter<boolean> = new EventEmitter();
 
   @HostListener('window:keydown', ['$event']) onKeyDown(event:KeyboardEvent): void {
     if (this.source && event.key === 'Escape')

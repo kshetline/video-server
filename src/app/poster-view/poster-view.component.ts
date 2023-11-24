@@ -261,7 +261,7 @@ export class PosterViewComponent implements OnInit {
         if (item.isAlias)
           item = this.findItemById(item.id);
 
-        if (item && currentCollections.has(item.parent.id))
+        if (item && item.parent && currentCollections.has(item.parent.id))
           this.items.splice(i, 1);
       }
     }

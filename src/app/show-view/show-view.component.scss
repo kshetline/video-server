@@ -242,13 +242,8 @@
 }
 
 @media screen and (orientation: portrait) and (max-width: 620px) {
-  .go-back-panel {
-    height: 7em;
-  }
-
   .content {
     grid-template-columns: auto;
-    height: calc(100dvh - 7em);
 
     .poster-area {
       .logo {

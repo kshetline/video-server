@@ -1,19 +1,23 @@
-<div *ngIf="isLoggedIn()" class="status-panel">
-  <p-progressBar *ngIf="status && status?.updateProgress >= 0" [value]="status?.updateProgress"
-                 [showValue]="false" class="narrow-progress"></p-progressBar>
-  <p-button *ngIf="isAdmin()" [disabled]="status && status?.updateProgress >= 0" icon="pi pi-refresh"
-            styleClass="p-button-rounded p-button-sm p-button-danger" (click)="showRefreshDialog = true"></p-button>
-  <span>{{userName()}}</span>
-  <p-button icon="pi pi-sign-out" styleClass="p-button-rounded" (click)="logOut()"></p-button>
+<div *ngIf="isLoggedIn()" class="poster-panel">
+  <app-poster-view [library]="library" (itemClicked)="itemClicked($event)"></app-poster-view>
+  <app-collection-view *ngIf="isLoggedIn()" [class.active]="currentCollection" [collection]=currentCollection
+    (goBack)="currentCollection = null" (showSelected)="currentShow = $event"
+    [currentShow]="currentShow"></app-collection-view>
+  <app-show-view *ngIf="isLoggedIn()" [class.active]="currentShow" [show]="currentShow" (goBack)="currentShow = null"
+                 (viewBonus)="bonusSource = $event" (playing)="playing = $event"
+                 [currentBonus]="bonusSource"></app-show-view>
+  <app-bonus-view *ngIf="isLoggedIn()" [class.active]="bonusSource" [source]="bonusSource" (goBack)="bonusSource = null"
+                  (playing)="playing = $event"></app-bonus-view>
+  <div *ngIf="!playing" class="status-panel">
+    <p-progressBar *ngIf="status && status?.updateProgress >= 0" [value]="status?.updateProgress"
+                   [showValue]="false" class="narrow-progress"></p-progressBar>
+    <p-button *ngIf="isAdmin() && !posterWallHidden()" [disabled]="status && status?.updateProgress >= 0" icon="pi pi-refresh"
+              styleClass="p-button-rounded p-button-sm p-button-danger" (click)="showRefreshDialog = true"></p-button>
+    <span *ngIf="!posterWallHidden()">{{userName()}}</span>
+    <p-button *ngIf="posterWallHidden()" icon="pi pi-home" styleClass="p-button-rounded p-button-success" (click)="goHome()"></p-button>
+    <p-button icon="pi pi-sign-out" styleClass="p-button-rounded" (click)="logOut()"></p-button>
+  </div>
 </div>
-<app-poster-view [library]="library" (itemClicked)="itemClicked($event)"></app-poster-view>
-<app-collection-view *ngIf="isLoggedIn()" [class.active]="currentCollection" [collection]=currentCollection
-  (goBack)="currentCollection = null" (showSelected)="currentShow = $event"
-  [currentShow]="currentShow"></app-collection-view>
-<app-show-view *ngIf="isLoggedIn()" [class.active]="currentShow" [show]="currentShow" (goBack)="currentShow = null"
-               (viewBonus)="bonusSource = $event" [currentBonus]="bonusSource"></app-show-view>
-<app-bonus-view *ngIf="isLoggedIn()" [class.active]="bonusSource" [source]="bonusSource"
-                (goBack)="bonusSource = null"></app-bonus-view>
 <app-login *ngIf="isLoggedOut()"></app-login>
 <p-confirmDialog [style]="{ width: 'min(35em, calc(100vw - 4em))' }"></p-confirmDialog>
 <p-dialog header="Header" [(visible)]="showRefreshDialog" [style]="{ width: 'min(35em, calc(100vw - 4em))' }">
