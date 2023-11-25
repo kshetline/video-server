@@ -42,6 +42,7 @@
 .poster-wrapper {
   align-items: stretch;
   display: flex;
+  height: calc(100dvh - 3.5em);
   justify-content: space-between;
   position: relative;
 
@@ -49,7 +50,6 @@
     display: flex;
     flex-wrap: wrap;
     gap: 3em;
-    height: calc(100dvh - 3.5em);
     justify-content: center;
     overflow: auto;
     padding: 2em calc(2.5em + 2 * var(--scrollbar-width));
@@ -64,7 +64,7 @@
     flex-grow: 0;
     font-size: 1.2em;
     font-weight: bold;
-    gap: 3px;
+    height: calc(100dvh - 3.5rem);
     justify-content: space-between;
     left: calc(-1em - var(--scrollbar-width));
     opacity: 1;
@@ -78,6 +78,7 @@
     div {
       cursor: pointer;
       min-width: 1em;
+      padding: 1px 0;
       text-align: center;
       user-select: none;
       white-space: nowrap;
@@ -196,8 +197,12 @@
     }
   }
 
-  .poster-wrapper .poster-grid {
+  .poster-wrapper {
     height: calc(100dvh - 7em);
+
+    .letter-nav {
+      height: calc(100dvh - 7rem);
+    }
   }
 }
 
