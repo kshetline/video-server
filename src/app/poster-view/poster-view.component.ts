@@ -56,7 +56,6 @@ function containsTV(item: LibraryItem): boolean {
   styleUrls: ['./poster-view.component.scss']
 })
 export class PosterViewComponent implements OnDestroy, OnInit {
-  /* cspell:disable-next-line */ // noinspection SpellCheckingInspection
   readonly faFolderOpen = faFolderOpen;
   readonly faShare = faShare;
   readonly floor = floor;
@@ -65,6 +64,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
 
   private _library: VideoLibrary;
   private _filter = 'All';
+  private loadingTimers = new Map<Element, any>();
   private resizeDebounceSub: Subscription;
   private resizeSub: Subscription;
   private _searchText = '';
@@ -110,8 +110,25 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   ngOnInit(): void {
     this.intersectionObserver = new IntersectionObserver(entries => {
       entries.forEach(entry => {
-        if (entry.isIntersecting && entry.target.hasAttribute('data-thumbnail'))
-          this.showThumbnail[entry.target.getAttribute('data-thumbnail')] = true;
+        const target = entry.target;
+        const thumbnail = target.getAttribute('data-thumbnail');
+
+        if (this.showThumbnail[thumbnail])
+          return;
+
+        const timer = this.loadingTimers.get(target);
+
+        if (entry.isIntersecting && thumbnail && !timer) {
+          const loadingTimer = setTimeout(() => {
+            this.showThumbnail[thumbnail] = true;
+            this.loadingTimers.delete(target);
+          }, 100);
+          this.loadingTimers.set(target, loadingTimer);
+        }
+        else if (!entry.isIntersecting && timer) {
+          clearTimeout(timer);
+          this.loadingTimers.delete(target);
+        }
       });
     });
 
