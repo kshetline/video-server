@@ -379,7 +379,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
 
     for (let span = 1; span <= 4; ++span) {
       const count = ceil(26 / span) + 1;
-      const neededHeight = count * 22 - 1;
+      const neededHeight = count * 21;
 
       if (neededHeight <= availableHeight) {
         if (count !== this.letterGroups.length) {
