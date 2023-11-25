@@ -58,3 +58,14 @@ app-login {
     z-index: 300;
   }
 }
+
+.click-delay {
+  bottom: 0;
+  background-color: rgba(white, 20%);
+  cursor: wait;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 150;
+}

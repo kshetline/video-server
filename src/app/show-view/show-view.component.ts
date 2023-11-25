@@ -2,7 +2,7 @@ import { Component, EventEmitter, HostListener, Input, Output } from '@angular/c
 import { Cut, LibraryItem } from '../../../server/src/shared-types';
 import { canPlayVP9, getImageParam, getSeasonTitle } from '../video-ui-utils';
 import { encodeForUri } from '@tubular/util';
-import { max, round } from '@tubular/math';
+import { floor, max, round } from '@tubular/math';
 import { HttpClient } from '@angular/common/http';
 import { checksum53, isFile, isMovie, isTvSeason } from '../../../server/src/shared-utils';
 
@@ -223,7 +223,10 @@ export class ShowViewComponent {
   }
 
   getPosterUrl(item: LibraryItem): string {
-    return `/api/img/poster?id=${item.id}&cs=${checksum53(item.originalName || item.name)}&w=300&h=450`;
+    if (item.id !== floor(item.id))
+      return '/assets/folder.svg';
+    else
+      return `/api/img/poster?id=${item.id}&cs=${checksum53(item.originalName || item.name)}&w=300&h=450`;
   }
 
   getBackground(): string {

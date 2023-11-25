@@ -16,9 +16,12 @@ import { checksum53, isAnyCollection, isMovie, isTvSeason, isTvShow } from '../.
 })
 export class AppComponent implements AfterViewInit, OnInit {
   private canPoll = false;
+  private getSparseLibrary = true;
   private gettingLibrary = false;
 
   bonusSource: LibraryItem;
+  clickDelayed = false;
+  clickTimer: any;
   currentCollection: LibraryItem;
   currentShow: LibraryItem;
   library: VideoLibrary;
@@ -139,10 +142,40 @@ export class AppComponent implements AfterViewInit, OnInit {
   }
 
   itemClicked(item: LibraryItem): void {
-    if (isAnyCollection(item) || isTvShow(item))
-      this.currentCollection = item;
-    else if (isMovie(item) || isTvSeason(item))
-      this.currentShow = item;
+    const setItem = (newItem: LibraryItem): void => {
+      if (isAnyCollection(newItem) || isTvShow(newItem))
+        this.currentCollection = newItem;
+      else if (isMovie(newItem) || isTvSeason(newItem))
+        this.currentShow = newItem;
+    };
+
+    if (item.parentId == null) {
+      this.clickTimer = setTimeout(() => {
+        this.clickDelayed = true;
+        this.clickTimer = undefined;
+      }, 500);
+
+      this.httpClient.get<LibraryItem>('/api/library?id=' + item.id).subscribe(fullItem => {
+        this.clickDelayed = false;
+
+        if (this.clickTimer) {
+          clearTimeout(this.clickTimer);
+          this.clickTimer = undefined;
+        }
+
+        const index = fullItem ? this.library.array.findIndex(i => i.id === item.id) : -1;
+
+        if (index >= 0) {
+          this.library.array[index] = fullItem;
+          addBackLinks(fullItem.data, fullItem);
+          setItem(fullItem);
+        }
+        else
+          console.error('Did not find id', item.id);
+      });
+    }
+    else
+      setItem(item);
   }
 
   private pollLibrary(): void {
@@ -150,9 +183,14 @@ export class AppComponent implements AfterViewInit, OnInit {
       return;
 
     this.gettingLibrary = true;
-    this.httpClient.get<VideoLibrary>('/api/library').subscribe({
+    this.httpClient.get<VideoLibrary>('/api/library' + (this.getSparseLibrary ? '?sparse=true' : '')).subscribe({
       next: library => {
         this.gettingLibrary = false;
+
+        if (this.getSparseLibrary) {
+          this.getSparseLibrary = false;
+          setTimeout(() => this.pollLibrary());
+        }
 
         if (!isEqual(this.library, library, { keysToIgnore: ['lastUpdate', 'parent'] })) {
           addBackLinks(library.array);

@@ -178,7 +178,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   getPosterUrl(item: LibraryItem): string {
     if (item.aliasPosterPath)
       return `/api/img/poster?uri=${encodeForUri(item.aliasPosterPath)}&w=300&h=450`;
-    else if (item.isAlias && !item.isLink)
+    else if ((item.isAlias && !item.isLink) || item.id !== floor(item.id))
       return '/assets/folder.svg';
     else
       return `/api/img/poster?id=${item.id}&cs=${checksum53(item.originalName || item.name)}&w=300&h=450`;

@@ -1,6 +1,7 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { LibraryItem } from '../../../server/src/shared-types';
 import { checksum53, hashTitle, isCollection, isTvShow } from '../../../server/src/shared-utils';
+import { floor } from '@tubular/math';
 
 function getSortTime(item: LibraryItem): number {
   if (item.airDate)
@@ -58,6 +59,9 @@ export class CollectionViewComponent {
   }
 
   getPosterUrl(item: LibraryItem): string {
-    return `/api/img/poster?id=${item.id}&cs=${checksum53(item.originalName || item.name)}&w=300&h=450`;
+    if (item.id !== floor(item.id))
+      return '/assets/folder.svg';
+    else
+      return `/api/img/poster?id=${item.id}&cs=${checksum53(item.originalName || item.name)}&w=300&h=450`;
   }
 }

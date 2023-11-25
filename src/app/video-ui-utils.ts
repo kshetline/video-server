@@ -52,7 +52,7 @@ export function incrementImageIndex(): number {
 }
 
 export function addBackLinks(children: LibraryItem[], parent?:LibraryItem): void {
-  for (const child of children) {
+  for (const child of children || []) {
     if (parent)
       child.parent = parent;
 

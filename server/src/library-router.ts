@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { Cut, LibraryItem, LibraryStatus, MediaInfo, MediaInfoTrack, ShowInfo, Track, VideoLibrary, VType } from './shared-types';
-import { clone, forEach, isNumber, toInt, toNumber } from '@tubular/util';
+import { clone, forEach, isNumber, toBoolean, toInt, toNumber } from '@tubular/util';
 import { abs, floor, min } from '@tubular/math';
 import { requestJson } from 'by-request';
 import paths from 'path';
@@ -729,15 +729,44 @@ function filterLibrary(items: LibraryItem[], role: string): void {
   }
 }
 
+const sparseKeys = new Set([
+  'aliasPosterPath', 'data', 'id', 'isAlias', 'isLink', 'name', 'originalName', 'releaseDate',
+  'title', 'type', 'voteAverage', 'watched', 'year'
+]);
+
+function makeSparse(items: LibraryItem[], depth = 0): void {
+  for (const item of items) {
+    if (depth > 1)
+      delete item.data;
+
+    const keys = Object.keys(item);
+
+    for (const key of keys) {
+      if (!sparseKeys.has(key))
+        delete (item as any)[key];
+    }
+
+    if (item.data)
+      makeSparse(item.data, depth + 1);
+  }
+}
+
 router.get('/', async (req, res) => {
   noCache(res);
 
-  const library = clone(cachedLibrary);
+  let response: LibraryItem | VideoLibrary = clone(cachedLibrary);
 
-  library.array = library.array.filter(i => !i.hide);
+  response.array = response.array.filter(i => !i.hide);
 
   if (role(req) !== 'admin')
-    filterLibrary(library.array, role(req));
+    filterLibrary(response.array, role(req));
 
-  jsonOrJsonp(req, res, library);
+  if (toBoolean(req.query.sparse)) {
+    response.sparse = true;
+    makeSparse(response.array);
+  }
+  else if (req.query.id)
+    response = response.array.find(i => i.id === toNumber(req.query.id)) || null;
+
+  jsonOrJsonp(req, res, response);
 });

@@ -102,6 +102,7 @@ export interface VideoLibrary {
   status?: LibraryStatus;
   progress?: number;
   lastUpdate?: string;
+  sparse?: boolean;
   mainFileCount?: number;
   bonusFileCount: number;
 
