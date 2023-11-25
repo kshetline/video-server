@@ -185,6 +185,8 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   }
 
   jumpScroll(target: string): void {
+    target = target.substring(0, 1);
+
     const grid = document.querySelector('.poster-grid') as HTMLElement;
     const elems = document.querySelectorAll('.poster-grid .library-item .title');
 
