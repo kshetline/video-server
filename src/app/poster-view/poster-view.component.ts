@@ -1,6 +1,6 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { LibraryItem, VideoLibrary } from '../../../server/src/shared-types';
-import { floor } from '@tubular/math';
+import { ceil, floor, min } from '@tubular/math';
 import { clone, encodeForUri } from '@tubular/util';
 import { faFolderOpen } from '@fortawesome/free-regular-svg-icons';
 import { faShare } from '@fortawesome/free-solid-svg-icons';
@@ -9,6 +9,9 @@ import {
   isTvSeason, isTvShow, librarySorter
 } from '../../../server/src/shared-utils';
 import { searchForm } from '../video-ui-utils';
+import { fromEvent } from 'rxjs/internal/observable/fromEvent';
+import { debounceTime } from 'rxjs/internal/operators/debounceTime';
+import { Subscription } from 'rxjs/internal/Subscription';
 
 function isAMovie(item: LibraryItem): boolean {
   return item.isTvMovie || isMovie(item) ||
@@ -52,23 +55,28 @@ function containsTV(item: LibraryItem): boolean {
   templateUrl: './poster-view.component.html',
   styleUrls: ['./poster-view.component.scss']
 })
-export class PosterViewComponent implements OnInit {
-  readonly isCollection = isCollection;
+export class PosterViewComponent implements OnDestroy, OnInit {
+  /* cspell:disable-next-line */ // noinspection SpellCheckingInspection
   readonly faFolderOpen = faFolderOpen;
   readonly faShare = faShare;
   readonly floor = floor;
   readonly hashTitle = hashTitle;
+  readonly isCollection = isCollection;
 
   private _library: VideoLibrary;
   private _filter = 'All';
+  private resizeDebounceSub: Subscription;
+  private resizeSub: Subscription;
   private _searchText = '';
 
   filterChoices = ['All', 'Movies', 'TV', '4K', '3D'];
 
-  intersectionObserver: IntersectionObserver;
+  letterGroups: string[] = [];
   items: LibraryItem[];
+  intersectionObserver: IntersectionObserver;
   mutationObserver: MutationObserver;
   overview = '';
+  resizing = false;
   showThumbnail: Record<string, boolean> = {};
 
   @Input() get library(): VideoLibrary { return this._library; }
@@ -130,6 +138,20 @@ export class PosterViewComponent implements OnInit {
     });
 
     this.mutationObserver.observe(document.body, { childList: true, subtree: true });
+
+    const resizes = fromEvent(window, 'resize');
+
+    this.resizeSub = resizes.subscribe(() => this.resizing = true);
+    this.resizeDebounceSub = resizes.pipe(debounceTime(500)).subscribe(() => this.determineLetterNavGroups());
+    this.determineLetterNavGroups();
+  }
+
+  ngOnDestroy(): void {
+    if (this.resizeSub)
+      this.resizeSub.unsubscribe();
+
+    if (this.resizeSub)
+      this.resizeDebounceSub.unsubscribe();
   }
 
   onClick(item: LibraryItem): void {
@@ -145,9 +167,27 @@ export class PosterViewComponent implements OnInit {
       return `/api/img/poster?id=${item.id}&cs=${checksum53(item.originalName || item.name)}&w=300&h=450`;
   }
 
+  jumpScroll(target: string): void {
+    const grid = document.querySelector('.poster-grid') as HTMLElement;
+    const elems = document.querySelectorAll('.poster-grid .library-item .title');
+
+    for (const elem of Array.from(elems) as HTMLElement[]) {
+      if (elem.innerText.replace(/^(A|An|The)\s+/, '').toUpperCase() >= target) {
+        const rect = elem.parentElement.getBoundingClientRect();
+
+        grid.scrollTop += rect.y - grid.getBoundingClientRect().y - 28;
+        break;
+      }
+    }
+  }
+
   private refilter(): void {
+    const grid = document.querySelector('.poster-grid') as HTMLElement;
+
     this.showThumbnail = {};
-    document.querySelector('.poster-grid').scrollTop = 0;
+    grid.style.scrollBehavior = 'auto';
+    grid.scrollTop = 0;
+    setTimeout(() => grid.style.scrollBehavior = 'smooth', 1000);
 
     if (!this.searchText && this.filter === 'All') {
       this.items = this.library.array;
@@ -315,5 +355,35 @@ export class PosterViewComponent implements OnInit {
     }
 
     return false;
+  }
+
+  private determineLetterNavGroups(): void {
+    const availableHeight = (document.querySelector('.poster-grid') as HTMLElement).clientHeight - 14;
+
+    for (let span = 1; span <= 4; ++span) {
+      const count = ceil(26 / span) + 1;
+      const neededHeight = count * 22 - 1;
+
+      if (neededHeight <= availableHeight) {
+        if (count !== this.letterGroups.length) {
+          this.letterGroups = ['0'];
+
+          for (let i = 0; i < count - 1; ++i) {
+            const char = String.fromCharCode(65 + i * span);
+
+            if (span === 1)
+              this.letterGroups[i + 1] = char;
+            else if (span === 2)
+              this.letterGroups[i + 1] = char + String.fromCharCode(66 + i * span);
+            else
+              this.letterGroups[i + 1] = char + '-' + String.fromCharCode(min(64 + (i + 1) * span, 90));
+          }
+        }
+
+        break;
+      }
+    }
+
+    this.resizing = false;
   }
 }
