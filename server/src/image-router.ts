@@ -1,6 +1,6 @@
 import { Request, Response, Router } from 'express';
 import paths from 'path';
-import { cacheDir, deleteIfPossible, escapeForRegex, existsAsync, safeLstat, thumbnailDir } from './vs-util';
+import { cacheDir, deleteIfPossible, escapeForRegex, existsAsync, safeLstat, thumbnailDir, touch } from './vs-util';
 import { requestBinary } from 'by-request';
 import { isValidJson, toInt } from '@tubular/util';
 import { readdir, writeFile } from 'fs/promises';
@@ -20,6 +20,7 @@ async function getImage(imageType: string, apiPath: string, req: Request, res: R
   let id2 = req.query.id2;
   let fullSize: Buffer;
   let imagePath: string;
+  let newFile = false;
 
   for (let i = 0; i < 2; ++i) {
     if (uri)
@@ -41,6 +42,7 @@ async function getImage(imageType: string, apiPath: string, req: Request, res: R
 
       if (fullSize.length < 200 && isValidJson(fullSize.toString())) {
         if (id2) {
+          newFile = true;
           await writeFile(imagePath, '', 'binary');
           id2 = undefined;
           continue;
@@ -57,12 +59,16 @@ async function getImage(imageType: string, apiPath: string, req: Request, res: R
         }
       }
 
+      newFile = true;
       await writeFile(imagePath, fullSize, 'binary');
       break;
     }
   }
 
   if (!req.query.w || !req.query.h) {
+    if (!newFile)
+      touch(imagePath, false).finally(); // Track recency of cache usage
+
     res.sendFile(imagePath);
     return;
   }
@@ -76,8 +82,10 @@ async function getImage(imageType: string, apiPath: string, req: Request, res: R
       image.resize(toInt(req.query.w), toInt(req.query.h)).quality(80).write(thumbnailPath,
         () => res.sendFile(thumbnailPath)));
   }
-  else
+  else {
+    touch(thumbnailPath, false).finally(); // Track recency of cache usage
     res.sendFile(thumbnailPath);
+  }
 }
 
 router.get('/poster', async (req, res) => {
@@ -96,6 +104,8 @@ router.get('/logo', async (req, res) => {
 
   if (!await existsAsync(imagePath))
     await writeFile(imagePath, await requestBinary(url), 'binary');
+  else
+    touch(imagePath, false).finally(); // Track recency of cache usage
 
   res.sendFile(imagePath);
 });

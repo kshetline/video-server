@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { lstat, unlink } from 'fs/promises';
+import { lstat, open, unlink, utimes } from 'fs/promises';
 import { existsSync, mkdirSync, Stats } from 'fs';
 import paths from 'path';
 import { LibraryItem } from './shared-types';
@@ -98,6 +98,19 @@ export async function safeLstat(path: string): Promise<Stats | null> {
   return null;
 }
 
+export async function safeUnlink(path: string): Promise<boolean> {
+  try {
+    await unlink(path);
+    return true;
+  }
+  catch (e) {
+    if (e.code !== 'ENOENT')
+      throw e;
+  }
+
+  return false;
+}
+
 export async function deleteIfPossible(path: string): Promise<boolean> {
   try {
     await unlink(path);
@@ -124,4 +137,18 @@ export function itemAccessAllowed(item: LibraryItem, role: string): boolean {
   }
 
   return true;
+}
+
+export async function touch(path: string, newIfNonexistent = true): Promise<void> {
+  const now = new Date();
+
+  try {
+    await utimes(path, now, now);
+  }
+  catch (e) {
+    if (!newIfNonexistent || e.code !== 'ENOENT')
+      throw e;
+
+    await (await open(path, 'a')).close();
+  }
 }

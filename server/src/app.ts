@@ -26,7 +26,9 @@ import * as https from 'https';
 import { asLines, encodeForUri, isString, makePlainASCII, toBoolean, toInt } from '@tubular/util';
 import logger from 'morgan';
 import * as paths from 'path';
-import { existsAsync, jsonOrJsonp, noCache, normalizePort, role, timeStamp } from './vs-util';
+import {
+  cacheDir, existsAsync, jsonOrJsonp, noCache, normalizePort, role, safeLstat, safeUnlink, timeStamp, unref
+} from './vs-util';
 import fs from 'fs';
 import { cachedLibrary, initLibrary, pendingLibrary, router as libraryRouter, updateLibrary } from './library-router';
 import { router as imageRouter } from './image-router';
@@ -35,6 +37,7 @@ import { LibraryItem, LibraryStatus, ServerStatus, User, UserSession } from './s
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { isFile } from './shared-utils';
+import { readdir } from 'fs/promises';
 
 const debug = require('debug')('express:server');
 
@@ -61,6 +64,32 @@ process.on('unhandledRejection', err => console.error(`${timeStamp()} -- Unhandl
 
 createAndStartServer();
 
+const CACHE_CHECK_INTERVAL = 3_600_000; // One hour
+const CACHE_MAX_AGE = 604_800_000; // One week
+let cacheCheckTimer: any;
+
+async function cacheCheck(dir = cacheDir, depth = 0): Promise<void> {
+  try {
+    const files = (await readdir(dir)).filter(f => !f.startsWith('.') && f !== 'library.json');
+
+    for (const file of files) {
+      const path = paths.join(dir, file);
+      const stat = await safeLstat(path);
+
+      if (stat.isDirectory())
+        await cacheCheck(path, depth + 1);
+      else if (+stat.mtime + CACHE_MAX_AGE < Date.now())
+        await safeUnlink(path);
+    }
+  }
+  catch {}
+
+  if (depth === 0) {
+    cacheCheckTimer = setTimeout(() => cacheCheck(), CACHE_CHECK_INTERVAL);
+    unref(cacheCheckTimer);
+  }
+}
+
 function createAndStartServer(): void {
   console.log(`*** Starting server on port ${httpPort} at ${timeStamp()} ***`);
 
@@ -83,6 +112,8 @@ function createAndStartServer(): void {
     insecureServer.on('listening', onListening);
     insecureServer.listen(insecurePort);
   }
+
+  cacheCheckTimer = setTimeout(() => cacheCheck(), CACHE_CHECK_INTERVAL);
 }
 
 function onError(error: any): void {
