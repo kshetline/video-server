@@ -62,11 +62,11 @@ process.on('SIGTERM', shutdown);
 process.on('SIGUSR2', shutdown);
 process.on('unhandledRejection', err => console.error(`${timeStamp()} -- Unhandled rejection:`, err));
 
-createAndStartServer();
-
 const CACHE_CHECK_INTERVAL = 3_600_000; // One hour
 const CACHE_MAX_AGE = 604_800_000; // One week
 let cacheCheckTimer: any;
+
+createAndStartServer();
 
 async function cacheCheck(dir = cacheDir, depth = 0): Promise<void> {
   try {
