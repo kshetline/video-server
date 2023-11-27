@@ -8,6 +8,13 @@ import { checksum53, isFile, isMovie, isTvSeason } from '../../../server/src/sha
 
 const FADER_TRANSITION_DURATION = '0.75s';
 
+interface Person {
+  image?: string;
+  isDirector?: boolean;
+  name: string;
+  role?: string;
+}
+
 @Component({
   selector: 'app-show-view',
   templateUrl: './show-view.component.html',
@@ -30,7 +37,9 @@ export class ShowViewComponent {
   badges: string[] = [];
   categoryLabels: string[] = [];
   faderOpacity = '0';
+  people: Person[] = [];
   selection: LibraryItem;
+  showCast = false;
   streamUri: string;
   thumbnail: string;
   thumbnailWidth = '0';
@@ -53,6 +62,8 @@ export class ShowViewComponent {
       this.videoCategory = 0;
       this.videoIndex = 0;
       this.video = undefined;
+      this.people = [];
+      this.showCast = false;
       this.selection = undefined;
       this.anyOverview = false;
       this.backgroundMain = '';
@@ -66,6 +77,12 @@ export class ShowViewComponent {
 
       if (!value)
         return;
+
+      if (value.directors)
+        value.directors.forEach(d => this.people.push({ image: d.profilePath, isDirector: true, name: d.name }));
+
+      if (value.actors)
+        value.actors.forEach(d => this.people.push({ image: d.profilePath, name: d.name, role: d.character }));
 
       const choices: LibraryItem[] = [];
       const isTV = isTvSeason(value);
@@ -363,6 +380,10 @@ export class ShowViewComponent {
 
   closePlayer(): void {
     this.playSrc = '';
+  }
+
+  getProfileUrl(person: Person): string {
+    return `/api/img/profile?uri=${encodeForUri(person.image)}&w=200&h=300`;
   }
 
   private checkPendingBackgroundChange(): void {

@@ -62,7 +62,7 @@ process.on('SIGTERM', shutdown);
 process.on('SIGUSR2', shutdown);
 process.on('unhandledRejection', err => console.error(`${timeStamp()} -- Unhandled rejection:`, err));
 
-const CACHE_CHECK_INTERVAL = 3_600_000; // One hour
+const CACHE_CHECK_INTERVAL = 14_400_000; // Four hours
 const CACHE_MAX_AGE = 604_800_000; // One week
 let cacheCheckTimer: any;
 

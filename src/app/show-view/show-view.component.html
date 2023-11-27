@@ -51,11 +51,24 @@
       </div>
       <div class="file-wrapper">
         <div class="file">
+          <p-button *ngIf="people.length > 0" icon="pi pi-info" styleClass="p-button-rounded p-button-sm"
+                    class="info-btn" (click)="showCast = !showCast"></p-button>
           <button pButton type="button" label="Play" icon="pi pi-play" class="p-button-sm"
                   [disabled]="!this.streamUri" (click)="play()"></button>
           <button #btn pButton type="button" label="Download" icon="pi pi-download"
                   [disabled]="!video?.uri" class="p-button-sm" (click)="startDownload(btn)"></button>
           <a [href]="downloadLink()"><div>{{startOfPath()}}</div><div>{{endOfPath()}}</div></a>
+        </div>
+      </div>
+      <div *ngIf="people.length > 0" class="gallery-wrapper" [class.expand]="showCast">
+        <div class="gallery">
+          <div *ngFor="let person of people" class="person" [title]="person.role || ''">
+            <div class="image-frame">
+              <img [ngSrc]="getProfileUrl(person)" width=100 height=150 [alt]="person.name">
+            </div>
+            <div *ngIf="person.isDirector" class="director">Director</div>
+            <div class="person">{{person.name}}</div>
+          </div>
         </div>
       </div>
     </div>

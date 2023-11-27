@@ -237,6 +237,61 @@
           }
         }
       }
+
+      .gallery-wrapper {
+        height: 0;
+        margin-top: 0.75em;
+        overflow: hidden;
+        position: relative;
+        transition: height 0.5s ease-in-out;
+
+        &.expand {
+          height: 175px;
+        }
+
+        .gallery {
+          display: flex;
+          gap: 1em;
+          height: 175px;
+          left: 1em;
+          overflow: auto;
+          position: absolute;
+          right: 1em;
+
+          .person {
+            align-items: center;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25em;
+
+            .image-frame {
+              background-image: url("/assets/generic_person.jpg");
+              background-size: contain;
+              border-radius: 50%;
+              height: 100px;
+              min-width: 100px;
+              overflow: hidden;
+              width: 100px;
+
+              img {
+                top: -20px;
+                position: relative;
+              }
+            }
+          }
+
+          .director {
+            font-style: italic;
+            opacity: 0.67;
+            text-align: center;
+          }
+
+          .person {
+            max-width: 100px;
+            text-align: center;
+          }
+        }
+      }
     }
   }
 }
@@ -288,10 +343,18 @@
           .file {
             flex-wrap: wrap;
 
+            .info-btn {
+              display: none;
+            }
+
             a {
               flex-basis: 100%;
             }
           }
+        }
+
+        .gallery-wrapper {
+          display: none;
         }
       }
     }
@@ -300,6 +363,14 @@
 
 @media screen and (max-height: 800px) {
   .content .poster-area .logo {
+    display: none;
+  }
+
+  .content .show-info-wrapper .show-info .gallery-wrapper {
+    display: none;
+  }
+
+  .content .show-info-wrapper .show-info .file-wrapper .file .info-btn {
     display: none;
   }
 }

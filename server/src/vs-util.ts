@@ -14,6 +14,7 @@ export const thumbnailDir = paths.join(cacheDir, 'thumbnail');
 for (const dir of [
   cacheDir, thumbnailDir,
   paths.join(cacheDir, 'poster'), paths.join(thumbnailDir, 'poster'),
+  paths.join(cacheDir, 'profile'), paths.join(thumbnailDir, 'profile'),
   paths.join(cacheDir, 'backdrop'),
   paths.join(cacheDir, 'logo')
 ]) {

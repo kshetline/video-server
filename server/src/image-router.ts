@@ -13,18 +13,29 @@ export const router = Router();
 const TRANSPARENT_PIXEL = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
   'base64');
 const vSource = process.env.VS_VIDEO_SOURCE;
+const profileRoot = 'http://image.tmdb.org/t/p/original';
 
 async function getImage(imageType: string, apiPath: string, req: Request, res: Response): Promise<void> {
-  const uri = req.query.uri as string;
+  const uri = (req.query.uri as string)?.replace(/^\//, '');
   const id = req.query.id;
+  const profile = (imageType === 'profile');
   let id2 = req.query.id2;
   let fullSize: Buffer;
   let imagePath: string;
   let newFile = false;
+  let profileName: string;
+  let profileExt: string;
 
   for (let i = 0; i < 2; ++i) {
-    if (uri)
-      imagePath = paths.join(vSource, uri);
+    if (uri) {
+      if (profile) {
+        imagePath = paths.join(cacheDir, imageType, uri);
+        profileName = uri.replace(/\.\w+$/, '');
+        profileExt = uri.substring(profileName.length);
+      }
+      else
+        imagePath = paths.join(vSource, uri);
+    }
     else
       imagePath = paths.join(cacheDir, imageType, `${id}${id2 ? '-' + id2 : ''}-${req.query.cs || 'x'}.jpg`);
 
@@ -35,10 +46,16 @@ async function getImage(imageType: string, apiPath: string, req: Request, res: R
       continue;
     }
 
-    if (!stat && !uri) {
-      const url = `${process.env.VS_ZIDOO_CONNECT}${apiPath}?id=${id2 || id}`;
+    if (!stat && (!uri || profile)) {
+      const url = profile ? `${profileRoot}/${uri}` :
+        `${process.env.VS_ZIDOO_CONNECT}${apiPath}?id=${id2 || id}`;
 
-      fullSize = await requestBinary(url);
+      try {
+        fullSize = await requestBinary(url);
+      }
+      catch {
+        fullSize = TRANSPARENT_PIXEL;
+      }
 
       if (fullSize.length < 200 && isValidJson(fullSize.toString())) {
         if (id2) {
@@ -73,9 +90,11 @@ async function getImage(imageType: string, apiPath: string, req: Request, res: R
     return;
   }
 
-  const thumbnailPath = uri ?
-    paths.join(thumbnailDir, imageType, `${checksum53(uri)}-${req.query.w}-${req.query.h}.jpg`) :
-    paths.join(thumbnailDir, imageType, `${req.query.id}-${req.query.cs}-${req.query.w}-${req.query.h}.jpg`);
+  const thumbnailPath = profile ?
+    paths.join(thumbnailDir, imageType, `${profileName}-${req.query.w}-${req.query.h}${profileExt}`) :
+    uri ?
+      paths.join(thumbnailDir, imageType, `${checksum53(uri)}-${req.query.w}-${req.query.h}.jpg`) :
+      paths.join(thumbnailDir, imageType, `${req.query.id}-${req.query.cs}-${req.query.w}-${req.query.h}.jpg`);
 
   if (!await existsAsync(thumbnailPath)) {
     Jimp.read((fullSize || imagePath) as any).then(image =>
@@ -94,6 +113,10 @@ router.get('/poster', async (req, res) => {
 
 router.get('/backdrop', async (req, res) => {
   await getImage('backdrop', 'Poster/v2/getBackdrop', req, res);
+});
+
+router.get('/profile', async (req, res) => {
+  await getImage('profile', profileRoot, req, res);
 });
 
 router.get('/logo', async (req, res) => {
