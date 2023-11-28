@@ -164,7 +164,7 @@
       .swappable-info {
         align-items: stretch;
         display: flex;
-        gap: 0.5em;
+        gap: 0.25em;
         margin-top: 0.75em;
 
         .general-wrapper, .gallery-wrapper {
@@ -192,24 +192,29 @@
 
         .general-wrapper {
           .general {
-            .episode-title, .tag-line {
-              font-weight: bold;
-              margin: 0.75em 0;
-            }
-
-            .overview {
-              height: 6em;
-              line-height: 1.2em;
-              margin-top: 0.75em;
+            .text-wrapper {
+              height: 10.4em;
               overflow-y: auto;
-              white-space: pre-line;
+
+              .episode-title, .tag-line {
+                font-weight: bold;
+                margin-bottom: 0.75em;
+              }
+
+              .overview {
+                line-height: 1.2em;
+                margin-top: 0.75em;
+                white-space: pre-line;
+              }
             }
 
             .badges {
+              bottom: 0;
               display: flex;
               flex-wrap: wrap;
               gap: 0.33em;
               margin-top: 0.5em;
+              position: absolute;
 
               .badge {
                 background-color: white;
@@ -225,19 +230,23 @@
         }
 
         .tab {
+          align-items: center;
           border: 1.5px solid white;
           border-radius: 0.5em;
+          cursor: pointer;
+          display: flex;
           flex-grow: 0;
           font-size: 0.8em;
-          cursor: pointer;
-          height: 14em;
+          height: 15em;
+          justify-content: center;
+          min-width: 25px;
           padding: 0 0.2em;
           text-align: center;
-          text-orientation: upright;
-          writing-mode: vertical-lr;
+          vertical-align: middle;
 
-          i {
-            font-size: 0.75em;
+          span {
+            text-orientation: upright;
+            writing-mode: vertical-lr;
           }
         }
 
@@ -254,9 +263,9 @@
           .gallery {
             display: flex;
             gap: 1em;
-            height: 175px;
             left: 1em;
-            overflow: auto;
+            overflow-x: auto;
+            overflow-y: hidden;
             position: absolute;
             right: 1em;
 
@@ -266,6 +275,7 @@
               flex-direction: column;
               gap: 0.25em;
               position: relative;
+              user-select: none;
 
               .image-frame {
                 background-image: url("/assets/generic_person.jpg");
@@ -278,15 +288,16 @@
 
                 img {
                   top: -20px;
+                  pointer-events: none;
                   position: relative;
                 }
               }
 
-              .director, .person {
+              .director, .name {
                 max-width: 100px;
                 position: relative;
                 text-align: center;
-                top: -1.2em;
+                top: -1.4em;
               }
 
               .director {
@@ -294,6 +305,15 @@
                 font-style: italic;
                 text-align: center;
                 text-shadow: 0 0 3px dodgerblue, -1px -1px 3px dodgerblue, -1px 1px 3px dodgerblue, 1px -1px 3px dodgerblue, 1px 1px 3px dodgerblue;
+              }
+
+              .name {
+                display: -webkit-box;
+                height: 2.4em;
+                overflow: hidden;
+                text-align: center;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 2;
               }
             }
           }
@@ -405,10 +425,6 @@
               flex-basis: 100%;
             }
           }
-        }
-
-        .gallery-wrapper {
-          display: none;
         }
       }
     }

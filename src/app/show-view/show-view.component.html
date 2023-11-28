@@ -46,16 +46,18 @@
       <div class="swappable-info">
         <div class="general-wrapper" [class.expand]="!showCast">
           <div class="general">
-            <div *ngIf="show.tagLine" class="tag-line">{{show.tagLine}}</div>
-            <div *ngIf="isTvSeason(show)" class="episode-title">{{selection.name}}</div>
-            <div *ngIf="anyOverview" class="overview"><div>{{selection.overview}}</div></div>
+            <div class="text-wrapper">
+              <div *ngIf="show.tagLine" class="tag-line">{{show.tagLine}}</div>
+              <div *ngIf="isTvSeason(show)" class="episode-title">{{selection.name}}</div>
+              <div *ngIf="anyOverview" class="overview"><div>{{selection.overview}}</div></div>
+            </div>
             <div *ngIf="badges?.length > 0" class="badges">
               <div *ngFor="let badge of badges" class="badge">{{badge}}</div>
             </div>
           </div>
         </div>
         <div *ngIf="people.length > 0" class="tab" (click)="showCast = !showCast">
-          {{showCast ? '▶SUMMARY▶' : '◀CAST◀'}}
+          <span>{{showCast ? '▶ SUMMARY ▶' : '◀ CAST ◀'}}</span>
         </div>
         <div *ngIf="people.length > 0" class="gallery-wrapper" [class.expand]="showCast">
           <div class="gallery">
@@ -64,7 +66,7 @@
                 <img [ngSrc]="getProfileUrl(person)" width=100 height=150 [alt]="person.name">
               </div>
               <div class="director">{{person.isDirector ? 'Director' : '\u00A0'}}</div>
-              <div class="person">{{person.name}}</div>
+              <div class="name">{{person.name}}</div>
             </div>
           </div>
         </div>
