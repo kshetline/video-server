@@ -188,6 +188,12 @@ export class PosterViewComponent implements OnDestroy, OnInit {
     target = target.substring(0, 1);
 
     const grid = document.querySelector('.poster-grid') as HTMLElement;
+
+    if (target === '0') {
+      grid.scrollTop = 0;
+      return;
+    }
+
     const elems = document.querySelectorAll('.poster-grid .library-item .title');
 
     for (const elem of Array.from(elems) as HTMLElement[]) {

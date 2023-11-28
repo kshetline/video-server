@@ -161,33 +161,142 @@
         }
       }
 
-      .episode-title, .tag-line {
-        font-weight: bold;
-        margin: 0.75em 0;
-      }
-
-      .overview {
-        height: 6em;
-        line-height: 1.2em;
-        margin-top: 0.75em;
-        overflow-y: auto;
-        white-space: pre-line;
-      }
-
-      .badges {
+      .swappable-info {
+        align-items: stretch;
         display: flex;
-        flex-wrap: wrap;
-        gap: 0.33em;
-        margin-top: 0.5em;
+        gap: 0.5em;
+        margin-top: 0.75em;
 
-        .badge {
-          background-color: white;
-          border: white 1.5px solid;
-          border-radius: 0.2em;
-          color: black;
-          padding: 0 0.4em;
-          user-select: none;
-          white-space: nowrap;
+        .general-wrapper, .gallery-wrapper {
+          flex-grow: 0;
+          overflow: hidden;
+          position: relative;
+          transition-duration: 0.5s;
+          transition-property: flex-grow, width;
+          transition-timing-function: ease-in-out;
+          width: 0;
+
+          &.expand {
+            flex-grow: 1;
+            width: calc(100vw - 11em - min(calc(100vw - 33em), 33dvh));
+          }
+
+          .general, .gallery {
+            bottom: 0;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+          }
+        }
+
+        .general-wrapper {
+          .general {
+            .episode-title, .tag-line {
+              font-weight: bold;
+              margin: 0.75em 0;
+            }
+
+            .overview {
+              height: 6em;
+              line-height: 1.2em;
+              margin-top: 0.75em;
+              overflow-y: auto;
+              white-space: pre-line;
+            }
+
+            .badges {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 0.33em;
+              margin-top: 0.5em;
+
+              .badge {
+                background-color: white;
+                border: white 1.5px solid;
+                border-radius: 0.2em;
+                color: black;
+                padding: 0 0.4em;
+                user-select: none;
+                white-space: nowrap;
+              }
+            }
+          }
+        }
+
+        .tab {
+          border: 1.5px solid white;
+          border-radius: 0.5em;
+          flex-grow: 0;
+          font-size: 0.8em;
+          cursor: pointer;
+          height: 14em;
+          padding: 0 0.2em;
+          text-align: center;
+          text-orientation: upright;
+          writing-mode: vertical-lr;
+
+          i {
+            font-size: 0.75em;
+          }
+        }
+
+        .gallery-wrapper {
+          margin-top: 0.75em;
+          overflow: hidden;
+          position: relative;
+
+          &.expand {
+            flex-grow: 1;
+            width: auto;
+          }
+
+          .gallery {
+            display: flex;
+            gap: 1em;
+            height: 175px;
+            left: 1em;
+            overflow: auto;
+            position: absolute;
+            right: 1em;
+
+            .person {
+              align-items: center;
+              display: flex;
+              flex-direction: column;
+              gap: 0.25em;
+              position: relative;
+
+              .image-frame {
+                background-image: url("/assets/generic_person.jpg");
+                background-size: contain;
+                border-radius: 50%;
+                height: 100px;
+                min-width: 100px;
+                overflow: hidden;
+                width: 100px;
+
+                img {
+                  top: -20px;
+                  position: relative;
+                }
+              }
+
+              .director, .person {
+                max-width: 100px;
+                position: relative;
+                text-align: center;
+                top: -1.2em;
+              }
+
+              .director {
+                color: white;
+                font-style: italic;
+                text-align: center;
+                text-shadow: 0 0 3px dodgerblue, -1px -1px 3px dodgerblue, -1px 1px 3px dodgerblue, 1px -1px 3px dodgerblue, 1px 1px 3px dodgerblue;
+              }
+            }
+          }
         }
       }
 
@@ -234,61 +343,6 @@
             > div:last-child {
               flex-shrink: 0;
             }
-          }
-        }
-      }
-
-      .gallery-wrapper {
-        height: 0;
-        margin-top: 0.75em;
-        overflow: hidden;
-        position: relative;
-        transition: height 0.5s ease-in-out;
-
-        &.expand {
-          height: 175px;
-        }
-
-        .gallery {
-          display: flex;
-          gap: 1em;
-          height: 175px;
-          left: 1em;
-          overflow: auto;
-          position: absolute;
-          right: 1em;
-
-          .person {
-            align-items: center;
-            display: flex;
-            flex-direction: column;
-            gap: 0.25em;
-
-            .image-frame {
-              background-image: url("/assets/generic_person.jpg");
-              background-size: contain;
-              border-radius: 50%;
-              height: 100px;
-              min-width: 100px;
-              overflow: hidden;
-              width: 100px;
-
-              img {
-                top: -20px;
-                position: relative;
-              }
-            }
-          }
-
-          .director {
-            font-style: italic;
-            opacity: 0.67;
-            text-align: center;
-          }
-
-          .person {
-            max-width: 100px;
-            text-align: center;
           }
         }
       }
@@ -363,14 +417,6 @@
 
 @media screen and (max-height: 800px) {
   .content .poster-area .logo {
-    display: none;
-  }
-
-  .content .show-info-wrapper .show-info .gallery-wrapper {
-    display: none;
-  }
-
-  .content .show-info-wrapper .show-info .file-wrapper .file .info-btn {
     display: none;
   }
 }
