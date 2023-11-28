@@ -193,7 +193,7 @@
         .general-wrapper {
           .general {
             .text-wrapper {
-              height: 10.4em;
+              height: 9.2em;
               overflow-y: auto;
 
               .episode-title, .tag-line {
@@ -237,7 +237,7 @@
           display: flex;
           flex-grow: 0;
           font-size: 0.8em;
-          height: 15em;
+          height: 14em;
           justify-content: center;
           min-width: 25px;
           padding: 0 0.2em;
@@ -251,7 +251,6 @@
         }
 
         .gallery-wrapper {
-          margin-top: 0.75em;
           overflow: hidden;
           position: relative;
 
@@ -282,6 +281,7 @@
                 background-size: contain;
                 border-radius: 50%;
                 height: 100px;
+                min-height: 100px;
                 min-width: 100px;
                 overflow: hidden;
                 width: 100px;
@@ -294,7 +294,7 @@
               }
 
               .director, .name {
-                max-width: 100px;
+                max-width: calc(100px + 1.5em);
                 position: relative;
                 text-align: center;
                 top: -1.4em;
@@ -304,12 +304,12 @@
                 color: white;
                 font-style: italic;
                 text-align: center;
-                text-shadow: 0 0 3px dodgerblue, -1px -1px 3px dodgerblue, -1px 1px 3px dodgerblue, 1px -1px 3px dodgerblue, 1px 1px 3px dodgerblue;
+                text-shadow: 0 0 3px #444, -1px -1px 3px #444, -1px 1px 3px #444, 1px -1px 3px #444, 1px 1px 3px #444;
               }
 
               .name {
                 display: -webkit-box;
-                height: 2.4em;
+                min-height: 2.4em;
                 overflow: hidden;
                 text-align: center;
                 -webkit-box-orient: vertical;

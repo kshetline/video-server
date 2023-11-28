@@ -57,11 +57,12 @@
           </div>
         </div>
         <div *ngIf="people.length > 0" class="tab" (click)="showCast = !showCast">
-          <span>{{showCast ? '▶ SUMMARY ▶' : '◀ CAST ◀'}}</span>
+          <span>{{showCast ? 'SUMMARY' : 'CAST'}}</span>
         </div>
         <div *ngIf="people.length > 0" class="gallery-wrapper" [class.expand]="showCast">
           <div class="gallery">
-            <div *ngFor="let person of people" class="person" [title]="person.role || ''">
+            <div *ngFor="let person of people" class="person"
+                 [title]="(person.name?.length > 20 ? person.name + (person.role ? ': ' : '') : '') + (person.role || '')">
               <div class="image-frame">
                 <img [ngSrc]="getProfileUrl(person)" width=100 height=150 [alt]="person.name">
               </div>
