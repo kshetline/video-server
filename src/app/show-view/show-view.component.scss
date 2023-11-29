@@ -426,13 +426,59 @@
             }
           }
         }
+
+        .swappable-info {
+          .general-wrapper .general .text-wrapper {
+            height: 5.5em;
+          }
+
+          .gallery-wrapper .gallery .person .image-frame {
+            height: 66.7px;
+            min-height: 66.7px;
+            min-width: 66.7px;
+            width: 66.7px;
+          }
+
+          img {
+            transform: scale(0.667);
+            transform-origin: top left;
+          }
+
+          .tab {
+            height: 9em;
+          }
+        }
       }
     }
   }
 }
 
 @media screen and (max-height: 800px) {
-  .content .poster-area .logo {
-    display: none;
+  .content {
+    .poster-area .logo {
+      display: none;
+    }
+
+    .show-info-wrapper .show-info .swappable-info {
+      .general-wrapper .general .text-wrapper {
+        height: 5.5em;
+      }
+
+      .gallery-wrapper .gallery .person .image-frame {
+        height: 66.7px;
+        min-height: 66.7px;
+        min-width: 66.7px;
+        width: 66.7px;
+
+        img {
+          transform: scale(0.667);
+          transform-origin: top left;
+        }
+      }
+
+      .tab {
+        height: 9em;
+      }
+    }
   }
 }
