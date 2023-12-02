@@ -26,9 +26,9 @@ export class AppComponent implements AfterViewInit, OnInit {
   currentCollection: LibraryItem;
   currentShow: LibraryItem;
   library: VideoLibrary;
+  logoffTime = 0;
   playing = false;
   showRefreshDialog = false;
-  startTime = 0;
   status: ServerStatus;
 
   constructor(
@@ -164,7 +164,7 @@ export class AppComponent implements AfterViewInit, OnInit {
       if (state)
         this.pollLibrary();
       else
-        this.startTime = processMillis();
+        this.logoffTime = processMillis();
     });
   }
 
@@ -274,15 +274,12 @@ export class AppComponent implements AfterViewInit, OnInit {
   }
 
   clearStatusMessage(): void {
-    console.log(processMillis(), this.startTime + 500);
-    if (processMillis() > this.startTime + 500) {
-      console.trace();
+    if (processMillis() > this.logoffTime + 500)
       this.messageService.clear();
-    }
   }
 
-  startTimer(): void {
-    this.startTime = processMillis();
+  resetLogoffTime(): void {
+    this.logoffTime = processMillis();
   }
 
   private pollStatus = (): void => {

@@ -18,7 +18,7 @@
     <p-button icon="pi pi-sign-out" styleClass="p-button-rounded" (click)="logOut()"></p-button>
   </div>
 </div>
-<app-login *ngIf="isLoggedOut()" (typing)="clearStatusMessage()" (open)="startTimer()"></app-login>
+<app-login *ngIf="isLoggedOut()" (typing)="clearStatusMessage()" (open)="resetLogoffTime()"></app-login>
 <p-toast></p-toast>
 <p-confirmDialog [style]="{ width: 'min(35em, calc(100vw - 4em))' }"></p-confirmDialog>
 <p-dialog header="Header" [(visible)]="showRefreshDialog" [style]="{ width: 'min(35em, calc(100vw - 4em))' }">
