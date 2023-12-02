@@ -4,6 +4,7 @@ import { canPlayVP9, getImageParam } from '../video-ui-utils';
 import { encodeForUri } from '@tubular/util';
 import { HttpClient } from '@angular/common/http';
 import { checksum53, isMovie, isTvShow } from '../../../server/src/shared-utils';
+import { StatusInterceptor } from '../status.service';
 
 @Component({
   selector: 'app-bonus-view',
@@ -30,6 +31,7 @@ export class BonusViewComponent {
   @Input() get source(): LibraryItem { return this._source; }
   set source(value: LibraryItem) {
     if (this._source !== value) {
+      StatusInterceptor.alive();
       this._source = value;
       this.extras = [];
       this.playSrc = '';

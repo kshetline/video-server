@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { toInt } from '@tubular/util';
 import { Observable } from 'rxjs/internal/Observable';
 import { UserSession } from '../../server/src/shared-types';
+import { StatusInterceptor } from './status.service';
 
 @Injectable({
   providedIn: 'root'
@@ -47,14 +48,25 @@ export class AuthService {
   }
 
   logout(): void {
+    if (this.isLoggedOut())
+      return;
+
     this.currentSession = undefined;
     localStorage.removeItem('vs_expires_at');
     localStorage.removeItem('vs_session');
-    this.appRef.tick();
+    StatusInterceptor.stopRenewal();
+    setTimeout(() => this.appRef.tick());
   }
 
+  private wasLoggedIn = false;
+
   isLoggedIn(): boolean {
-    return this.currentSession && Date.now() < this.getExpiration();
+    const loggedIn = this.currentSession && Date.now() < this.getExpiration();
+
+    if (this.wasLoggedIn && !loggedIn)
+      setTimeout(() => StatusInterceptor.sendStatus(440));
+
+    return (this.wasLoggedIn = loggedIn);
   }
 
   isLoggedOut(): boolean {

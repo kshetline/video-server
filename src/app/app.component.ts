@@ -2,17 +2,18 @@ import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { LibraryItem, ServerStatus, VideoLibrary } from '../../server/src/shared-types';
 import { addBackLinks, getZIndex, incrementImageIndex } from './video-ui-utils';
-import { isEqual } from '@tubular/util';
+import { isEqual, processMillis } from '@tubular/util';
 import { floor } from '@tubular/math';
 import { AuthService } from './auth.service';
-import { ConfirmationService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { checksum53, isAnyCollection, isMovie, isTvSeason, isTvShow } from '../../server/src/shared-utils';
+import { StatusInterceptor } from './status.service';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
-  providers: [ConfirmationService]
+  providers: [ConfirmationService, MessageService, StatusInterceptor]
 })
 export class AppComponent implements AfterViewInit, OnInit {
   private canPoll = false;
@@ -27,13 +28,37 @@ export class AppComponent implements AfterViewInit, OnInit {
   library: VideoLibrary;
   playing = false;
   showRefreshDialog = false;
+  startTime = 0;
   status: ServerStatus;
 
   constructor(
     private httpClient: HttpClient,
     private auth: AuthService,
-    private confirmationService: ConfirmationService
-  ) {}
+    private confirmationService: ConfirmationService,
+    private messageService: MessageService
+  ) {
+    StatusInterceptor.getStatusUpdates(status => {
+      if ([401, 403, 440].indexOf(status) >= 0) {
+        // this.messageService.clear();
+        auth.logout();
+      }
+
+      switch (status) {
+        case 440:
+          this.messageService.add({ severity: 'warn', summary: 'Session Expired',
+                                    detail: 'Your login session has expired.', sticky: true });
+          break;
+        case 403:
+          this.messageService.add({ severity: 'error', summary: 'Forbidden',
+                                    detail: 'Access forbidden.', sticky: true });
+          break;
+        case 401:
+          this.messageService.add({ severity: 'error', summary: 'Unauthorized',
+                                    detail: 'Unauthorized access.', sticky: true });
+          break;
+      }
+    });
+  }
 
   ngOnInit(): void {
     fetch('/assets/tiny_clear.png').finally();
@@ -138,6 +163,8 @@ export class AppComponent implements AfterViewInit, OnInit {
     this.auth.loginStatus.subscribe(state => {
       if (state)
         this.pollLibrary();
+      else
+        this.startTime = processMillis();
     });
   }
 
@@ -244,6 +271,18 @@ export class AppComponent implements AfterViewInit, OnInit {
 
   posterWallHidden(): boolean {
     return !!(this.bonusSource || this.currentCollection || this.currentShow);
+  }
+
+  clearStatusMessage(): void {
+    console.log(processMillis(), this.startTime + 500);
+    if (processMillis() > this.startTime + 500) {
+      console.trace();
+      this.messageService.clear();
+    }
+  }
+
+  startTimer(): void {
+    this.startTime = processMillis();
   }
 
   private pollStatus = (): void => {

@@ -2,6 +2,7 @@ import { Component, EventEmitter, HostListener, Input, Output } from '@angular/c
 import { LibraryItem } from '../../../server/src/shared-types';
 import { checksum53, hashTitle, isCollection, isTvShow } from '../../../server/src/shared-utils';
 import { floor } from '@tubular/math';
+import { StatusInterceptor } from '../status.service';
 
 function getSortTime(item: LibraryItem): number {
   if (item.airDate)
@@ -33,6 +34,7 @@ export class CollectionViewComponent {
   @Input() get collection(): LibraryItem { return this._collection; }
   set collection(value: LibraryItem) {
     if (this._collection !== value) {
+      StatusInterceptor.alive();
       this._collection = value;
       this.items = value?.data;
 

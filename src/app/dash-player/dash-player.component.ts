@@ -3,6 +3,7 @@ import { MediaPlayer, MediaPlayerClass } from 'dashjs';
 import { encodeForUri, toNumber } from '@tubular/util';
 import { max, min } from '@tubular/math';
 import { AuthService } from '../auth.service';
+import { StatusInterceptor } from '../status.service';
 
 @Component({
   selector: 'app-dash-player',
@@ -135,6 +136,7 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
         this.onMouseMove();
 
       this.currentResolution = resolution;
+      StatusInterceptor.alive();
     });
     playerElem.addEventListener('volumechange', this.volumeChange);
     setTimeout(() => {

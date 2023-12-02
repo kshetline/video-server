@@ -202,7 +202,7 @@ export interface ShowInfo {
 
 export interface User {
   name: string;
-  hash: string;
+  hash?: string;
   role: string;
   time_to_expire: number;
 }

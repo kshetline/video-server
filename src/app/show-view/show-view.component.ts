@@ -5,6 +5,7 @@ import { encodeForUri } from '@tubular/util';
 import { floor, max, round } from '@tubular/math';
 import { HttpClient } from '@angular/common/http';
 import { checksum53, isFile, isMovie, isTvSeason } from '../../../server/src/shared-utils';
+import { StatusInterceptor } from '../status.service';
 
 const FADER_TRANSITION_DURATION = '0.75s';
 
@@ -55,6 +56,7 @@ export class ShowViewComponent {
   @Input() get show(): LibraryItem { return this._show; }
   set show(value: LibraryItem) {
     if (this._show !== value) {
+      StatusInterceptor.alive();
       this._show = value;
       this.videoChoices = [];
       this.videoLabels = [];

@@ -20,7 +20,7 @@
 
 import { execSync } from 'child_process';
 import cookieParser from 'cookie-parser';
-import express, { Express } from 'express';
+import express, { Express, Response } from 'express';
 import * as http from 'http';
 import * as https from 'https';
 import { asLines, encodeForUri, isString, makePlainASCII, toBoolean, toInt } from '@tubular/util';
@@ -64,6 +64,7 @@ process.on('unhandledRejection', err => console.error(`${timeStamp()} -- Unhandl
 
 const CACHE_CHECK_INTERVAL = 14_400_000; // Four hours
 const CACHE_MAX_AGE = 604_800_000; // One week
+const EXTENDED_COOKIE_LIFE = 3_600_000; // One hour
 let cacheCheckTimer: any;
 
 createAndStartServer();
@@ -203,15 +204,23 @@ function getApp(): Express {
 
     if (!/^\/api\//.test(req.url) || /^\/api\/(login|status)\b/.test(req.url))
       next();
-    else if (userInfo == null)
+    else if (!userInfo)
       res.sendStatus(401);
     else {
       jwt.verify(token, process.env.VS_TOKEN_SECRET as string, (err: any, user: any) => {
-        if (err)
-          res.sendStatus(403);
+        if (err) {
+          if (err.name === 'TokenExpiredError')
+            res.status(440);
+          else if (err.name === 'JsonWebTokenError')
+            res.status(401);
+          else
+            res.status(403);
+
+          res.send(`${err.name}: ${err.message}`);
+        }
         else {
-          user.role = users.find(u => u.name === user.username)?.role;
-          (req as any).user = user;
+          const role = users.find(u => u.name === user.username)?.role;
+          (req as any).user = { name: user.username, role, time_to_expire: user.exp };
           next();
         }
       });
@@ -250,6 +259,16 @@ function getApp(): Express {
     });
   }
 
+  function sendJwt(user: User, res: Response): void {
+    const expiresIn = user.time_to_expire || 3600; // In seconds
+    const expiration = Date.now() + expiresIn * 1000;
+    const token = jwt.sign({ username: user.name }, process.env.VS_TOKEN_SECRET, { expiresIn });
+    const session: UserSession = { name: user.name, role: user.role, expiration };
+
+    res.cookie('vs_jwt', token, { secure: useHttps, httpOnly: true, expires: new Date(expiration + EXTENDED_COOKIE_LIFE) });
+    res.json(session);
+  }
+
   theApp.post('/api/login', async (req, res) => {
     const username = req.body.user?.toString();
     const pwd = req.body.pwd?.toString();
@@ -267,14 +286,7 @@ function getApp(): Express {
           });
 
           if (hashed === user.hash) {
-            const expiresIn = user.time_to_expire || 3600; // In seconds
-            const expiration = Date.now() + expiresIn * 1000;
-            const token = jwt.sign({ username }, process.env.VS_TOKEN_SECRET, { expiresIn });
-            const session: UserSession = { name: user.name, role: user.role, expiration };
-
-            res.cookie('vs_jwt', token, { secure: useHttps, httpOnly: true, expires: new Date(expiration) });
-            res.json(session);
-
+            sendJwt(user, res);
             return;
           }
         }
@@ -285,6 +297,10 @@ function getApp(): Express {
     }
 
     res.status(403).end();
+  });
+
+  theApp.get('/api/renew', async (req, res) => {
+    sendJwt((req as any).user, res);
   });
 
   theApp.use('/api/library', libraryRouter);
