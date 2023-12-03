@@ -194,6 +194,7 @@
           .general {
             .text-wrapper {
               height: 9.2em;
+              overflow-x: hidden;
               overflow-y: auto;
 
               .episode-title, .tag-line {
@@ -205,6 +206,10 @@
                 line-height: 1.2em;
                 margin-top: 0.75em;
                 white-space: pre-line;
+
+                .overview-content {
+                  width: var(--overview-width);
+                }
               }
             }
 

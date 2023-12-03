@@ -39,7 +39,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   ) {
     StatusInterceptor.getStatusUpdates(status => {
       if ([401, 403, 440].indexOf(status) >= 0) {
-        // this.messageService.clear();
+        this.messageService.clear();
         auth.logout();
       }
 

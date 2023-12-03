@@ -1,6 +1,6 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { Cut, LibraryItem } from '../../../server/src/shared-types';
-import { canPlayVP9, getImageParam, getSeasonTitle } from '../video-ui-utils';
+import { canPlayVP9, getImageParam, getSeasonTitle, setCssVariable } from '../video-ui-utils';
 import { encodeForUri } from '@tubular/util';
 import { floor, max, round } from '@tubular/math';
 import { HttpClient } from '@angular/common/http';
@@ -237,6 +237,10 @@ export class ShowViewComponent {
       this.selectVideo(this.videoIndex + 1);
   }
 
+  @HostListener('window:resize') onResize(): void {
+    setCssVariable('--overview-width', 'unset');
+  }
+
   getLogoUrl(): string {
     return `/api/img/logo?url=${encodeForUri(this.show.logo)}`;
   }
@@ -386,6 +390,17 @@ export class ShowViewComponent {
 
   getProfileUrl(person: Person): string {
     return `/api/img/profile?uri=${encodeForUri(person.image)}&w=200&h=300`;
+  }
+
+  toggleCast(): void {
+    if (!this.showCast) {
+      const overviewContent = document.querySelector('.overview-content') as HTMLElement;
+
+      if (overviewContent)
+        setCssVariable('--overview-width', overviewContent.getBoundingClientRect().width + 'px');
+    }
+
+    this.showCast = !this.showCast;
   }
 
   private checkPendingBackgroundChange(): void {

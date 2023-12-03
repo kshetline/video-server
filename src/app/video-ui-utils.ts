@@ -6,6 +6,10 @@ import { debounceTime } from 'rxjs/internal/operators/debounceTime';
 
 let imageIndex = 0;
 
+export function setCssVariable(name: string, value: string): void {
+  (document.querySelector(':root') as HTMLElement).style.setProperty(name, value);
+}
+
 function getScrollBarWidth(): void {
   const inner = document.createElement('p');
 
@@ -35,7 +39,7 @@ function getScrollBarWidth(): void {
     w2 = outer.clientWidth;
 
   document.body.removeChild(outer);
-  (document.querySelector(':root') as HTMLElement).style.setProperty('--scrollbar-width', (w1 - w2) + 'px');
+  setCssVariable('--scrollbar-width', (w1 - w2) + 'px');
 }
 
 const resizes = fromEvent(window, 'resize');
