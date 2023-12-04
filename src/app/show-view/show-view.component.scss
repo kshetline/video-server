@@ -200,6 +200,7 @@
               .episode-title, .tag-line {
                 font-weight: bold;
                 margin-bottom: 0.75em;
+                width: var(--overview-width);
               }
 
               .overview {
