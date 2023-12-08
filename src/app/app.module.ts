@@ -20,6 +20,7 @@ import { PosterViewComponent } from './poster-view/poster-view.component';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { RatingComponent } from './rating/rating.component';
+import { SplitButtonModule } from 'primeng/splitbutton';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 import { ShowViewComponent } from './show-view/show-view.component';
@@ -51,6 +52,7 @@ import { StatusInterceptor } from './status.service';
     PasswordModule,
     ProgressBarModule,
     RadioButtonModule,
+    SplitButtonModule,
     ToastModule,
     TooltipModule
   ],

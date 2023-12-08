@@ -153,3 +153,7 @@ export async function touch(path: string, newIfNonexistent = true): Promise<void
     await (await open(path, 'a')).close();
   }
 }
+
+export function getRemoteAddress(req: Request): string {
+  return (req.headers['x-real-ip'] as string) || req.socket.remoteAddress;
+}

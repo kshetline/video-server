@@ -64,7 +64,7 @@ export class AuthService {
     const loggedIn = this.currentSession && Date.now() < this.getExpiration();
 
     if (this.wasLoggedIn && !loggedIn)
-      setTimeout(() => StatusInterceptor.sendStatus(440));
+      setTimeout(() => StatusInterceptor.sendHttpStatus(440));
 
     return (this.wasLoggedIn = loggedIn);
   }

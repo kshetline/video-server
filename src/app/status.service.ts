@@ -3,15 +3,17 @@ import { HttpInterceptor, HttpEvent, HttpHandler, HttpRequest, HttpResponse, Htt
 import { map, Observable } from 'rxjs';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { BehaviorSubject } from 'rxjs/internal/BehaviorSubject';
+import { shareReplay } from 'rxjs/internal/operators/shareReplay';
 
 const RENEW_INTERVAL = 600_000; // 10 minutes
 
 @Injectable()
 export class StatusInterceptor implements HttpInterceptor {
+  private static _localAccess = false;
   private static httpClient: HttpClient;
+  private static httpStatus = new BehaviorSubject<number>(0);
+  private static httpStatusObserver = StatusInterceptor.httpStatus.asObservable();
   private static renewTimer: any;
-  private static status = new BehaviorSubject<number>(0);
-  private static statusObserver = StatusInterceptor.status.asObservable();
 
   static alive(): void {
     if (!StatusInterceptor.renewTimer) {
@@ -31,30 +33,37 @@ export class StatusInterceptor implements HttpInterceptor {
     }
   }
 
-  static getStatusUpdates(callback: (observer: number) => void): Subscription {
-    return StatusInterceptor.statusObserver.subscribe(callback);
+  static getHttpStatusUpdates(callback: (observer: number) => void): Subscription {
+    return StatusInterceptor.httpStatusObserver.subscribe(callback);
   }
 
-  static sendStatus(status: number): void {
-    StatusInterceptor.status.next(status);
+  static sendHttpStatus(status: number): void {
+    StatusInterceptor.httpStatus.next(status);
   }
+
+  static get localAccess(): boolean { return StatusInterceptor._localAccess; }
 
   constructor(httpClient: HttpClient) {
     StatusInterceptor.httpClient = httpClient;
   }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    return next.handle(req).pipe(map(evt => {
+    const observer = next.handle(req).pipe(map(evt => {
       if (evt.type === HttpEventType.Response && !/\/api\/(renew|status)$/.test(req.url)) {
         const status = (evt as HttpResponse<any>).status;
 
-        StatusInterceptor.status.next(status);
+        StatusInterceptor.httpStatus.next(status);
 
         if (status === 200)
           StatusInterceptor.alive();
       }
 
       return evt;
-    }));
+    })).pipe(shareReplay());
+
+    if (/\/api\/status$/.test(req.url))
+      observer.subscribe((res: any) => { if (res.body) StatusInterceptor._localAccess = !!res.body.localAccess; });
+
+    return observer;
   }
 }

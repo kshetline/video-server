@@ -1,4 +1,4 @@
-import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
 import { Cut, LibraryItem } from '../../../server/src/shared-types';
 import { canPlayVP9, getImageParam, getSeasonTitle, setCssVariable } from '../video-ui-utils';
 import { encodeForUri } from '@tubular/util';
@@ -6,6 +6,8 @@ import { floor, max, round } from '@tubular/math';
 import { HttpClient } from '@angular/common/http';
 import { checksum53, isFile, isMovie, isTvSeason } from '../../../server/src/shared-utils';
 import { StatusInterceptor } from '../status.service';
+import { AuthService } from '../auth.service';
+import { MenuItem } from 'primeng/api';
 
 const FADER_TRANSITION_DURATION = '0.75s';
 
@@ -21,7 +23,7 @@ interface Person {
   templateUrl: './show-view.component.html',
   styleUrls: ['./show-view.component.scss']
 })
-export class ShowViewComponent {
+export class ShowViewComponent implements OnInit {
   readonly getSeasonTitle = getSeasonTitle;
   readonly isTvSeason = isTvSeason;
 
@@ -39,6 +41,7 @@ export class ShowViewComponent {
   categoryLabels: string[] = [];
   faderOpacity = '0';
   people: Person[] = [];
+  players: MenuItem[] = [];
   selection: LibraryItem;
   showCast = false;
   streamUri: string;
@@ -51,7 +54,17 @@ export class ShowViewComponent {
   videoLabels: string[] = [];
   videoIndex = 0;
 
-  constructor(private httpClient: HttpClient) {}
+  constructor(private httpClient: HttpClient, private auth: AuthService) {}
+
+  ngOnInit(): void {
+    this.httpClient.get<string[]>('/api/players').subscribe(players => {
+      this.players = [];
+      players.forEach((name, i) => this.players.push({
+        label: `Play: ${name}`,
+        command: () => this.playOnMediaPlayer(i)
+      }));
+    });
+  }
 
   @Input() get show(): LibraryItem { return this._show; }
   set show(value: LibraryItem) {
@@ -384,6 +397,10 @@ export class ShowViewComponent {
     this.playSrc = this.streamUri;
   }
 
+  playOnMediaPlayer(player: number): void {
+    this.httpClient.get(`/api/play?id=${this.video.aggregationId}&type=${this.video.type}&player=${player}`).subscribe();
+  }
+
   closePlayer(): void {
     this.playSrc = '';
   }
@@ -401,6 +418,10 @@ export class ShowViewComponent {
     }
 
     this.showCast = !this.showCast;
+  }
+
+  localAccess(): boolean {
+    return this.players.length > 0 && this.auth.getSession()?.role === 'admin' && StatusInterceptor.localAccess;
   }
 
   private checkPendingBackgroundChange(): void {

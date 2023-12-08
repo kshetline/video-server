@@ -27,9 +27,10 @@ import { asLines, encodeForUri, isString, makePlainASCII, toBoolean, toInt } fro
 import logger from 'morgan';
 import * as paths from 'path';
 import {
-  cacheDir, existsAsync, jsonOrJsonp, noCache, normalizePort, role, safeLstat, safeUnlink, timeStamp, unref
+  cacheDir, existsAsync, getRemoteAddress, jsonOrJsonp, noCache, normalizePort, role, safeLstat, safeUnlink, timeStamp, unref
 } from './vs-util';
 import fs from 'fs';
+import { Resolver } from 'node:dns';
 import { cachedLibrary, initLibrary, pendingLibrary, router as libraryRouter, updateLibrary } from './library-router';
 import { router as imageRouter } from './image-router';
 import { router as streamingRouter } from './streaming-router';
@@ -38,6 +39,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { isFile } from './shared-utils';
 import { readdir } from 'fs/promises';
+import { requestText } from 'by-request';
 
 const debug = require('debug')('express:server');
 
@@ -56,6 +58,7 @@ let insecureServer: http.Server;
 const MAX_START_ATTEMPTS = 3;
 let startAttempts = 0;
 let users: User[] = [];
+let hostIps: string[];
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
@@ -310,8 +313,21 @@ function getApp(): Express {
   theApp.get('/api/status', async (req, res) => {
     noCache(res);
 
+    if (!hostIps) {
+      hostIps = await new Promise<string[]>((resolve, reject) => {
+        new Resolver().resolve(process.env.VS_REQUIRED_HOST || 'shetline.org', (err, result) => {
+          if (err)
+            reject(err);
+          else
+            resolve(result);
+        });
+      });
+    }
+
+    const remote = getRemoteAddress(req);
     const status: ServerStatus = {
       lastUpdate: cachedLibrary?.lastUpdate,
+      localAccess: remote === '::1' || remote?.startsWith('192.168.') || (hostIps || []).indexOf(remote) >= 0,
       ready: cachedLibrary?.status === LibraryStatus.DONE,
       updateProgress: -1
     };
@@ -405,6 +421,40 @@ function getApp(): Express {
     else {
       updateLibrary(toBoolean(req.query.quick)).finally();
       res.json(null);
+    }
+  });
+
+  theApp.get('/api/players', async (req, res) => {
+    noCache(res);
+
+    if (role(req) !== 'admin' || !process.env.VS_PLAYERS)
+      res.json([]);
+    else
+      res.json(process.env.VS_PLAYERS.split('#').filter((_s, i) => i % 2 === 1));
+  });
+
+  theApp.get('/api/play', async (req, res) => {
+    noCache(res);
+
+    if (role(req) !== 'admin')
+      res.sendStatus(403);
+    else {
+      let host = process.env.VS_ZIDOO_CONNECT;
+
+      if (req.query.player != null && process.env.VS_PLAYERS) {
+        const players = process.env.VS_PLAYERS.split('#').filter((_s, i) => i % 2 === 0);
+
+        host = players[toInt(req.query.player)] || host;
+      }
+
+      const url = host + `Poster/v2/playVideo?id=${req.query.id}&type=${req.query.type}`;
+
+      try {
+        res.send(await requestText(url));
+      }
+      catch {
+        res.sendStatus(404);
+      }
     }
   });
 

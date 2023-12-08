@@ -37,7 +37,7 @@ export class AppComponent implements AfterViewInit, OnInit {
     private confirmationService: ConfirmationService,
     private messageService: MessageService
   ) {
-    StatusInterceptor.getStatusUpdates(status => {
+    StatusInterceptor.getHttpStatusUpdates(status => {
       if ([401, 403, 440].indexOf(status) >= 0) {
         this.messageService.clear();
         auth.logout();
