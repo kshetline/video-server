@@ -377,7 +377,7 @@
   }
 }
 
-@media screen and (orientation: portrait) and (max-width: 620px) {
+@media screen and (orientation: portrait) and (max-width: 900px) {
   .content {
     grid-template-columns: auto;
 
@@ -436,7 +436,7 @@
 
         .swappable-info {
           .general-wrapper .general .text-wrapper {
-            height: 5.7em;
+            height: 5.5em;
           }
 
           .gallery-wrapper .gallery .person .image-frame {
@@ -452,7 +452,7 @@
           }
 
           .tab {
-            height: 9em;
+            height: 9.3em;
           }
         }
       }
@@ -468,7 +468,7 @@
 
     .show-info-wrapper .show-info .swappable-info {
       .general-wrapper .general .text-wrapper {
-        height: 5.7em;
+        height: 5.5em;
       }
 
       .gallery-wrapper .gallery .person .image-frame {
@@ -484,7 +484,7 @@
       }
 
       .tab {
-        height: 9em;
+        height: 9.3em;
       }
     }
   }
