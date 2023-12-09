@@ -473,7 +473,7 @@ function getApp(): Express {
 
       if (mainPlayer || uri) {
         const url = mainPlayer ?
-          `${host}Poster/v2/playVideo?id=${req.query.id}&type=${req.query.type}` :
+          `${host}Poster/v2/playVideo?id=${req.query.id}&type=0` :
           `${host}ZidooFileControl/openFile?videoplaymode=0&path=${encodeForUri(process.env.VS_ZIDOO_SOURCE_ROOT + uri)}`;
 
         try {

@@ -406,7 +406,7 @@ export class ShowViewComponent implements OnInit {
   }
 
   playOnMediaPlayer(player: number): void {
-    this.httpClient.get(`/api/play?id=${this.video.aggregationId}&type=${this.video.type}&player=${player}`).subscribe();
+    this.httpClient.get(`/api/play?id=${this.video.aggregationId}&player=${player}`).subscribe();
   }
 
   closePlayer(): void {
