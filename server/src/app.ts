@@ -373,6 +373,24 @@ function getApp(): Express {
     return null;
   }
 
+  function findUriByAggregationId(agId: number, item?: LibraryItem): string {
+    if (!item)
+      item = { aggregationId: -1, data: cachedLibrary.array } as LibraryItem;
+
+    if (isFile(item) && item.aggregationId === agId)
+      return item.uri;
+    else if (item.data) {
+      for (const child of item.data) {
+        const match = findUriByAggregationId(agId, child);
+
+        if (match)
+          return match;
+      }
+    }
+
+    return null;
+  }
+
   theApp.get('/api/stream-check', async (req, res) => {
     noCache(res);
 
@@ -447,14 +465,26 @@ function getApp(): Express {
         host = players[toInt(req.query.player)] || host;
       }
 
-      const url = host + `Poster/v2/playVideo?id=${req.query.id}&type=${req.query.type}`;
+      const mainPlayer = (req.query.player == null || toInt(req.query.player) === 0);
+      let uri: string;
 
-      try {
-        res.send(await requestText(url));
+      if (!mainPlayer)
+        uri = findUriByAggregationId(toInt(req.query.id));
+
+      if (mainPlayer || uri) {
+        const url = mainPlayer ?
+          `${host}Poster/v2/playVideo?id=${req.query.id}&type=${req.query.type}` :
+          `${host}ZidooFileControl/openFile?videoplaymode=0&path=${encodeForUri(process.env.VS_ZIDOO_SOURCE_ROOT + uri)}`;
+
+        try {
+          res.send(await requestText(url));
+        }
+        catch {
+          res.sendStatus(404);
+        }
       }
-      catch {
+      else
         res.sendStatus(404);
-      }
     }
   });
 

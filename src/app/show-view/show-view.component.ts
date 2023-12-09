@@ -7,7 +7,7 @@ import { HttpClient } from '@angular/common/http';
 import { checksum53, isFile, isMovie, isTvSeason } from '../../../server/src/shared-utils';
 import { StatusInterceptor } from '../status.service';
 import { AuthService } from '../auth.service';
-import { MenuItem } from 'primeng/api';
+import { MenuItem, MessageService } from 'primeng/api';
 
 const FADER_TRANSITION_DURATION = '0.75s';
 
@@ -21,7 +21,8 @@ interface Person {
 @Component({
   selector: 'app-show-view',
   templateUrl: './show-view.component.html',
-  styleUrls: ['./show-view.component.scss']
+  styleUrls: ['./show-view.component.scss'],
+  providers: [MessageService]
 })
 export class ShowViewComponent implements OnInit {
   readonly getSeasonTitle = getSeasonTitle;
@@ -54,7 +55,11 @@ export class ShowViewComponent implements OnInit {
   videoLabels: string[] = [];
   videoIndex = 0;
 
-  constructor(private httpClient: HttpClient, private auth: AuthService) {}
+  constructor(
+    private httpClient: HttpClient,
+    private auth: AuthService,
+    private messageService: MessageService
+  ) {}
 
   ngOnInit(): void {
     this.httpClient.get<string[]>('/api/players').subscribe(players => {
@@ -394,7 +399,10 @@ export class ShowViewComponent implements OnInit {
   }
 
   play(): void {
-    this.playSrc = this.streamUri;
+    if (!this.streamUri)
+      this.messageService.add({ severity: 'warn', summary: 'Can\'t play in browser', detail: 'Streaming not available.' });
+    else
+      this.playSrc = this.streamUri;
   }
 
   playOnMediaPlayer(player: number): void {
