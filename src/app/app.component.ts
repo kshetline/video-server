@@ -64,7 +64,10 @@ export class AppComponent implements AfterViewInit, OnInit {
 
   ngOnInit(): void {
     fetch('/assets/tiny_clear.png').finally();
-    this.httpClient.jsonp<string>('https://shetline.com/myip.php', 'callback').subscribe(ip => this.myIP = ip);
+    this.httpClient.jsonp<string>('https://shetline.com/myip.php', 'callback').subscribe(ip => {
+      this.myIP = ip;
+      this.getStatusObservable().subscribe(status => this.status = status);
+    });
 
     window.addEventListener('click', evt => {
       if (evt.altKey) {
@@ -158,7 +161,7 @@ export class AppComponent implements AfterViewInit, OnInit {
     if (this.auth.isLoggedIn())
       this.pollLibrary();
 
-    this.getStatus().subscribe({
+    this.getStatusObservable().subscribe({
       next: status => this.status = status,
       complete: () => this.canPoll = true
     });
@@ -289,7 +292,7 @@ export class AppComponent implements AfterViewInit, OnInit {
     if (!this.canPoll)
       setTimeout(() => this.pollStatus(), 250);
     else {
-      this.getStatus().subscribe({
+      this.getStatusObservable().subscribe({
         next: status => {
           const finished = status.ready && (!this.status || !this.status.ready);
           this.status = status;
@@ -305,7 +308,7 @@ export class AppComponent implements AfterViewInit, OnInit {
     }
   };
 
-  private getStatus(): Observable<ServerStatus> {
+  private getStatusObservable(): Observable<ServerStatus> {
     let options = {};
 
     if (this.myIP)
