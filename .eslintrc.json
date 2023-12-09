@@ -64,6 +64,7 @@
       }
     ],
     "guard-for-in": "error",
+    "import/first": "off",
     "key-spacing": "off",
     "multiline-ternary": "off",
     "node/no-callback-literal": "off",

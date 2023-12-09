@@ -18,18 +18,31 @@
   OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+import { asLines, encodeForUri, isString, makePlainASCII, toBoolean, toInt } from '@tubular/util';
+import fs, { readFileSync } from 'fs';
+import * as paths from 'path';
+
+process.chdir(__dirname);
+
+for (let i = 2; i < process.argv.length; ++i) {
+  if (process.argv[i] === '-env') {
+    const envFile = process.argv[i + 1] || '.env';
+    const vars = asLines(readFileSync(envFile).toString()).map(line => /^([^=]+)=(.*)$/.exec(line))
+      .filter(pair => pair != null).map(pair => ({ name: pair[1].trim(), value: pair[2] }));
+
+    vars.forEach(p => process.env[p.name] = p.value);
+  }
+}
+
 import { execSync } from 'child_process';
 import cookieParser from 'cookie-parser';
 import express, { Express, Response } from 'express';
 import * as http from 'http';
 import * as https from 'https';
-import { asLines, encodeForUri, isString, makePlainASCII, toBoolean, toInt } from '@tubular/util';
 import logger from 'morgan';
-import * as paths from 'path';
 import {
   cacheDir, existsAsync, getRemoteAddress, jsonOrJsonp, noCache, normalizePort, role, safeLstat, safeUnlink, timeStamp, unref
 } from './vs-util';
-import fs from 'fs';
 import { Resolver } from 'node:dns';
 import { cachedLibrary, initLibrary, pendingLibrary, router as libraryRouter, updateLibrary } from './library-router';
 import { router as imageRouter } from './image-router';
@@ -241,7 +254,7 @@ function getApp(): Express {
       res.status(403).end();
   });
 
-  theApp.use(express.static(paths.join(__dirname, 'public')));
+  theApp.use(express.static('public'));
   theApp.get('/', (_req, res) => {
     res.send('Static home file not found');
   });

@@ -20,7 +20,6 @@ export class AppComponent implements AfterViewInit, OnInit {
   private canPoll = false;
   private getSparseLibrary = true;
   private gettingLibrary = false;
-  private myIP = '';
 
   bonusSource: LibraryItem;
   clickDelayed = false;
@@ -64,10 +63,6 @@ export class AppComponent implements AfterViewInit, OnInit {
 
   ngOnInit(): void {
     fetch('/assets/tiny_clear.png').finally();
-    this.httpClient.jsonp<string>('https://shetline.com/myip.php', 'callback').subscribe(ip => {
-      this.myIP = ip;
-      this.getStatusObservable().subscribe(status => this.status = status);
-    });
 
     window.addEventListener('click', evt => {
       if (evt.altKey) {
@@ -309,11 +304,6 @@ export class AppComponent implements AfterViewInit, OnInit {
   };
 
   private getStatusObservable(): Observable<ServerStatus> {
-    let options = {};
-
-    if (this.myIP)
-      options = { headers: { 'x-real-ip': this.myIP } };
-
-    return this.httpClient.get<ServerStatus>('/api/status', options);
+    return this.httpClient.get<ServerStatus>('/api/status');
   }
 }
