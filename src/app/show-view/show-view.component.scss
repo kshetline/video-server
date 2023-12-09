@@ -221,6 +221,7 @@
               gap: 0.33em;
               margin-top: 0.5em;
               position: absolute;
+              width: var(--overview-width);
 
               .badge {
                 background-color: white;
@@ -435,7 +436,7 @@
 
         .swappable-info {
           .general-wrapper .general .text-wrapper {
-            height: 5.5em;
+            height: 5.7em;
           }
 
           .gallery-wrapper .gallery .person .image-frame {

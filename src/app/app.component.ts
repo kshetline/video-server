@@ -8,6 +8,7 @@ import { AuthService } from './auth.service';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { checksum53, isAnyCollection, isMovie, isTvSeason, isTvShow } from '../../server/src/shared-utils';
 import { StatusInterceptor } from './status.service';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -19,6 +20,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   private canPoll = false;
   private getSparseLibrary = true;
   private gettingLibrary = false;
+  private myIP = '';
 
   bonusSource: LibraryItem;
   clickDelayed = false;
@@ -62,6 +64,7 @@ export class AppComponent implements AfterViewInit, OnInit {
 
   ngOnInit(): void {
     fetch('/assets/tiny_clear.png').finally();
+    this.httpClient.jsonp<string>('https://shetline.com/myip.php', 'callback').subscribe(ip => this.myIP = ip);
 
     window.addEventListener('click', evt => {
       if (evt.altKey) {
@@ -155,7 +158,7 @@ export class AppComponent implements AfterViewInit, OnInit {
     if (this.auth.isLoggedIn())
       this.pollLibrary();
 
-    this.httpClient.get<ServerStatus>('/api/status').subscribe({
+    this.getStatus().subscribe({
       next: status => this.status = status,
       complete: () => this.canPoll = true
     });
@@ -286,7 +289,7 @@ export class AppComponent implements AfterViewInit, OnInit {
     if (!this.canPoll)
       setTimeout(() => this.pollStatus(), 250);
     else {
-      this.httpClient.get<ServerStatus>('/api/status').subscribe({
+      this.getStatus().subscribe({
         next: status => {
           const finished = status.ready && (!this.status || !this.status.ready);
           this.status = status;
@@ -301,4 +304,13 @@ export class AppComponent implements AfterViewInit, OnInit {
       });
     }
   };
+
+  private getStatus(): Observable<ServerStatus> {
+    let options = {};
+
+    if (this.myIP)
+      options = { headers: { 'x-real-ip': this.myIP } };
+
+    return this.httpClient.get<ServerStatus>('/api/status', options);
+  }
 }

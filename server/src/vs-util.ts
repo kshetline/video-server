@@ -155,5 +155,7 @@ export async function touch(path: string, newIfNonexistent = true): Promise<void
 }
 
 export function getRemoteAddress(req: Request): string {
-  return (req.headers['x-real-ip'] as string) || req.socket.remoteAddress;
+  return ((req.headers['x-real-ip'] as string) ||
+    (req.headers['x-forwarded-for'] as string) ||
+    req.socket.remoteAddress || '').replace(/.*:/, '');
 }
