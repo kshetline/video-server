@@ -24,6 +24,9 @@ import * as paths from 'path';
 
 process.chdir(__dirname);
 
+if (process.cwd().endsWith('tsc-out'))
+  process.chdir('..');
+
 for (let i = 2; i < process.argv.length; ++i) {
   if (process.argv[i] === '-env') {
     const envFile = process.argv[i + 1] || '.env';
@@ -340,7 +343,7 @@ function getApp(): Express {
     const remote = getRemoteAddress(req);
     const status: ServerStatus = {
       lastUpdate: cachedLibrary?.lastUpdate,
-      localAccess: remote === '::1' || remote?.startsWith('192.168.') || (hostIps || []).indexOf(remote) >= 0,
+      localAccess: remote === '::1' || remote === '127.0.0.1' || remote?.startsWith('192.168.') || (hostIps || []).indexOf(remote) >= 0,
       ready: cachedLibrary?.status === LibraryStatus.DONE,
       updateProgress: -1
     };
@@ -479,15 +482,18 @@ function getApp(): Express {
       }
 
       const mainPlayer = (req.query.player == null || toInt(req.query.player) === 0);
-      let uri: string;
+      let uri = req.query.uri as string;
 
-      if (!mainPlayer)
+      if (uri && !uri.startsWith('/'))
+        uri = '/' + uri;
+
+      if (!mainPlayer && !uri)
         uri = findUriByAggregationId(toInt(req.query.id));
 
       if (mainPlayer || uri) {
-        const url = mainPlayer ?
-          `${host}Poster/v2/playVideo?id=${req.query.id}&type=0` :
-          `${host}ZidooFileControl/openFile?videoplaymode=0&path=${encodeForUri(process.env.VS_ZIDOO_SOURCE_ROOT + uri)}`;
+        const url = uri ?
+          `${host}ZidooFileControl/openFile?videoplaymode=0&path=${encodeForUri(process.env.VS_ZIDOO_SOURCE_ROOT + uri)}` :
+          `${host}Poster/v2/playVideo?id=${req.query.id}&type=0`;
 
         try {
           res.send(await requestText(url));

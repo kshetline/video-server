@@ -8,7 +8,7 @@ import { hashTitle } from './shared-utils';
 const guestFilter = new Set(process.env.VS_GUEST_FILTER ? process.env.VS_GUEST_FILTER.split(';') : []);
 const demoFilter = new Set(process.env.VS_DEMO_FILTER ? process.env.VS_DEMO_FILTER.split(';') : []);
 
-export const cacheDir = paths.join(__dirname, 'cache');
+export const cacheDir = paths.join(process.cwd(), 'cache');
 export const thumbnailDir = paths.join(cacheDir, 'thumbnail');
 
 for (const dir of [

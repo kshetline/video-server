@@ -3,9 +3,11 @@
 </div>
 <div class="content" [style.background-image]="getBackgroundUrl()">
   <div class="inner-content">
-    <div *ngFor="let extra of extras" class="extra">
-      <button pButton type="button" label="Play" icon="pi pi-play" class="p-button-sm"
+    <div *ngFor="let extra of extras; index as i" class="extra">
+      <button *ngIf="!localAccess()" pButton type="button" label="Play" icon="pi pi-play" class="p-button-sm"
         [disabled]="!streamUris.get(extra)" (click)="play(extra)"></button>
+      <p-splitButton *ngIf="localAccess()" label="Play" icon="pi pi-play" class="p-button-sm"
+        [model]="getPlayerMenu(i, extra)" [class.dim]="!streamUris.get(extra)" (onClick)="play(extra)"></p-splitButton>
       <button #btn pButton type="button" label="Download" icon="pi pi-download"
               class="p-button-sm" (click)="startDownload(btn)"></button>
       <a [href]="downloadLink(extra)"><div>&nbsp;</div></a>

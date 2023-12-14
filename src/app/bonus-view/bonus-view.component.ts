@@ -1,24 +1,28 @@
-import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
 import { LibraryItem } from '../../../server/src/shared-types';
 import { canPlayVP9, getImageParam } from '../video-ui-utils';
 import { encodeForUri } from '@tubular/util';
 import { HttpClient } from '@angular/common/http';
 import { checksum53, isMovie, isTvShow } from '../../../server/src/shared-utils';
 import { StatusInterceptor } from '../status.service';
+import { MenuItem } from 'primeng/api';
+import { AuthService } from '../auth.service';
 
 @Component({
   selector: 'app-bonus-view',
   templateUrl: './bonus-view.component.html',
   styleUrls: ['./bonus-view.component.scss']
 })
-export class BonusViewComponent {
+export class BonusViewComponent implements OnInit {
   private _playSrc = '';
   private _source: LibraryItem;
 
   extras: string[] = [];
+  players: string[] = [];
+  playerMenus: MenuItem[][] = [];
   streamUris = new Map<string, string>();
 
-  constructor(private httpClient: HttpClient) {}
+  constructor(private httpClient: HttpClient, private auth: AuthService) {}
 
   @Input() get playSrc(): string { return this._playSrc; }
   set playSrc(value: string) {
@@ -35,6 +39,7 @@ export class BonusViewComponent {
       this._source = value;
       this.extras = [];
       this.playSrc = '';
+      this.playerMenus = [];
 
       if (value) {
         let src = value;
@@ -63,6 +68,10 @@ export class BonusViewComponent {
   @HostListener('window:keydown', ['$event']) onKeyDown(event:KeyboardEvent): void {
     if (this.source && event.key === 'Escape')
       this.goBack.emit();
+  }
+
+  ngOnInit(): void {
+    this.httpClient.get<string[]>('/api/players').subscribe(players => this.players = players);
   }
 
   getBackgroundUrl(): string {
@@ -94,6 +103,24 @@ export class BonusViewComponent {
 
   play(uri: string): void {
     this.playSrc = this.streamUris.get(uri);
+  }
+
+  getPlayerMenu(index: number, uri: string): MenuItem[] {
+    if (!this.playerMenus[index])
+      this.playerMenus[index] = this.players.map((name, i) => ({
+        label: `Play: ${name}`,
+        command: () => this.playOnMediaPlayer(i, uri)
+      }));
+
+    return this.playerMenus[index];
+  }
+
+  playOnMediaPlayer(player: number, uri: string): void {
+    this.httpClient.get(`/api/play?uri=${encodeForUri(uri)}&player=${player}`).subscribe();
+  }
+
+  localAccess(): boolean {
+    return this.players.length > 0 && this.auth.getSession()?.role === 'admin' && StatusInterceptor.localAccess;
   }
 
   closePlayer(): void {
