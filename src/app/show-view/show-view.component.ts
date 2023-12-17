@@ -1,6 +1,6 @@
 import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
 import { Cut, LibraryItem } from '../../../server/src/shared-types';
-import { canPlayVP9, getImageParam, getSeasonTitle, setCssVariable } from '../video-ui-utils';
+import { areImagesSimilar, canPlayVP9, getImageParam, getSeasonTitle, setCssVariable } from '../video-ui-utils';
 import { encodeForUri } from '@tubular/util';
 import { floor, max, round } from '@tubular/math';
 import { HttpClient } from '@angular/common/http';
@@ -41,12 +41,14 @@ export class ShowViewComponent implements OnInit {
   badges: string[] = [];
   categoryLabels: string[] = [];
   faderOpacity = '0';
+  identicalThumbnail = false;
   people: Person[] = [];
   players: MenuItem[] = [];
   selection: LibraryItem;
   showCast = false;
   streamUri: string;
   thumbnail: string;
+  thumbnailNaturalWidth = 0;
   thumbnailWidth = '0';
   transitionDuration = FADER_TRANSITION_DURATION;
   video: LibraryItem;
@@ -89,6 +91,8 @@ export class ShowViewComponent implements OnInit {
       this.backgroundMain = '';
       this.thumbnail = undefined;
       this.thumbnailMode = false;
+      this.identicalThumbnail = false;
+      this.thumbnailNaturalWidth = 0;
       this.thumbnailWidth = '0';
       this.transitionDuration = FADER_TRANSITION_DURATION;
       this.backgroundChangeInProgress = false;
@@ -344,7 +348,9 @@ export class ShowViewComponent implements OnInit {
           this.thumbnailMode = true;
           this.faderOpacity = '0';
           this.backgroundMain = this.getBackgroundAux(true);
+          areImagesSimilar(img, this.backgroundMain).then(similar => this.identicalThumbnail = similar);
           this.thumbnail = newBackground;
+          this.thumbnailNaturalWidth = img.naturalWidth;
           this.thumbnailWidth = round(img.naturalWidth * 200 / img.naturalHeight) + 'px';
           this.checkPendingBackgroundChange();
 

@@ -1,8 +1,9 @@
 import { LibraryItem } from '../../server/src/shared-types';
-import { stripDiacriticals_lc } from '@tubular/util';
+import { isString, stripDiacriticals_lc } from '@tubular/util';
 import { isCollection, isMovie, isTvSeason, isTvShow } from '../../server/src/shared-utils';
 import { fromEvent } from 'rxjs/internal/observable/fromEvent';
 import { debounceTime } from 'rxjs/internal/operators/debounceTime';
+import { compare as imageCompare } from 'resemblejs';
 
 let imageIndex = 0;
 
@@ -138,4 +139,50 @@ export function canPlayVP9(): boolean {
 
 export function searchForm(s: string): string {
   return stripDiacriticals_lc(s.trim()).replace(/[^_0-9a-z]/i, '');
+}
+
+async function getImageData(image: string | HTMLImageElement): Promise<ImageData> {
+  return new Promise<ImageData>(resolve => {
+    const drawImage = (img: HTMLImageElement): void => {
+      const canvas = new OffscreenCanvas(img.naturalWidth, img.naturalHeight);
+      const ctx: CanvasRenderingContext2D = canvas.getContext('2d') as any;
+
+      ctx.drawImage(img, 0, 0);
+      resolve(ctx.getImageData(0, 0, img.naturalWidth, img.naturalHeight));
+    };
+
+    if (isString(image)) {
+      const img = new Image();
+
+      img.addEventListener('load', () => {
+        setTimeout(() => img.remove());
+        drawImage(img);
+      });
+      img.addEventListener('error', () => { img.remove(); resolve(null); });
+      img.src = image;
+    }
+    else
+      drawImage(image);
+  });
+}
+
+export async function areImagesSimilar(image1: string | HTMLImageElement, image2: string | HTMLImageElement): Promise<boolean> {
+  if (image1 === image2)
+    return true;
+  else if (!image1 !== !image2)
+    return false;
+
+  const data1 = await getImageData(image1);
+  const data2 = await getImageData(image2);
+
+  if (!data1 && !data2)
+    return true;
+  else if (!data1 !== !data2)
+    return false;
+
+  return new Promise<boolean>(resolve => {
+    imageCompare(data1, data2, { ignore: 'antialiasing', scaleToSameSize: true }, (err, data) => {
+      resolve(!err && data.rawMisMatchPercentage < 5);
+    });
+  });
 }

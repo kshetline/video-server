@@ -6,7 +6,8 @@
 <div *ngIf="show" class="content" [style.background-image]="cssUrl(getBackground())">
   <div class="background-fader" [style.opacity]="faderOpacity" [style.background-image]="cssUrl(backgroundOverlay)"
        [style.transition-duration]="transitionDuration"></div>
-  <div *ngIf="thumbnail" class="thumbnail" [style.background-image]="cssUrl(thumbnail)"
+  <div *ngIf="thumbnail && thumbnailNaturalWidth > 1 && !identicalThumbnail"
+       class="thumbnail" [style.background-image]="cssUrl(thumbnail)"
     [style.width]="thumbnailWidth"></div>
   <div class="poster-area">
     <div class="logo">
