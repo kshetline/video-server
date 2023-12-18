@@ -41,7 +41,7 @@ import { execSync } from 'child_process';
 import cookieParser from 'cookie-parser';
 import express, { Express, Response } from 'express';
 import * as http from 'http';
-import * as https from 'https';
+import * as http2 from 'http2';
 import logger from 'morgan';
 import {
   cacheDir, existsAsync, getRemoteAddress, jsonOrJsonp, noCache, normalizePort, role, safeLstat, safeUnlink, timeStamp, unref
@@ -69,7 +69,7 @@ const httpPort = normalizePort(process.env.VS_PORT || defaultPort);
 const insecurePort = normalizePort(process.env.VS_INSECURE_PORT);
 const useHttps = toBoolean(process.env.VS_USE_HTTPS);
 const app = getApp();
-let httpServer: http.Server | https.Server;
+let httpServer: http.Server | http2.Http2SecureServer;
 let insecureServer: http.Server;
 const MAX_START_ATTEMPTS = 3;
 let startAttempts = 0;
@@ -113,10 +113,11 @@ async function cacheCheck(dir = cacheDir, depth = 0): Promise<void> {
 function createAndStartServer(): void {
   console.log(`*** Starting server on port ${httpPort} at ${timeStamp()} ***`);
 
-  httpServer = useHttps ? https.createServer({
+  httpServer = useHttps ? http2.createSecureServer({
     key: fs.readFileSync(process.env.VS_KEY),
-    cert: fs.readFileSync(process.env.VS_CERT)
-  }, app) :
+    cert: fs.readFileSync(process.env.VS_CERT),
+    allowHTTP1: true
+  }, app as any) :
     http.createServer(app);
   httpServer.on('error', onError);
   httpServer.on('listening', onListening);
