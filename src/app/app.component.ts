@@ -155,7 +155,10 @@ export class AppComponent implements AfterViewInit, OnInit {
         this.status = status;
 
         if (this.status.wsPort) {
-          this.webSocket = new WebSocket(`ws://${location.hostname}:${this.status.wsPort}`);
+          const protocol = (/https/.test(location.protocol) ? 'wss' : 'ws');
+          const port = this.status.wsPort < 0 ? location.port : this.status.wsPort;
+
+          this.webSocket = new WebSocket(`${protocol}://${location.hostname}:${port}`);
           this.webSocket.addEventListener('error', () => {
             console.warn('Web socket connection failed');
             this.webSocket = undefined;

@@ -114,7 +114,8 @@ async function cacheCheck(dir = cacheDir, depth = 0): Promise<void> {
 }
 
 function createAndStartServer(): void {
-  console.log(`*** Starting server on port ${httpPort} at ${timeStamp()} ***`);
+  console.log(`*** Starting server on port ${httpPort} at ${timeStamp()}${
+    wsPort ? ', websocket on port ' + (wsPort < 0 ? httpPort : wsPort) : ''} ***`);
 
   httpServer = useHttps ? https.createServer({
     key: fs.readFileSync(process.env.VS_KEY),
@@ -127,8 +128,6 @@ function createAndStartServer(): void {
   users = JSON.parse(fs.readFileSync('users.json').toString('utf8'));
   initLibrary();
 
-  httpServer.listen(httpPort);
-
   if (useHttps && insecurePort) {
     insecureServer = http.createServer(app);
     insecureServer.on('error', onError);
@@ -136,9 +135,21 @@ function createAndStartServer(): void {
     insecureServer.listen(insecurePort);
   }
 
-  if (wsPort)
-    wsServer = new WebSocketServer({ port: wsPort });
+  if (wsPort) {
+    if (wsPort < 0 || wsPort === httpPort)
+      wsServer = new WebSocketServer({ server: httpServer });
+    else {
+      const server = useHttps ? https.createServer({
+        key: fs.readFileSync(process.env.VS_KEY),
+        cert: fs.readFileSync(process.env.VS_CERT)
+      }) :
+        http.createServer();
+      wsServer = new WebSocketServer({ server });
+      server.listen(wsPort);
+    }
+  }
 
+  httpServer.listen(httpPort);
   cacheCheckTimer = setTimeout(() => cacheCheck(), CACHE_CHECK_INTERVAL);
 }
 
