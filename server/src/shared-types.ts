@@ -4,9 +4,10 @@ export enum LibraryStatus { NOT_STARTED, INITIALIZED, BONUS_MATERIAL_LINKED, ALL
 
 export interface ServerStatus {
   lastUpdate: string;
-  localAccess: boolean;
+  localAccess?: boolean;
   ready: boolean;
   updateProgress: number;
+  wsPort: number;
 }
 
 export interface Track {

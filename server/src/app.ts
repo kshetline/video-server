@@ -18,7 +18,7 @@
   OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-import { asLines, encodeForUri, isString, makePlainASCII, toBoolean, toInt } from '@tubular/util';
+import { asLines, encodeForUri, isString, makePlainASCII, processMillis, toBoolean, toInt } from '@tubular/util';
 import fs, { readFileSync } from 'fs';
 import * as paths from 'path';
 
@@ -41,7 +41,8 @@ import { execSync } from 'child_process';
 import cookieParser from 'cookie-parser';
 import express, { Express, Response } from 'express';
 import * as http from 'http';
-import * as http2 from 'http2';
+import * as https from 'https';
+import { WebSocketServer } from 'ws';
 import logger from 'morgan';
 import {
   cacheDir, existsAsync, getRemoteAddress, jsonOrJsonp, noCache, normalizePort, role, safeLstat, safeUnlink, timeStamp, unref
@@ -66,11 +67,13 @@ const devMode = process.argv.includes('-d');
 const allowCors = toBoolean(process.env.VS_ALLOW_CORS) || devMode;
 const defaultPort = devMode ? 4201 : 8080;
 const httpPort = normalizePort(process.env.VS_PORT || defaultPort);
+const wsPort = toInt(process.env.VS_WEB_SOCKET_PORT);
 const insecurePort = normalizePort(process.env.VS_INSECURE_PORT);
 const useHttps = toBoolean(process.env.VS_USE_HTTPS);
 const app = getApp();
-let httpServer: http.Server | http2.Http2SecureServer;
+let httpServer: http.Server | https.Server;
 let insecureServer: http.Server;
+let wsServer: WebSocketServer;
 const MAX_START_ATTEMPTS = 3;
 let startAttempts = 0;
 let users: User[] = [];
@@ -113,11 +116,10 @@ async function cacheCheck(dir = cacheDir, depth = 0): Promise<void> {
 function createAndStartServer(): void {
   console.log(`*** Starting server on port ${httpPort} at ${timeStamp()} ***`);
 
-  httpServer = useHttps ? http2.createSecureServer({
+  httpServer = useHttps ? https.createServer({
     key: fs.readFileSync(process.env.VS_KEY),
-    cert: fs.readFileSync(process.env.VS_CERT),
-    allowHTTP1: true
-  }, app as any) :
+    cert: fs.readFileSync(process.env.VS_CERT)
+  }, app) :
     http.createServer(app);
   httpServer.on('error', onError);
   httpServer.on('listening', onListening);
@@ -133,6 +135,9 @@ function createAndStartServer(): void {
     insecureServer.on('listening', onListening);
     insecureServer.listen(insecurePort);
   }
+
+  if (wsPort)
+    wsServer = new WebSocketServer({ port: wsPort });
 
   cacheCheckTimer = setTimeout(() => cacheCheck(), CACHE_CHECK_INTERVAL);
 }
@@ -206,7 +211,52 @@ function shutdown(signal?: string): void {
   if (insecureServer)
     insecureServer.close();
 
+  if (wsServer)
+    wsServer.close();
+
   httpServer.close(() => process.exit(0));
+}
+
+function getStatus(remote?: string): ServerStatus {
+  const status: ServerStatus = {
+    lastUpdate: cachedLibrary?.lastUpdate,
+    ready: cachedLibrary?.status === LibraryStatus.DONE,
+    updateProgress: -1,
+    wsPort
+  };
+
+  if (remote)
+    status.localAccess = remote === '1' || remote === '127.0.0.1' || remote?.startsWith('192.168.') ||
+      (hostIps || []).indexOf(remote) >= 0;
+
+  if (pendingLibrary)
+    status.updateProgress = pendingLibrary.progress;
+
+  return status;
+}
+
+let statusTimer: any;
+let statusTime = 0;
+
+export function sendStatus(): void {
+  if (wsServer) {
+    if (statusTimer) {
+      clearTimeout(statusTimer);
+      statusTimer = undefined;
+    }
+
+    if (!statusTime)
+      statusTime = processMillis();
+
+    statusTimer = setTimeout(() => {
+      statusTimer = undefined;
+      statusTime = 0;
+
+      const message = JSON.stringify({ type: 'status', data: getStatus() });
+
+      wsServer.clients.forEach(client => client.send(message));
+    }, 1000 + statusTime - processMillis());
+  }
 }
 
 function getApp(): Express {
@@ -217,7 +267,7 @@ function getApp(): Express {
   theApp.use(express.urlencoded({ extended: false }));
   theApp.use(cookieParser());
 
-  //  hashed_password = crypto.pbkdf2Sync("password", salt, 100000, 64, 'sha512').toString('hex')
+  // hashed_password = crypto.pbkdf2Sync("password", salt, 100000, 64, 'sha512').toString('hex')
   theApp.use((req, res, next) => {
     const token = req.cookies.vs_jwt;
     const userInfo = token?.split('.')[1];
@@ -342,15 +392,7 @@ function getApp(): Express {
     }
 
     const remote = getRemoteAddress(req);
-    const status: ServerStatus = {
-      lastUpdate: cachedLibrary?.lastUpdate,
-      localAccess: remote === '::1' || remote === '127.0.0.1' || remote?.startsWith('192.168.') || (hostIps || []).indexOf(remote) >= 0,
-      ready: cachedLibrary?.status === LibraryStatus.DONE,
-      updateProgress: -1
-    };
-
-    if (pendingLibrary)
-      status.updateProgress = pendingLibrary.progress;
+    const status = getStatus(remote);
 
     jsonOrJsonp(req, res, status);
   });

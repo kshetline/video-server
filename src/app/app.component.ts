@@ -2,7 +2,7 @@ import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { LibraryItem, ServerStatus, VideoLibrary } from '../../server/src/shared-types';
 import { addBackLinks, getZIndex, incrementImageIndex } from './video-ui-utils';
-import { isEqual, processMillis } from '@tubular/util';
+import { isEqual, isValidJson, processMillis } from '@tubular/util';
 import { floor } from '@tubular/math';
 import { AuthService } from './auth.service';
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -20,6 +20,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   private canPoll = false;
   private getSparseLibrary = true;
   private gettingLibrary = false;
+  private webSocket: WebSocket;
 
   bonusSource: LibraryItem;
   clickDelayed = false;
@@ -46,16 +47,22 @@ export class AppComponent implements AfterViewInit, OnInit {
 
       switch (status) {
         case 440:
-          this.messageService.add({ severity: 'warn', summary: 'Session Expired',
-                                    detail: 'Your login session has expired.', sticky: true });
+          this.messageService.add({
+            severity: 'warn', summary: 'Session Expired',
+            detail: 'Your login session has expired.', sticky: true
+          });
           break;
         case 403:
-          this.messageService.add({ severity: 'error', summary: 'Forbidden',
-                                    detail: 'Access forbidden.', sticky: true });
+          this.messageService.add({
+            severity: 'error', summary: 'Forbidden',
+            detail: 'Access forbidden.', sticky: true
+          });
           break;
         case 401:
-          this.messageService.add({ severity: 'error', summary: 'Unauthorized',
-                                    detail: 'Unauthorized access.', sticky: true });
+          this.messageService.add({
+            severity: 'error', summary: 'Unauthorized',
+            detail: 'Unauthorized access.', sticky: true
+          });
           break;
       }
     });
@@ -122,7 +129,7 @@ export class AppComponent implements AfterViewInit, OnInit {
           }).subscribe({
             complete: () => {
               const fetchImg = update.saveImg.replace(/^url\(['"]/, '').replace(/['"]\)/, '').replace(/&ii=\d+/, '') +
-                  `&ii=${(incrementImageIndex())}`;
+                `&ii=${(incrementImageIndex())}`;
 
               fetch(fetchImg, { cache: 'reload' }).finally(() => {
                 setTimeout(() => {
@@ -137,19 +144,6 @@ export class AppComponent implements AfterViewInit, OnInit {
         });
       }
     }, true);
-
-    if (navigator.serviceWorker && Date.now() < 0) { // TODO: Enable push events
-      navigator.serviceWorker.register('/assets/service.js').then(reg =>
-        console.log('Service worker registration succeeded:', reg))
-        .catch(err => {
-          console.error('Service worker registration failed:', err);
-          this.pollStatus();
-        });
-    }
-    else {
-      console.warn('Service worker not available');
-      this.pollStatus();
-    }
   }
 
   ngAfterViewInit(): void {
@@ -157,7 +151,28 @@ export class AppComponent implements AfterViewInit, OnInit {
       this.pollLibrary();
 
     this.getStatusObservable().subscribe({
-      next: status => this.status = status,
+      next: status => {
+        this.status = status;
+
+        if (this.status.wsPort) {
+          this.webSocket = new WebSocket(`ws://${location.hostname}:${this.status.wsPort}`);
+          this.webSocket.addEventListener('error', () => {
+            console.warn('Web socket connection failed');
+            this.webSocket = undefined;
+            this.pollStatus();
+          });
+          this.webSocket.addEventListener('message', evt => {
+            const message = isValidJson(evt.data) ? JSON.parse(evt.data) : evt.data;
+
+            if (message?.type === 'status')
+              this.receiveStatus(message.data);
+          });
+        }
+        else {
+          console.warn('Web socket not available');
+          this.pollStatus();
+        }
+      },
       complete: () => this.canPoll = true
     });
 
@@ -283,19 +298,24 @@ export class AppComponent implements AfterViewInit, OnInit {
     this.logoffTime = processMillis();
   }
 
+  private receiveStatus(status: ServerStatus): void {
+    const finished = status.ready && (!this.status || !this.status.ready);
+
+    status.localAccess = status.localAccess ?? this.status.localAccess;
+    this.status = status;
+
+    if (finished ||
+        (this.library && status.lastUpdate && new Date(this.library.lastUpdate) < new Date(status.lastUpdate)))
+      this.pollLibrary();
+  }
+
   private pollStatus = (): void => {
     if (!this.canPoll)
       setTimeout(() => this.pollStatus(), 250);
     else {
       this.getStatusObservable().subscribe({
         next: status => {
-          const finished = status.ready && (!this.status || !this.status.ready);
-          this.status = status;
-
-          if (finished ||
-              (this.library && status.lastUpdate && new Date(this.library.lastUpdate) < new Date(status.lastUpdate)))
-            this.pollLibrary();
-
+          this.receiveStatus(status);
           setTimeout(() => this.pollStatus(), this.status.updateProgress < 0 ? 60000 : 2000);
         },
         error: () => setTimeout(() => this.pollStatus(), 1000)

@@ -10,6 +10,7 @@ import { existsSync, lstatSync, readFileSync } from 'fs';
 import {
   isAnyCollection, isCollection, isFile, isMovie, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter
 } from './shared-utils';
+import { sendStatus } from './app';
 
 export const router = Router();
 
@@ -270,8 +271,10 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
       }
     }
 
-    if (items === pendingLibrary.array)
+    if (items === pendingLibrary.array) {
       pendingLibrary.progress = min(pendingLibrary.progress + 44 / 2.89 / pendingLibrary.total, 39.7);
+      sendStatus();
+    }
   }
 }
 
@@ -321,8 +324,10 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
     else
       await getMediaInfo(item.data);
 
-    if (items === pendingLibrary.array)
+    if (items === pendingLibrary.array) {
       pendingLibrary.progress = min(pendingLibrary.progress + 110 / 2.89 / pendingLibrary.total, 77.8);
+      sendStatus();
+    }
   }
 }
 
@@ -350,8 +355,10 @@ async function getDirectories(dir: string, bonusDirs: Set<string>, map: Map<stri
 
       const specialDir = /[•§]/.test(path) || /§.*\bSeason 0?1\b/.test(path);
 
-      if (!isBonusDir && (specialDir && subCount === 0 || !specialDir && subCount > 0))
+      if (!isBonusDir && (specialDir && subCount === 0 || !specialDir && subCount > 0)) {
         pendingLibrary.progress = min(pendingLibrary.progress + 71 / 2.89 / pendingLibrary.total, 24.5);
+        sendStatus();
+      }
     }
     else {
       if (!map.has(dir))
@@ -451,8 +458,10 @@ async function getShowInfo(items: LibraryItem[]): Promise<void> {
     else
       await getShowInfo(item.data);
 
-    if (items === pendingLibrary.array)
+    if (items === pendingLibrary.array) {
       pendingLibrary.progress = min(pendingLibrary.progress + 64 / 2.89 / pendingLibrary.total, 99.4);
+      sendStatus();
+    }
   }
 }
 
@@ -652,6 +661,7 @@ export async function updateLibrary(quick = false): Promise<void> {
     pendingLibrary.progress = 0;
     pendingLibrary.mainFileCount = 0;
     pendingLibrary.bonusFileCount = 0;
+    sendStatus();
 
     if (cachedLibrary.status === LibraryStatus.NOT_STARTED)
       cachedLibrary = pendingLibrary;
@@ -666,13 +676,16 @@ export async function updateLibrary(quick = false): Promise<void> {
     else {
       await getDirectories(vSource, bonusDirs, directoryMap);
       pendingLibrary.progress = 24.5;
+      sendStatus();
       pendingLibrary.status = LibraryStatus.BONUS_MATERIAL_LINKED;
       await getChildren(pendingLibrary.array, bonusDirs, directoryMap);
       pendingLibrary.progress = 39.7;
+      sendStatus();
       pendingLibrary.status = LibraryStatus.ALL_VIDEOS;
       await getMediaInfo(pendingLibrary.array);
       fixVideoFlagsAndEncoding(pendingLibrary.array);
       pendingLibrary.progress = 77.8;
+      sendStatus();
       pendingLibrary.status = LibraryStatus.MEDIA_DETAILS;
       await getShowInfo(pendingLibrary.array);
     }
@@ -683,6 +696,7 @@ export async function updateLibrary(quick = false): Promise<void> {
     pendingLibrary.lastUpdate = new Date().toISOString();
     pendingLibrary.progress = 100;
     cachedLibrary = pendingLibrary;
+    sendStatus();
 
     await writeFile(libraryFile, JSON.stringify(cachedLibrary), 'utf8');
   }
