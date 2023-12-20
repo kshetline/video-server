@@ -9,6 +9,7 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { checksum53, isAnyCollection, isMovie, isTvSeason, isTvShow } from '../../server/src/shared-utils';
 import { StatusInterceptor } from './status.service';
 import { Observable } from 'rxjs';
+import { shareReplay } from 'rxjs/internal/operators/shareReplay';
 
 @Component({
   selector: 'app-root',
@@ -17,9 +18,9 @@ import { Observable } from 'rxjs';
   providers: [ConfirmationService, MessageService, StatusInterceptor]
 })
 export class AppComponent implements AfterViewInit, OnInit {
-  private canPoll = false;
   private getSparseLibrary = true;
   private gettingLibrary = false;
+  private readyToPoll = false;
   private webSocket: WebSocket;
 
   bonusSource: LibraryItem;
@@ -32,6 +33,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   playing = false;
   showRefreshDialog = false;
   status: ServerStatus;
+  wsReady = false;
 
   constructor(
     private httpClient: HttpClient,
@@ -159,9 +161,11 @@ export class AppComponent implements AfterViewInit, OnInit {
           const port = this.status.wsPort < 0 ? location.port : this.status.wsPort;
 
           this.webSocket = new WebSocket(`${protocol}://${location.hostname}:${port}`);
+          this.webSocket.addEventListener('open', () => this.wsReady = true);
           this.webSocket.addEventListener('error', () => {
             console.warn('Web socket connection failed');
             this.webSocket = undefined;
+            this.wsReady = false;
             this.pollStatus();
           });
           this.webSocket.addEventListener('message', evt => {
@@ -176,7 +180,7 @@ export class AppComponent implements AfterViewInit, OnInit {
           this.pollStatus();
         }
       },
-      complete: () => this.canPoll = true
+      complete: () => this.readyToPoll = true
     });
 
     this.auth.loginStatus.subscribe(state => {
@@ -313,8 +317,9 @@ export class AppComponent implements AfterViewInit, OnInit {
   }
 
   private pollStatus = (): void => {
-    if (!this.canPoll)
-      setTimeout(() => this.pollStatus(), 250);
+    if (this.wsReady) {}
+    else if (!this.readyToPoll)
+      setTimeout(() => this.pollStatus(), 500);
     else {
       this.getStatusObservable().subscribe({
         next: status => {
@@ -327,6 +332,6 @@ export class AppComponent implements AfterViewInit, OnInit {
   };
 
   private getStatusObservable(): Observable<ServerStatus> {
-    return this.httpClient.get<ServerStatus>('/api/status');
+    return this.httpClient.get<ServerStatus>('/api/status').pipe(shareReplay());
   }
 }
