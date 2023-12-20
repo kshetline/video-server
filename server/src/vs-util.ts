@@ -126,10 +126,18 @@ export function role(req: any): 'admin' | 'demo' | 'guest' {
   return req.user?.role;
 }
 
+export function isAdmin(req: any): boolean {
+  return req.user?.role === 'admin';
+}
+
+export function isDemo(req: any): boolean {
+  return req.user?.role === 'demo';
+}
+
 export function itemAccessAllowed(item: LibraryItem, role: string): boolean {
   const filters = [guestFilter];
 
-  if (role === 'demo')
+  if (isDemo(role))
     filters.push(demoFilter);
 
   for (const filter of filters) {

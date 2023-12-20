@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import paths from 'path';
-import { existsAsync, role } from './vs-util';
+import { existsAsync, isDemo } from './vs-util';
 
 export const router = Router();
 
@@ -8,7 +8,7 @@ router.get('/*', async (req, res) => {
   const filePath = paths.join(process.env.VS_STREAMING_SOURCE,
     req.url.substring(1).split('/').map(s => decodeURIComponent(s)).join('/')).normalize();
 
-  if (role(req) === 'demo' && !filePath.endsWith('.sample.mp4')) {
+  if (isDemo(req) && !filePath.endsWith('.sample.mp4')) {
     res.sendStatus(403);
     return;
   }

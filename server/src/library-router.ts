@@ -5,7 +5,7 @@ import { abs, floor, min } from '@tubular/math';
 import { requestJson } from 'by-request';
 import paths from 'path';
 import { readdir, readFile, writeFile } from 'fs/promises';
-import { cacheDir, existsAsync, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat, unref } from './vs-util';
+import { cacheDir, existsAsync, isAdmin, isDemo, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat, unref } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
 import {
   isAnyCollection, isCollection, isFile, isMovie, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter
@@ -733,7 +733,7 @@ function filterLibrary(items: LibraryItem[], role: string): void {
   }
 
   for (const item of items) {
-    if (role === 'demo' && item.uri) {
+    if (isDemo(role) && item.uri) {
       item.shadowUri = item.uri;
       item.uri = item.mobileUri = item.streamUri = item.sampleUri;
     }
@@ -772,7 +772,7 @@ router.get('/', async (req, res) => {
 
   response.array = response.array.filter(i => !i.hide);
 
-  if (role(req) !== 'admin')
+  if (!isAdmin(req))
     filterLibrary(response.array, role(req));
 
   if (toBoolean(req.query.sparse)) {

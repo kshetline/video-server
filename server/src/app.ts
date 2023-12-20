@@ -45,7 +45,7 @@ import * as https from 'https';
 import { WebSocketServer } from 'ws';
 import logger from 'morgan';
 import {
-  cacheDir, existsAsync, getRemoteAddress, jsonOrJsonp, noCache, normalizePort, role, safeLstat, safeUnlink, timeStamp, unref
+  cacheDir, existsAsync, getRemoteAddress, isAdmin, isDemo, jsonOrJsonp, noCache, normalizePort, safeLstat, safeUnlink, timeStamp, unref
 } from './vs-util';
 import { Resolver } from 'node:dns';
 import { cachedLibrary, initLibrary, pendingLibrary, router as libraryRouter, updateLibrary } from './library-router';
@@ -464,7 +464,7 @@ function getApp(): Express {
   theApp.get('/api/stream-check', async (req, res) => {
     noCache(res);
 
-    const demo = role(req) === 'demo';
+    const demo = isDemo(req);
     const mobile = toBoolean(req.query.mobile);
     let uri = req.query.uri as string;
     let streamUri: string;
@@ -504,7 +504,7 @@ function getApp(): Express {
   });
 
   theApp.post('/api/library-refresh', async (req, res) => {
-    if (role(req) !== 'admin')
+    if (!isAdmin(req))
       res.sendStatus(403);
     else {
       updateLibrary(toBoolean(req.query.quick)).finally();
@@ -515,7 +515,7 @@ function getApp(): Express {
   theApp.get('/api/players', async (req, res) => {
     noCache(res);
 
-    if (role(req) !== 'admin' || !process.env.VS_PLAYERS)
+    if (!isAdmin(req) || !process.env.VS_PLAYERS)
       res.json([]);
     else
       res.json(process.env.VS_PLAYERS.split('#').filter((_s, i) => i % 2 === 1));
@@ -524,7 +524,7 @@ function getApp(): Express {
   theApp.get('/api/play', async (req, res) => {
     noCache(res);
 
-    if (role(req) !== 'admin')
+    if (!isAdmin(req))
       res.sendStatus(403);
     else {
       let host = process.env.VS_ZIDOO_CONNECT;
