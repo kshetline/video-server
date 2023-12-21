@@ -287,7 +287,7 @@ export class AppComponent implements AfterViewInit, OnInit {
 
   refresh(quick = false): void {
     this.showRefreshDialog = false;
-    this.httpClient.post(`/api/library-refresh${quick ? '?quick=true' : ''}`, null).subscribe(() => {
+    this.httpClient.post(`/api/admin/library-refresh${quick ? '?quick=true' : ''}`, null).subscribe(() => {
       setTimeout(() => this.pollStatus(), 500);
     });
   }

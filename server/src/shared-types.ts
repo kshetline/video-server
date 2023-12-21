@@ -214,3 +214,90 @@ export interface UserSession {
   role: string;
   expiration: number;
 }
+
+interface MediaTrack {
+  '@type': string;
+  BitDepth?: string;
+  Channels?: string;
+  Channels_Original?: string;
+  ChannelPositions?: string;
+  ChannelPositions_Original?: string;
+  ChannelLayout?: string;
+  ChannelLayout_Original?: string;
+  CodecID?: string;
+  Encoded_Library?: string;
+  DisplayAspectRatio?: string;
+  HDR_Format?: string;
+}
+
+export interface MediaWrapper {
+  media: {
+    track: MediaTrack[];
+  }
+}
+
+export interface GeneralTrackProperties {
+  codec_id: string;
+  default_track: boolean;
+  enabled_track: boolean;
+  flag_commentary: boolean;
+  flag_original: boolean;
+  forced_track: boolean;
+  language: string;
+  language_ietf?: string;
+  media?: MediaTrack;
+  number: number;
+  track_name?: string;
+  type: string;
+  uid: string;
+}
+
+export interface AudioTrackProperties extends GeneralTrackProperties {
+  audio_channels: number;
+  flag_visual_impaired: boolean;
+}
+
+export interface SubtitlesTrackProperties extends GeneralTrackProperties {
+  flag_hearing_impaired: boolean;
+}
+
+export interface VideoTrackProperties extends GeneralTrackProperties{
+  display_dimensions: string;
+  pixel_dimensions: string;
+  stereo_mode?: number;
+}
+
+export interface GeneralTrack {
+  codec: string;
+  id: number;
+  properties: GeneralTrackProperties;
+  type: string;
+}
+
+export interface AudioTrack extends GeneralTrack {
+  properties: AudioTrackProperties;
+}
+
+export interface SubtitlesTrack extends GeneralTrack {
+  properties: SubtitlesTrackProperties;
+}
+
+export interface VideoTrack extends GeneralTrack {
+  properties: VideoTrackProperties;
+}
+
+export type MkvTrack = AudioTrack | SubtitlesTrack | VideoTrack;
+
+export interface MKVInfo {
+  chapters?: [{ num_entries: number }];
+  container: {
+    properties: {
+      date_local?: string;
+      date_utc?: string;
+      duration: number;
+      title?: string;
+      writing_application?: string;
+    }
+  };
+  tracks: MkvTrack[];
+}

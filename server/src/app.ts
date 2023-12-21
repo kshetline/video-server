@@ -48,15 +48,17 @@ import {
   cacheDir, existsAsync, getRemoteAddress, isAdmin, isDemo, jsonOrJsonp, noCache, normalizePort, safeLstat, safeUnlink, timeStamp, unref
 } from './vs-util';
 import { Resolver } from 'node:dns';
-import { cachedLibrary, initLibrary, pendingLibrary, router as libraryRouter, updateLibrary } from './library-router';
+import { cachedLibrary, initLibrary, pendingLibrary, router as libraryRouter } from './library-router';
 import { router as imageRouter } from './image-router';
 import { router as streamingRouter } from './streaming-router';
+import { router as adminRouter } from './admin-router';
 import { LibraryItem, LibraryStatus, ServerStatus, User, UserSession } from './shared-types';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { isFile } from './shared-utils';
 import { readdir } from 'fs/promises';
 import { requestText } from 'by-request';
+import { closeSettings, openSettings } from './settings';
 
 const debug = require('debug')('express:server');
 
@@ -117,6 +119,7 @@ function createAndStartServer(): void {
   console.log(`*** Starting server on port ${httpPort} at ${timeStamp()}${
     wsPort ? ', websocket on port ' + (wsPort < 0 ? httpPort : wsPort) : ''} ***`);
 
+  openSettings().catch(err => console.error('Failed to open settings DB:', err));
   httpServer = useHttps ? https.createServer({
     key: fs.readFileSync(process.env.VS_KEY),
     cert: fs.readFileSync(process.env.VS_CERT)
@@ -226,6 +229,7 @@ function shutdown(signal?: string): void {
     wsServer.close();
 
   httpServer.close(() => process.exit(0));
+  closeSettings().finally();
 }
 
 function getStatus(remote?: string): ServerStatus {
@@ -387,6 +391,7 @@ function getApp(): Express {
   theApp.use('/api/library', libraryRouter);
   theApp.use('/api/img', imageRouter);
   theApp.use('/api/stream', streamingRouter);
+  theApp.use('/api/admin', adminRouter);
 
   theApp.get('/api/status', async (req, res) => {
     noCache(res);
@@ -501,15 +506,6 @@ function getApp(): Express {
     }
 
     jsonOrJsonp(req, res, result);
-  });
-
-  theApp.post('/api/library-refresh', async (req, res) => {
-    if (!isAdmin(req))
-      res.sendStatus(403);
-    else {
-      updateLibrary(toBoolean(req.query.quick)).finally();
-      res.json(null);
-    }
   });
 
   theApp.get('/api/players', async (req, res) => {

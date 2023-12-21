@@ -26,8 +26,10 @@
     "http-errors": "~2.0.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "~1.10.0",
+    "promised-sqlite3": "^2.1.0",
     "request": "^2.88.2",
-    "request-ip": "^2.2.0"
+    "request-ip": "^2.2.0",
+    "sqlite3": "^5.1.6"
   },
   "devDependencies": {
     "@types/chai": "^4.3.1",
