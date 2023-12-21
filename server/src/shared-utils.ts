@@ -62,7 +62,7 @@ function sortForm(s: string): string {
   let $ = /^((A|An|The)\s+)(.*)$/.exec(s);
 
   if ($)
-    s = $[3] + ', ' + $[2];
+    s = $[3] + '\t' + $[2];
 
   $ = /^(\d+)\b(.*)$/.exec(s);
 
@@ -72,11 +72,22 @@ function sortForm(s: string): string {
   return s;
 }
 
-const comparator = new Intl.Collator('en', { caseFirst: 'upper' }).compare;
+export const comparator = new Intl.Collator('en', { caseFirst: 'upper' }).compare;
+
+export function sorter(a: string, b: string): number {
+  return comparator(sortForm(a), sortForm(b));
+}
 
 export function librarySorter(a: LibraryItem, b: LibraryItem): number {
-  const sa = sortForm(a.name);
-  const sb = sortForm(b.name);
+  const sa = sortForm(a.name).split('\t');
+  const sb = sortForm(b.name).split('\t');
 
-  return comparator(sa, sb);
+  for (let i = 0; i < sa.length && i < sb.length; ++i) {
+    const diff = comparator(sa[i], sb[i]);
+
+    if (diff !== 0)
+      return diff;
+  }
+
+  return sa.length - sb.length;
 }

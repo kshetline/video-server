@@ -8,10 +8,9 @@ import { join as pathJoin } from 'path';
 import { monitorProcess } from './process-util';
 import { spawn } from 'child_process';
 import { AudioTrack, MediaWrapper, MKVInfo, VideoTrack } from './shared-types';
+import { comparator, sorter } from './shared-utils';
 
 export const router = Router();
-
-const comparator = new Intl.Collator('en', { caseFirst: 'upper' }).compare;
 
 export interface VideoWalkOptions {
   directoryExclude?: (path: string, dir: string, depth: number) => boolean;
@@ -62,10 +61,10 @@ export interface VideoStats {
   videoCount: number;
 }
 
-export async function walkVideoDirectory(callback: VideoWalkCallback): Promise<VideoStats>;
+// export async function walkVideoDirectory(callback: VideoWalkCallback): Promise<VideoStats>;
 export async function walkVideoDirectory(options: VideoWalkOptions, callback: VideoWalkCallback): Promise<VideoStats>;
-export async function walkVideoDirectory(dir: string, callback: VideoWalkCallback): Promise<VideoStats>;
-export async function walkVideoDirectory(dir: string, options: VideoWalkOptions, callback: VideoWalkCallback): Promise<VideoStats>;
+// export async function walkVideoDirectory(dir: string, callback: VideoWalkCallback): Promise<VideoStats>;
+// export async function walkVideoDirectory(dir: string, options: VideoWalkOptions, callback: VideoWalkCallback): Promise<VideoStats>;
 export async function walkVideoDirectory(
   arg0: string | VideoWalkOptions | VideoWalkCallback,
   arg1?: VideoWalkOptions | VideoWalkCallback,
@@ -127,7 +126,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
       // Do nothing
     }
     else if (stat.isDirectory()) {
-      if (options.directoryExclude && options.directoryExclude(path, dir, depth))
+      if (options.directoryExclude && options.directoryExclude(path, file, depth))
         continue;
 
       const subStats = await walkVideoDirectoryAux(path, depth + 1, options, callback);
@@ -156,7 +155,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
         stats.extrasBytes += stat.size;
         ++stats.extrasCount;
       }
-      else if (/§/.test(path) && !/[\\/]Movies[\\/]/.test(path)) {
+      else if (/§/.test(path) && !/[\\/]Movies[\\/]/.test(path) || /- S\d\dE\d\d -/.test(file)) {
         info.isTV = true;
         stats.tvBytes += stat.size;
         ++stats.tvEpisodesRaw;
@@ -199,21 +198,28 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
           }
 
           if (info.isMovie || info.isTV) {
-            const title = file.replace(/\.mkv$/i, '').replace(/\s*\(.*?[a-z].*?\)/gi, '')
+            let title = file.replace(/\.mkv$/i, '').replace(/\s*\(.*?[a-z].*?\)/gi, '')
+              .replace(/^\d{1,2} - /, '').replace(/ - /g, ': ')
               .replace(/：/g, ':').replace(/？/g, '?').trim().replace(/(.+), (A|An|The)$/, '$2 $1');
 
-            if (info.isMovie)
+            if (info.isMovie) {
+              title = title.replace(/-S\d\dE\d\d-|-M\d-/, ': ');
               stats.movieTitles.add(title);
+            }
             else {
               stats.tvEpisodeTitles.add(title);
 
-              const seriesTitle = last(path.replace(/^\w:/, '').split(/[/\\]/).filter(s => s.includes('§')).map(s => s.trim()
+              let $: RegExpExecArray;
+              let seriesTitle = last(path.replace(/^\w:/, '').split(/[/\\]/).filter(s => s.includes('§')).map(s => s.trim()
                 .replace(/^\d+\s*-\s*/, '')
                 .replace(/§.*$/, '')
                 .replace(/\s+-\s+\d\d\s+-\s+/, ': ')
                 .replace(/\s+-\s+/, ': ')
                 .replace(/\s*\(.*?[a-z].*?\)/gi, '').trim()
                 .replace(/(.+), (A|An|The)$/, '$2 $1')));
+
+              if (!seriesTitle && ($ = /(.*?): S\d\dE\d\d:/.exec(title)))
+                seriesTitle = $[1];
 
               if (seriesTitle)
                 stats.tvShowTitles.add(seriesTitle);
@@ -246,6 +252,6 @@ setTimeout(async () => {
   const stats = await walkVideoDirectory({ getMetadata: false },
     async (path: string, info: any): Promise<void> => console.log(path + '\r\n', info));
   console.log('  end walk', new Date());
-  console.log('\nUnique movie titles:\n ', Array.from(stats.movieTitles).sort(comparator).join('\n  '));
-  console.log('\nUnique TV show titles:\n ', Array.from(stats.tvShowTitles).sort(comparator).join('\n  '));
+  console.log('\nUnique movie titles:\n ', Array.from(stats.movieTitles).sort(sorter).join('\n  '));
+  console.log('\nUnique TV show titles:\n ', Array.from(stats.tvShowTitles).sort(sorter).join('\n  '));
 }, 2000);

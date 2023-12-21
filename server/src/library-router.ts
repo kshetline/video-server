@@ -8,13 +8,12 @@ import { readdir, readFile, writeFile } from 'fs/promises';
 import { cacheDir, existsAsync, isAdmin, isDemo, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat, unref } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
 import {
-  isAnyCollection, isCollection, isFile, isMovie, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter
+  comparator, isAnyCollection, isCollection, isFile, isMovie, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter
 } from './shared-utils';
 import { sendStatus } from './app';
 
 export const router = Router();
 
-const comparator = new Intl.Collator('en', { caseFirst: 'upper' }).compare;
 const SEASON_EPISODE = /\bS(\d{1,2})E(\d{1,3})\b/i;
 const SPECIAL_EPISODE = /-M(\d\d?)-/;
 const DAY = 86_400_000;
