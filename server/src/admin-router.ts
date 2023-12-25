@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { isAdmin, safeLstat } from './vs-util';
+import { existsAsync, isAdmin, safeLstat } from './vs-util';
 import { updateLibrary } from './library-router';
 import { clone, forEach, isFunction, isNumber, isObject, isString, last, toBoolean } from '@tubular/util';
 import { readdir } from 'fs/promises';
@@ -13,6 +13,7 @@ import { comparator, sorter } from './shared-utils';
 export const router = Router();
 
 export interface VideoWalkOptions {
+  checkStreaming?: boolean | string;
   directoryExclude?: (path: string, dir: string, depth: number) => boolean;
   earliest?: Date;
   getMetadata?: boolean;
@@ -23,6 +24,7 @@ export interface VideoWalkOptions {
 }
 
 const DEFAULT_VW_OPTIONS: VideoWalkOptions = {
+  checkStreaming: true,
   directoryExclude: (_path: string, dir: string, depth: number): boolean => {
     return depth === 0 && dir === 'Home movies';
   },
@@ -40,7 +42,7 @@ export interface VideoInfo {
   video?: VideoTrack[];
 }
 
-export type VideoWalkCallback = (path: string, info: VideoInfo) => Promise<void>;
+export type VideoWalkCallback = (path: string, depth: number, info: VideoInfo) => Promise<void>;
 
 export interface VideoStats {
   extrasBytes: number;
@@ -93,6 +95,9 @@ export async function walkVideoDirectory(
 
   options = Object.assign(clone(DEFAULT_VW_OPTIONS), options);
 
+  if (options.checkStreaming === true)
+    options.checkStreaming = getValue('videoDirectory') + '\t' + getValue('streamingDirectory');
+
   return await walkVideoDirectoryAux(dir, 0, options, callback);
 }
 
@@ -129,14 +134,28 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
       if (options.directoryExclude && options.directoryExclude(path, file, depth))
         continue;
 
+      const consolidateStats = (subStats: VideoStats, checkStreaming = false): void => forEach(stats as any, (key, value) => {
+        if (checkStreaming || !key.startsWith('streaming')) {
+          if (isNumber(value))
+            (stats as any)[key] += (subStats as any)[key];
+          else
+            ((subStats as any)[key] as Set<string>).forEach(s => ((stats as any)[key] as Set<string>).add(s));
+        }
+      });
       const subStats = await walkVideoDirectoryAux(path, depth + 1, options, callback);
 
-      forEach(stats as any, (key, value) => {
-        if (isNumber(value))
-          (stats as any)[key] += (subStats as any)[key];
-        else
-          ((subStats as any)[key] as Set<string>).forEach(s => ((stats as any)[key] as Set<string>).add(s));
-      });
+      consolidateStats(subStats);
+
+      if (isString(options.checkStreaming)) {
+        const baseDirs = options.checkStreaming.split('\t');
+        const streamingDir = pathJoin(baseDirs[1], path.substring(baseDirs[0].length));
+
+        if (await existsAsync(streamingDir)) {
+          const subStats = await walkVideoDirectoryAux(streamingDir, depth + 1, options, callback);
+
+          consolidateStats(subStats, true);
+        }
+      }
     }
     else if (/\.tmp\./.test(file)) {
       // Do nothing
@@ -226,7 +245,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
             }
           }
 
-          await callback(path, info);
+          await callback(path, depth, info);
         }
         catch (e) {
           console.error('Error while processing %s:', path, e);
@@ -249,9 +268,17 @@ router.post('/library-refresh', async (req, res) => {
 
 setTimeout(async () => {
   console.log('start walk', new Date());
+  let lastChar = '';
   const stats = await walkVideoDirectory({ getMetadata: false },
-    async (path: string, info: any): Promise<void> => console.log(path + '\r\n', info));
+    async (path: string, depth: number, _info: any): Promise<void> => {
+      if (depth === 1 && lastChar !== path.charAt(3)) {
+        lastChar = path.charAt(3);
+        process.stdout.write(lastChar);
+      }
+    });
+  console.log();
   console.log('  end walk', new Date());
   console.log('\nUnique movie titles:\n ', Array.from(stats.movieTitles).sort(sorter).join('\n  '));
   console.log('\nUnique TV show titles:\n ', Array.from(stats.tvShowTitles).sort(sorter).join('\n  '));
+  console.log(stats);
 }, 2000);
