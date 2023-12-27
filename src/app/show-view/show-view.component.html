@@ -25,7 +25,7 @@
         <span *ngIf="hasYear()">{{selection.year}}</span>
         <span *ngIf="hasAirDate()" class="air-date">{{selection.airDate}}</span>
         <span *ngIf="show.certification" class="rating">{{show.certification}}</span>
-        <span *ngIf="video.duration" class="duration">{{getDuration()}}</span>
+        <span *ngIf="video.duration || video.parent.duration" class="duration">{{getDuration()}}</span>
         <span *ngIf="show.homepage" class="homepage">
           <a [href]="show.homepage" target="_blank">
             <i class="pi pi-home"><span class="blank">&nbsp;</span></i><span class="text">Homepage</span></a>

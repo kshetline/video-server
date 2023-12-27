@@ -301,7 +301,7 @@ export class ShowViewComponent implements OnInit {
   }
 
   getDuration(): string {
-    return round(this.video.duration / 60000) + ' minutes';
+    return round((this.video.duration || this.video.parent.duration) / 60000) + ' minutes';
   }
 
   getVoteAverage(): number {
