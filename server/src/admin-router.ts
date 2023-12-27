@@ -18,6 +18,7 @@ export interface VideoWalkOptions {
   earliest?: Date;
   getMetadata?: boolean;
   isStreamingResource?: (file: string) => boolean;
+  reportStreamingToCallback?: boolean;
   skipExtras?: boolean;
   skipMovies?: boolean;
   skipTV?: boolean;
@@ -42,7 +43,7 @@ export interface VideoInfo {
   video?: VideoTrack[];
 }
 
-export type VideoWalkCallback = (path: string, depth: number, info: VideoInfo) => Promise<void>;
+export type VideoWalkCallback = (path: string, depth: number, info?: VideoInfo) => Promise<void>;
 
 export interface VideoStats {
   extrasBytes: number;
@@ -101,7 +102,8 @@ export async function walkVideoDirectory(
   return await walkVideoDirectoryAux(dir, 0, options, callback);
 }
 
-async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoWalkOptions, callback: VideoWalkCallback): Promise<VideoStats> {
+async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoWalkOptions,
+                                     callback: VideoWalkCallback, dontRecurse = false): Promise<VideoStats> {
   const stats: VideoStats = {
     extrasBytes: 0,
     extrasCount: 0,
@@ -131,7 +133,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
       // Do nothing
     }
     else if (stat.isDirectory()) {
-      if (options.directoryExclude && options.directoryExclude(path, file, depth))
+      if (dontRecurse || options.directoryExclude && options.directoryExclude(path, file, depth))
         continue;
 
       const consolidateStats = (subStats: VideoStats, checkStreaming = false): void => forEach(stats as any, (key, value) => {
@@ -151,7 +153,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
         const streamingDir = pathJoin(baseDirs[1], path.substring(baseDirs[0].length));
 
         if (await existsAsync(streamingDir)) {
-          const subStats = await walkVideoDirectoryAux(streamingDir, depth + 1, options, callback);
+          const subStats = await walkVideoDirectoryAux(streamingDir, depth + 1, options, callback, true);
 
           consolidateStats(subStats, true);
         }
@@ -163,6 +165,9 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
     else if (options.isStreamingResource && options.isStreamingResource(file)) {
       stats.streamingFileBytes += stat.size;
       ++stats.streamingFileCount;
+
+      if (options.reportStreamingToCallback)
+        await callback(path, depth);
     }
     else if (/\.mkv$/.test(file)) {
       ++stats.videoCount;
@@ -280,5 +285,9 @@ setTimeout(async () => {
   console.log('  end walk', new Date());
   console.log('\nUnique movie titles:\n ', Array.from(stats.movieTitles).sort(sorter).join('\n  '));
   console.log('\nUnique TV show titles:\n ', Array.from(stats.tvShowTitles).sort(sorter).join('\n  '));
+  forEach(stats as any, (key, value) => {
+    if (value instanceof Set)
+      (stats as any)[key] = value.size;
+  });
   console.log(stats);
 }, 2000);
