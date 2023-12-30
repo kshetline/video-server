@@ -31,7 +31,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   library: VideoLibrary;
   logoffTime = 0;
   playing = false;
-  showRefreshDialog = false;
+  showAdminPage = false;
   status: ServerStatus;
   wsReady = false;
 
@@ -263,6 +263,7 @@ export class AppComponent implements AfterViewInit, OnInit {
 
   goHome(): void {
     this.bonusSource = this.currentCollection = this.currentShow = undefined;
+    this.showAdminPage = false;
   }
 
   logOut(): void {
@@ -285,15 +286,8 @@ export class AppComponent implements AfterViewInit, OnInit {
     return this.auth.getSession()?.name;
   }
 
-  refresh(quick = false): void {
-    this.showRefreshDialog = false;
-    this.httpClient.post(`/api/admin/library-refresh${quick ? '?quick=true' : ''}`, null).subscribe(() => {
-      setTimeout(() => this.pollStatus(), 500);
-    });
-  }
-
   posterWallHidden(): boolean {
-    return !!(this.bonusSource || this.currentCollection || this.currentShow);
+    return !!(this.bonusSource || this.currentCollection || this.currentShow || this.showAdminPage);
   }
 
   clearStatusMessage(): void {

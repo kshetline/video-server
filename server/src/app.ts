@@ -45,7 +45,8 @@ import * as https from 'https';
 import { WebSocketServer } from 'ws';
 import logger from 'morgan';
 import {
-  cacheDir, existsAsync, getRemoteAddress, isAdmin, isDemo, jsonOrJsonp, noCache, normalizePort, safeLstat, safeUnlink, timeStamp, unref
+  cacheDir, existsAsync, getRemoteAddress, isAdmin, isDemo, jsonOrJsonp, noCache, normalizePort, safeLstat, safeUnlink,
+  setWebSocketServer, timeStamp, unref, webSocketSend
 } from './vs-util';
 import { Resolver } from 'node:dns';
 import { cachedLibrary, initLibrary, pendingLibrary, router as libraryRouter } from './library-router';
@@ -149,6 +150,7 @@ function createAndStartServer(): void {
         http.createServer();
       wsServer = new WebSocketServer({ server });
       server.listen(wsPort);
+      setWebSocketServer(wsServer);
     }
   }
 
@@ -266,10 +268,7 @@ export function sendStatus(): void {
     statusTimer = setTimeout(() => {
       statusTimer = undefined;
       statusTime = 0;
-
-      const message = JSON.stringify({ type: 'status', data: getStatus() });
-
-      wsServer.clients.forEach(client => client.send(message));
+      webSocketSend(JSON.stringify({ type: 'status', data: getStatus() }));
     }, 1000 + statusTime - processMillis());
   }
 }

@@ -8,11 +8,11 @@
                  [currentBonus]="bonusSource"></app-show-view>
   <app-bonus-view *ngIf="isLoggedIn()" [class.active]="bonusSource" [source]="bonusSource" (goBack)="bonusSource = null"
                   (playing)="playing = $event"></app-bonus-view>
+  <app-admin-view *ngIf="isAdmin()" [class.active]="showAdminPage" (goBack)="showAdminPage = false"></app-admin-view>
   <div *ngIf="!playing" class="status-panel">
-    <p-progressBar *ngIf="status && status?.updateProgress >= 0" [value]="status?.updateProgress"
-                   [showValue]="false" class="narrow-progress"></p-progressBar>
-    <p-button *ngIf="isAdmin() && !posterWallHidden()" [disabled]="status && status?.updateProgress >= 0" icon="pi pi-refresh"
-              styleClass="p-button-rounded p-button-sm p-button-danger" (click)="showRefreshDialog = true"></p-button>
+    <p-button *ngIf="isAdmin() && !showAdminPage && !posterWallHidden()"
+              [disabled]="status && status?.updateProgress >= 0" icon="pi pi-wrench"
+              styleClass="p-button-rounded p-button-danger" (click)="showAdminPage = true"></p-button>
     <span *ngIf="!posterWallHidden()">{{userName()}}</span>
     <p-button *ngIf="posterWallHidden()" icon="pi pi-home" styleClass="p-button-rounded p-button-success" (click)="goHome()"></p-button>
     <p-button icon="pi pi-sign-out" styleClass="p-button-rounded" (click)="logOut()"></p-button>
@@ -21,19 +21,4 @@
 <app-login *ngIf="isLoggedOut()" (typing)="clearStatusMessage()" (open)="resetLogoffTime()"></app-login>
 <p-toast></p-toast>
 <p-confirmDialog [style]="{ width: 'min(35em, calc(100vw - 4em))' }"></p-confirmDialog>
-<p-dialog header="Header" [(visible)]="showRefreshDialog" [style]="{ width: 'min(35em, calc(100vw - 4em))' }">
-  <ng-template pTemplate="header">
-    <span class="p-dialog-title">Refresh Video Library</span>
-  </ng-template>
-  <p>
-    Refresh the video library?
-  </p>
-  <ng-template pTemplate="footer">
-    <div class="p-dialog-footer">
-      <button pButton icon="pi pi-refresh" (click)="refresh()" label="Full"></button>
-      <button pButton icon="pi pi-check" (click)="refresh(true)" label="Quick"></button>
-      <button pButton icon="pi pi-times" (click)="showRefreshDialog = false" label="Cancel"></button>
-    </div>
-  </ng-template>
-</p-dialog>
 <div *ngIf="clickDelayed" class="click-delay"></div>

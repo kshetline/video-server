@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, Stats } from 'fs';
 import paths from 'path';
 import { LibraryItem } from './shared-types';
 import { hashTitle } from './shared-utils';
+import { WebSocketServer } from 'ws';
 
 const guestFilter = new Set(process.env.VS_GUEST_FILTER ? process.env.VS_GUEST_FILTER.split(';') : []);
 const demoFilter = new Set(process.env.VS_DEMO_FILTER ? process.env.VS_DEMO_FILTER.split(';') : []);
@@ -20,6 +21,17 @@ for (const dir of [
 ]) {
   if (!existsSync(dir))
     mkdirSync(dir);
+}
+
+let wsServer: WebSocketServer;
+
+export function setWebSocketServer(wss: WebSocketServer): void {
+  wsServer = wss;
+}
+
+export function webSocketSend(message: string): void {
+  if (wsServer)
+    wsServer.clients.forEach(client => client.send(message));
 }
 
 export function noCache(res: Response): void {

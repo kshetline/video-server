@@ -1,13 +1,13 @@
 import { Router } from 'express';
-import { existsAsync, isAdmin, safeLstat } from './vs-util';
+import { existsAsync, isAdmin, jsonOrJsonp, noCache, safeLstat, webSocketSend } from './vs-util';
 import { updateLibrary } from './library-router';
 import { clone, forEach, isFunction, isNumber, isObject, isString, last, toBoolean } from '@tubular/util';
 import { readdir } from 'fs/promises';
-import { getValue } from './settings';
-import { join as pathJoin } from 'path';
+import { getValue, setValue } from './settings';
+import { join as pathJoin, sep } from 'path';
 import { monitorProcess } from './process-util';
 import { spawn } from 'child_process';
-import { AudioTrack, MediaWrapper, MKVInfo, VideoTrack } from './shared-types';
+import { AudioTrack, MediaWrapper, MKVInfo, VideoStats, VideoTrack } from './shared-types';
 import { comparator, sorter } from './shared-utils';
 
 export const router = Router();
@@ -22,6 +22,11 @@ export interface VideoWalkOptions {
   skipExtras?: boolean;
   skipMovies?: boolean;
   skipTV?: boolean;
+}
+
+interface VideoWalkOptionsPlus extends VideoWalkOptions {
+  streamingDirectory?: string;
+  videoDirectory?: string;
 }
 
 const DEFAULT_VW_OPTIONS: VideoWalkOptions = {
@@ -40,28 +45,15 @@ export interface VideoInfo {
   isMovie?: boolean;
   isTV?: boolean;
   mkvInfo?: MKVInfo;
+  streamingDirectory?: string;
   video?: VideoTrack[];
+  videoDirectory?: string;
 }
 
 export type VideoWalkCallback = (path: string, depth: number, info?: VideoInfo) => Promise<void>;
 
-export interface VideoStats {
-  extrasBytes: number;
-  extrasCount: number;
-  miscFileCount: number;
-  movieBytes: number;
-  movieCountRaw: number;
-  movieCountUnique: number;
-  movieTitles: Set<string>;
-  skippedForAge: number;
-  skippedForType: number;
-  streamingFileBytes: number;
-  streamingFileCount: number;
-  tvBytes: number;
-  tvEpisodesRaw: number;
-  tvEpisodeTitles: Set<string>;
-  tvShowTitles: Set<string>;
-  videoCount: number;
+function terminateDir(d: string): string {
+  return d + (d.endsWith(sep) ? '' : sep);
 }
 
 // export async function walkVideoDirectory(callback: VideoWalkCallback): Promise<VideoStats>;
@@ -96,13 +88,13 @@ export async function walkVideoDirectory(
 
   options = Object.assign(clone(DEFAULT_VW_OPTIONS), options);
 
-  if (options.checkStreaming === true)
-    options.checkStreaming = getValue('videoDirectory') + '\t' + getValue('streamingDirectory');
+  (options as VideoWalkOptionsPlus).streamingDirectory = terminateDir(getValue('streamingDirectory'));
+  (options as VideoWalkOptionsPlus).videoDirectory = terminateDir(getValue('videoDirectory'));
 
   return await walkVideoDirectoryAux(dir, 0, options, callback);
 }
 
-async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoWalkOptions,
+async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoWalkOptionsPlus,
                                      callback: VideoWalkCallback, dontRecurse = false): Promise<VideoStats> {
   const stats: VideoStats = {
     extrasBytes: 0,
@@ -228,10 +220,10 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
 
             if (info.isMovie) {
               title = title.replace(/-S\d\dE\d\d-|-M\d-/, ': ');
-              stats.movieTitles.add(title);
+              (stats.movieTitles as Set<string>).add(title);
             }
             else {
-              stats.tvEpisodeTitles.add(title);
+              (stats.tvEpisodeTitles as Set<string>).add(title);
 
               let $: RegExpExecArray;
               let seriesTitle = last(path.replace(/^\w:/, '').split(/[/\\]/).filter(s => s.includes('§')).map(s => s.trim()
@@ -246,10 +238,12 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
                 seriesTitle = $[1];
 
               if (seriesTitle)
-                stats.tvShowTitles.add(seriesTitle);
+                (stats.tvShowTitles as Set<string>).add(seriesTitle);
             }
           }
 
+          info.streamingDirectory = options.streamingDirectory;
+          info.videoDirectory = options.videoDirectory;
           await callback(path, depth, info);
         }
         catch (e) {
@@ -271,23 +265,40 @@ router.post('/library-refresh', async (req, res) => {
   }
 });
 
-setTimeout(async () => {
-  console.log('start walk', new Date());
-  let lastChar = '';
-  const stats = await walkVideoDirectory({ getMetadata: false },
-    async (path: string, depth: number, _info: any): Promise<void> => {
-      if (depth === 1 && lastChar !== path.charAt(3)) {
-        lastChar = path.charAt(3);
-        process.stdout.write(lastChar);
-      }
-    });
-  console.log();
-  console.log('  end walk', new Date());
-  console.log('\nUnique movie titles:\n ', Array.from(stats.movieTitles).sort(sorter).join('\n  '));
-  console.log('\nUnique TV show titles:\n ', Array.from(stats.tvShowTitles).sort(sorter).join('\n  '));
-  forEach(stats as any, (key, value) => {
-    if (value instanceof Set)
-      (stats as any)[key] = value.size;
-  });
-  console.log(stats);
-}, 2000);
+router.get('/stats', async (req, res) => {
+  noCache(res);
+
+  const statsStr = getValue('videoStats');
+  let stats: any = null;
+
+  try {
+    stats = statsStr ? JSON.parse(statsStr) : null;
+  }
+  catch {}
+
+  if (toBoolean(req.query.update)) {
+    (async (): Promise<void> => {
+      let lastChar = '';
+      const stats = await walkVideoDirectory({ checkStreaming: true, getMetadata: false },
+        async (path: string, depth: number, info: any): Promise<void> => {
+          const startChar = path.charAt(info.videoDirectory.length);
+
+          if (depth === 1 && lastChar !== startChar) {
+            lastChar = startChar;
+            webSocketSend(JSON.stringify({ type: 'videoStatsProgress', data: startChar }));
+          }
+        });
+      const statsStr = JSON.stringify(stats, (_key, value) => {
+        if (value instanceof Set)
+          return Array.from(value.values()).sort(sorter);
+        else
+          return value;
+      }, 2);
+
+      setValue('videoStats', statsStr);
+      webSocketSend(JSON.stringify({ type: 'videoStats', data: statsStr }));
+    })().finally();
+  }
+
+  jsonOrJsonp(req, res, stats);
+});

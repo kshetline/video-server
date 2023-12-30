@@ -301,3 +301,22 @@ export interface MKVInfo {
   };
   tracks: MkvTrack[];
 }
+
+export interface VideoStats {
+  extrasBytes: number;
+  extrasCount: number;
+  miscFileCount: number;
+  movieBytes: number;
+  movieCountRaw: number;
+  movieCountUnique: number;
+  movieTitles: Set<string> | string[];
+  skippedForAge: number;
+  skippedForType: number;
+  streamingFileBytes: number;
+  streamingFileCount: number;
+  tvBytes: number;
+  tvEpisodesRaw: number;
+  tvEpisodeTitles: Set<string> | string[];
+  tvShowTitles: Set<string> | string[];
+  videoCount: number;
+}

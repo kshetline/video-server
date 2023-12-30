@@ -186,3 +186,16 @@ export async function areImagesSimilar(image1: string | HTMLImageElement, image2
     });
   });
 }
+
+export function formatSize(b: number): string {
+  let unit = 'TB';
+
+  for (const u of ['bytes', 'KB', 'MB', 'GB']) {
+    if (b < 1024) {
+      unit = u;
+      break;
+    }
+  }
+
+  return b.toFixed(3) + ' ' + unit;
+}
