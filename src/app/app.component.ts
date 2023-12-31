@@ -156,28 +156,8 @@ export class AppComponent implements AfterViewInit, OnInit {
       next: status => {
         this.status = status;
 
-        if (this.status.wsPort) {
-          const protocol = (/https/.test(location.protocol) ? 'wss' : 'ws');
-          const port = this.status.wsPort < 0 ? location.port : this.status.wsPort;
-
-          this.webSocket = new WebSocket(`${protocol}://${location.hostname}:${port}`);
-          this.webSocket.addEventListener('open', () => this.wsReady = true);
-          this.webSocket.addEventListener('error', () => {
-            console.warn('Web socket connection failed');
-            this.webSocket = undefined;
-            this.wsReady = false;
-            this.pollStatus();
-          });
-          this.webSocket.addEventListener('message', evt => {
-            const message = isValidJson(evt.data) ? JSON.parse(evt.data) : evt.data;
-
-            if (message?.type === 'status')
-              this.receiveStatus(message.data);
-
-            if (message?.type)
-              broadcastMessage(message.type, isValidJson(message.data) ? JSON.parse(message.data) : message.data);
-          });
-        }
+        if (this.status.wsPort)
+          this.connectToWebSocket();
         else {
           console.warn('Web socket not available');
           this.pollStatus();
@@ -327,6 +307,44 @@ export class AppComponent implements AfterViewInit, OnInit {
       });
     }
   };
+
+  private connectToWebSocket(): void {
+    const protocol = (/https/.test(location.protocol) ? 'wss' : 'ws');
+    const port = this.status.wsPort < 0 ? location.port : this.status.wsPort;
+    let socketOpen = false;
+
+    this.webSocket = new WebSocket(`${protocol}://${location.hostname}:${port}`);
+    this.webSocket.addEventListener('open', () => {
+      socketOpen = true;
+      this.wsReady = true;
+    });
+    this.webSocket.addEventListener('close', () => {
+      if (socketOpen) {
+        socketOpen = false;
+        setTimeout(() => this.connectToWebSocket(), 5000);
+      }
+    });
+    this.webSocket.addEventListener('error', () => {
+      if (!socketOpen)
+        setTimeout(() => this.connectToWebSocket(), 5000);
+      else {
+        socketOpen = false;
+        console.warn('Web socket connection failed');
+        this.webSocket = undefined;
+        this.wsReady = false;
+        this.pollStatus();
+      }
+    });
+    this.webSocket.addEventListener('message', evt => {
+      const message = isValidJson(evt.data) ? JSON.parse(evt.data) : evt.data;
+
+      if (message?.type === 'status')
+        this.receiveStatus(message.data);
+
+      if (message?.type)
+        broadcastMessage(message.type, isValidJson(message.data) ? JSON.parse(message.data) : message.data);
+    });
+  }
 
   private getStatusObservable(): Observable<ServerStatus> {
     return this.httpClient.get<ServerStatus>('/api/status').pipe(shareReplay());

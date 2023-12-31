@@ -35,7 +35,7 @@ const DEFAULT_VW_OPTIONS: VideoWalkOptions = {
     return depth === 0 && dir === 'Home movies';
   },
   isStreamingResource: (file: string): boolean => {
-    return /\.(webm|sample\.mp4|mobile\.mp4)$/.test(file);
+    return /\.(mp4|mpd|webm)$/.test(file);
   }
 };
 
@@ -102,6 +102,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
   const stats: VideoStats = {
     extrasBytes: 0,
     extrasCount: 0,
+    miscFileBytes: 0,
     miscFileCount: 0,
     movieBytes: 0,
     movieCountRaw: 0,
@@ -130,13 +131,11 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
       if (dontRecurse || options.directoryExclude && options.directoryExclude(path, file, depth))
         continue;
 
-      const consolidateStats = (subStats: VideoStats, checkStreaming = false): void => forEach(stats as any, (key, value) => {
-        if (checkStreaming || !key.startsWith('streaming')) {
-          if (isNumber(value))
-            (stats as any)[key] += (subStats as any)[key];
-          else
-            ((subStats as any)[key] as Set<string>).forEach(s => ((stats as any)[key] as Set<string>).add(s));
-        }
+      const consolidateStats = (subStats: VideoStats): void => forEach(stats as any, (key, value) => {
+        if (isNumber(value))
+          (stats as any)[key] += (subStats as any)[key];
+        else
+          ((subStats as any)[key] as Set<string>).forEach(s => ((stats as any)[key] as Set<string>).add(s));
       });
       const subStats = await walkVideoDirectoryAux(path, depth + 1, options, callback);
 
@@ -149,7 +148,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
         if (await existsAsync(streamingDir)) {
           const subStats = await walkVideoDirectoryAux(streamingDir, depth + 1, options, callback, true);
 
-          consolidateStats(subStats, true);
+          consolidateStats(subStats);
         }
       }
     }
@@ -252,6 +251,10 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
           console.error('Error while processing %s:', path, e);
         }
       }
+    }
+    else {
+      stats.miscFileBytes += stat.size;
+      ++stats.miscFileCount;
     }
   }
 

@@ -305,6 +305,7 @@ export interface MKVInfo {
 export interface VideoStats {
   extrasBytes: number;
   extrasCount: number;
+  miscFileBytes: number;
   miscFileCount: number;
   movieBytes: number;
   movieCountRaw: number;

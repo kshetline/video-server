@@ -48,6 +48,14 @@
       <td>{{videoStats?.videoCount ? formatSize(videoStats.extrasBytes) : ''}}</td>
     </tr>
     <tr>
+      <th>Miscellaneous file count</th>
+      <td>{{videoStats?.videoCount ? videoStats.miscFileCount : ''}}</td>
+    </tr>
+    <tr>
+      <th>Miscellaneous storage usage</th>
+      <td>{{videoStats?.videoCount ? formatSize(videoStats.miscFileBytes) : ''}}</td>
+    </tr>
+    <tr>
       <th>Streaming file count</th>
       <td>{{videoStats?.videoCount ? videoStats.streamingFileCount : ''}}</td>
     </tr>
@@ -59,11 +67,11 @@
       <td colspan=2><hr></td>
     </tr>
     <tr>
-      <th>Video file count</th>
+      <th>Video file count (not including streaming/misc)</th>
       <td>{{videoStats?.videoCount}}</td>
     </tr>
     <tr>
-      <th>Video storage usage (not including streaming)</th>
+      <th>Video storage usage (not including streaming/misc)</th>
       <td>{{videoStats?.videoCount ? formatSize(videoStats.movieBytes + videoStats.tvBytes + videoStats.extrasBytes) : ''}}</td>
     </tr>
   </table>
