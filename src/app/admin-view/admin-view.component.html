@@ -2,4 +2,84 @@
   <p-button label="Back" icon="pi pi-chevron-left" (click)="goBack.emit()"/>
 </div>
 <div class="content">
+  <div class="row">
+    <p-button label="Refresh Video Library" icon="pi pi-refresh" (click)="showRefreshDialog = true"/>
+    <p-progressBar *ngIf="updateProgress >= 0" [value]="updateProgress" [showValue]="false"></p-progressBar>
+  </div>
+  <div class="row">
+    <p-button label="Refresh Video Inventory" icon="pi pi-refresh" (click)="refreshInventory()"/>
+    <p-progressBar *ngIf="inventoryProgress >= 0" [value]="inventoryProgress" [showValue]="false"></p-progressBar>
+  </div>
+  <table>
+    <tr>
+      <th>Movie file count</th>
+      <td>{{videoStats?.videoCount ? videoStats.movieCountRaw : ''}}</td>
+    </tr>
+    <tr>
+      <th>Unique movie titles</th>
+      <td>{{videoStats?.videoCount ? $any(videoStats.movieTitles).length : ''}}</td>
+    </tr>
+    <tr>
+      <th>Movie storage usage</th>
+      <td>{{videoStats?.videoCount ? formatSize(videoStats.movieBytes) : ''}}</td>
+    </tr>
+    <tr>
+      <th>TV file count</th>
+      <td>{{videoStats?.videoCount ? videoStats.movieCountRaw : ''}}</td>
+    </tr>
+    <tr>
+      <th>Unique TV show titles</th>
+      <td>{{videoStats?.videoCount ? $any(videoStats.tvShowTitles).length : ''}}</td>
+    </tr>
+    <tr>
+      <th>Unique TV show episodes</th>
+      <td>{{videoStats?.videoCount ? $any(videoStats.tvEpisodeTitles).length : ''}}</td>
+    </tr>
+    <tr>
+      <th>TV storage usage</th>
+      <td>{{videoStats?.videoCount ? formatSize(videoStats.tvBytes) : ''}}</td>
+    </tr>
+    <tr>
+      <th>Bonus materials file count</th>
+      <td>{{videoStats?.videoCount ? videoStats.extrasCount : ''}}</td>
+    </tr>
+    <tr>
+      <th>Bonus materials storage usage</th>
+      <td>{{videoStats?.videoCount ? formatSize(videoStats.extrasBytes) : ''}}</td>
+    </tr>
+    <tr>
+      <th>Streaming file count</th>
+      <td>{{videoStats?.videoCount ? videoStats.streamingFileCount : ''}}</td>
+    </tr>
+    <tr>
+      <th>Streaming storage usage</th>
+      <td>{{videoStats?.videoCount ? formatSize(videoStats.streamingFileBytes) : ''}}</td>
+    </tr>
+    <tr>
+      <td colspan=2><hr></td>
+    </tr>
+    <tr>
+      <th>Video file count</th>
+      <td>{{videoStats?.videoCount}}</td>
+    </tr>
+    <tr>
+      <th>Video storage usage (not including streaming)</th>
+      <td>{{videoStats?.videoCount ? formatSize(videoStats.movieBytes + videoStats.tvBytes + videoStats.extrasBytes) : ''}}</td>
+    </tr>
+  </table>
 </div>
+<p-dialog header="Header" [(visible)]="showRefreshDialog" [style]="{ width: 'min(35em, calc(100vw - 4em))' }">
+  <ng-template pTemplate="header">
+    <span class="p-dialog-title">Refresh Video Library</span>
+  </ng-template>
+  <p>
+    Refresh the video library?
+  </p>
+  <ng-template pTemplate="footer">
+    <div class="p-dialog-footer">
+      <button pButton icon="pi pi-refresh" (click)="refresh()" label="Full"></button>
+      <button pButton icon="pi pi-check" (click)="refresh(true)" label="Quick"></button>
+      <button pButton icon="pi pi-times" (click)="showRefreshDialog = false" label="Cancel"></button>
+    </div>
+  </ng-template>
+</p-dialog>

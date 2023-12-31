@@ -14,11 +14,32 @@
   padding-left: 2em;
   right: 0;
   top: 0;
-  z-index: 310;
+  z-index: 410;
 }
 
 .content {
+  align-items: start;
+  color: black;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
   height: calc(100dvh - 3.5em);
-  overflow: hidden;
+  overflow: auto;
+  padding: 1em;
   position: relative;
+
+  .row {
+    align-items: center;
+    display: flex;
+    gap: 1em;
+  }
+
+  table {
+    border-spacing: 0;
+  }
+
+  td, th {
+    padding-right: 1.5em;
+    text-align: right;
+  }
 }

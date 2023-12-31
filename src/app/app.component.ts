@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { LibraryItem, ServerStatus, VideoLibrary } from '../../server/src/shared-types';
-import { addBackLinks, getZIndex, incrementImageIndex } from './video-ui-utils';
+import { addBackLinks, broadcastMessage, getZIndex, incrementImageIndex } from './video-ui-utils';
 import { isEqual, isValidJson, processMillis } from '@tubular/util';
 import { floor } from '@tubular/math';
 import { AuthService } from './auth.service';
@@ -173,6 +173,9 @@ export class AppComponent implements AfterViewInit, OnInit {
 
             if (message?.type === 'status')
               this.receiveStatus(message.data);
+
+            if (message?.type)
+              broadcastMessage(message.type, isValidJson(message.data) ? JSON.parse(message.data) : message.data);
           });
         }
         else {

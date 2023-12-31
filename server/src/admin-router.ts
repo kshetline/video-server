@@ -91,6 +91,9 @@ export async function walkVideoDirectory(
   (options as VideoWalkOptionsPlus).streamingDirectory = terminateDir(getValue('streamingDirectory'));
   (options as VideoWalkOptionsPlus).videoDirectory = terminateDir(getValue('videoDirectory'));
 
+  if (options.checkStreaming === true)
+    options.checkStreaming = getValue('videoDirectory') + '\t' + getValue('streamingDirectory');
+
   return await walkVideoDirectoryAux(dir, 0, options, callback);
 }
 
@@ -102,7 +105,6 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
     miscFileCount: 0,
     movieBytes: 0,
     movieCountRaw: 0,
-    movieCountUnique: 0,
     movieTitles: new Set(),
     skippedForAge: 0,
     skippedForType: 0,
@@ -265,6 +267,8 @@ router.post('/library-refresh', async (req, res) => {
   }
 });
 
+let statsInProgress = false;
+
 router.get('/stats', async (req, res) => {
   noCache(res);
 
@@ -276,27 +280,37 @@ router.get('/stats', async (req, res) => {
   }
   catch {}
 
-  if (toBoolean(req.query.update)) {
+  if (!statsInProgress && toBoolean(req.query.update)) {
+    statsInProgress = true;
+
     (async (): Promise<void> => {
-      let lastChar = '';
-      const stats = await walkVideoDirectory({ checkStreaming: true, getMetadata: false },
-        async (path: string, depth: number, info: any): Promise<void> => {
-          const startChar = path.charAt(info.videoDirectory.length);
+      try {
+        let lastChar = '';
+        const stats = await walkVideoDirectory({ checkStreaming: true, getMetadata: false },
+          async (path: string, depth: number, info: any): Promise<void> => {
+            const startChar = path.charAt(info.videoDirectory.length);
 
-          if (depth === 1 && lastChar !== startChar) {
-            lastChar = startChar;
-            webSocketSend(JSON.stringify({ type: 'videoStatsProgress', data: startChar }));
-          }
-        });
-      const statsStr = JSON.stringify(stats, (_key, value) => {
-        if (value instanceof Set)
-          return Array.from(value.values()).sort(sorter);
-        else
-          return value;
-      }, 2);
+            if (depth === 1 && lastChar !== startChar) {
+              lastChar = startChar;
+              webSocketSend(JSON.stringify({ type: 'videoStatsProgress', data: startChar }));
+            }
+          });
+        const statsStr = JSON.stringify(stats, (_key, value) => {
+          if (value instanceof Set)
+            return Array.from(value.values()).sort(sorter);
+          else
+            return value;
+        }, 2);
 
-      setValue('videoStats', statsStr);
-      webSocketSend(JSON.stringify({ type: 'videoStats', data: statsStr }));
+        setValue('videoStats', statsStr);
+        webSocketSend(JSON.stringify({ type: 'videoStats', data: statsStr }));
+      }
+      catch (e) {
+        console.error('Error compiling video stats');
+        console.error(e);
+      }
+
+      statsInProgress = false;
     })().finally();
   }
 

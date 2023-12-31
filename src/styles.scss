@@ -10,11 +10,12 @@ body {
   overflow: hidden;
 }
 
-.narrow-progress {
-  width: 6em;
+p-progressBar {
+  display: inline-block;
+  width: 20em;
 
   .p-progressbar {
-    height: 0.75em;
+    height: 1.5em;
   }
 }
 

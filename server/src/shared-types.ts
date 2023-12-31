@@ -308,7 +308,6 @@ export interface VideoStats {
   miscFileCount: number;
   movieBytes: number;
   movieCountRaw: number;
-  movieCountUnique: number;
   movieTitles: Set<string> | string[];
   skippedForAge: number;
   skippedForType: number;

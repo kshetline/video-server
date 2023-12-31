@@ -4,6 +4,7 @@ import { isCollection, isMovie, isTvSeason, isTvShow } from '../../server/src/sh
 import { fromEvent } from 'rxjs/internal/observable/fromEvent';
 import { debounceTime } from 'rxjs/internal/operators/debounceTime';
 import { compare as imageCompare } from 'resemblejs';
+import { EventEmitter } from '@angular/core';
 
 let imageIndex = 0;
 
@@ -191,11 +192,28 @@ export function formatSize(b: number): string {
   let unit = 'TB';
 
   for (const u of ['bytes', 'KB', 'MB', 'GB']) {
-    if (b < 1024) {
+    if (b < 1000.5) {
       unit = u;
       break;
     }
+    else
+      b /= 1000;
   }
 
-  return b.toFixed(3) + ' ' + unit;
+  return b.toPrecision(4) + ' ' + unit;
+}
+
+export interface WSMessage {
+  type: string;
+  data: any;
+}
+
+const wsEmitter = new EventEmitter<WSMessage>();
+
+export function broadcastMessage(type: string, data: any): void {
+  wsEmitter.emit({ type, data });
+}
+
+export function webSocketMessagesEmitter(): EventEmitter<WSMessage> {
+  return wsEmitter;
 }
