@@ -40,5 +40,8 @@ module.exports = {
   devtool: 'source-map',
   plugins: [
     new webpack.BannerPlugin({ banner: '#!/usr/bin/env node', raw: true })
-  ]
+  ],
+  externals: {
+    sqlite3: 'commonjs sqlite3'
+  }
 };

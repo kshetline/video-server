@@ -150,8 +150,9 @@ function createAndStartServer(): void {
         http.createServer();
       wsServer = new WebSocketServer({ server });
       server.listen(wsPort);
-      setWebSocketServer(wsServer);
     }
+
+    setWebSocketServer(wsServer);
   }
 
   httpServer.listen(httpPort);

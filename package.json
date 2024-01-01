@@ -12,7 +12,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "eslint '**/*.ts' '**/*.js'",
-    "deploy": "npm run build && cd server && npm run build && cd .. && rimraf --glob \"../docker-nodejs/nodejs/public/*\" && copyfiles -u 2 dist/video-ui/**/* ../docker-nodejs/nodejs/public/ && copyfiles -u 2 server/dist/app* ../docker-nodejs/nodejs/"
+    "deploy": "npm run build && cd server && npm run build && cd dist && npm init -y && npm i sqlite3 && cd .. && cd .. && rimraf --glob \"../docker-nodejs/nodejs/public/*\" && copyfiles -u 2 dist/video-ui/**/* ../docker-nodejs/nodejs/public/ && copyfiles -u 2 server/dist/**/* ../docker-nodejs/nodejs/"
   },
   "private": true,
   "dependencies": {
