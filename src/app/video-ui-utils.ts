@@ -200,7 +200,7 @@ export function formatSize(b: number): string {
       b /= 1000;
   }
 
-  return b.toPrecision(4) + ' ' + unit;
+  return b.toPrecision(4) + '\u202F' + unit;
 }
 
 export interface WSMessage {

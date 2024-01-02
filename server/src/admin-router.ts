@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Request, Response, Router } from 'express';
 import { existsAsync, isAdmin, jsonOrJsonp, noCache, safeLstat, webSocketSend } from './vs-util';
 import { updateLibrary } from './library-router';
 import { clone, forEach, isFunction, isNumber, isObject, isString, last, toBoolean } from '@tubular/util';
@@ -7,27 +7,11 @@ import { getValue, setValue } from './settings';
 import { join as pathJoin, sep } from 'path';
 import { monitorProcess } from './process-util';
 import { spawn } from 'child_process';
-import { AudioTrack, MediaWrapper, MKVInfo, VideoStats, VideoTrack } from './shared-types';
+import { AudioTrack, MediaWrapper, MKVInfo, SubtitlesTrack, VideoStats, VideoTrack, VideoWalkOptions, VideoWalkOptionsPlus } from './shared-types';
 import { comparator, sorter } from './shared-utils';
+import { examineAndUpdateMkvFlags } from './mkv-flags';
 
 export const router = Router();
-
-export interface VideoWalkOptions {
-  checkStreaming?: boolean | string;
-  directoryExclude?: (path: string, dir: string, depth: number) => boolean;
-  earliest?: Date;
-  getMetadata?: boolean;
-  isStreamingResource?: (file: string) => boolean;
-  reportStreamingToCallback?: boolean;
-  skipExtras?: boolean;
-  skipMovies?: boolean;
-  skipTV?: boolean;
-}
-
-interface VideoWalkOptionsPlus extends VideoWalkOptions {
-  streamingDirectory?: string;
-  videoDirectory?: string;
-}
 
 const DEFAULT_VW_OPTIONS: VideoWalkOptions = {
   checkStreaming: true,
@@ -39,18 +23,22 @@ const DEFAULT_VW_OPTIONS: VideoWalkOptions = {
   }
 };
 
-export interface VideoInfo {
+export interface VideoWalkInfo {
   audio?: AudioTrack[];
+  error?: boolean;
   isExtra?: boolean;
   isMovie?: boolean;
   isTV?: boolean;
   mkvInfo?: MKVInfo;
   streamingDirectory?: string;
+  subtitles?: SubtitlesTrack[];
   video?: VideoTrack[];
   videoDirectory?: string;
+  wasModified?: boolean;
 }
 
-export type VideoWalkCallback = (path: string, depth: number, info?: VideoInfo) => Promise<void>;
+export type VideoWalkCallback = (path: string, depth: number, options?: VideoWalkOptionsPlus,
+  info?: VideoWalkInfo) => Promise<void>;
 
 function terminateDir(d: string): string {
   return d + (d.endsWith(sep) ? '' : sep);
@@ -100,6 +88,7 @@ export async function walkVideoDirectory(
 async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoWalkOptionsPlus,
                                      callback: VideoWalkCallback, dontRecurse = false): Promise<VideoStats> {
   const stats: VideoStats = {
+    errorCount: 0,
     extrasBytes: 0,
     extrasCount: 0,
     miscFileBytes: 0,
@@ -165,7 +154,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
     else if (/\.mkv$/.test(file)) {
       ++stats.videoCount;
 
-      const info: VideoInfo = {};
+      const info: VideoWalkInfo = {};
 
       if (/[\\/](-Extras-|.*Bonus Disc.*)[\\/]/i.test(path)) {
         info.isExtra = true;
@@ -197,6 +186,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
             info.mkvInfo = JSON.parse(mkvJson) as MKVInfo;
             info.video = info.mkvInfo.tracks.filter(t => t.type === 'video') as VideoTrack[];
             info.audio = info.mkvInfo.tracks.filter(t => t.type === 'audio') as AudioTrack[];
+            info.subtitles = info.mkvInfo.tracks.filter(t => t.type === 'subtitles') as SubtitlesTrack[];
 
             const mediaJson = await monitorProcess(spawn('mediainfo', [path, '--Output=JSON']));
             const mediaTracks = (JSON.parse(mediaJson || '{}') as MediaWrapper).media?.track || [];
@@ -245,7 +235,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
 
           info.streamingDirectory = options.streamingDirectory;
           info.videoDirectory = options.videoDirectory;
-          await callback(path, depth, info);
+          await callback(path, depth, options, info);
         }
         catch (e) {
           console.error('Error while processing %s:', path, e);
@@ -261,7 +251,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
   return stats;
 }
 
-router.post('/library-refresh', async (req, res) => {
+router.post('/library-refresh', async (req: Request, res: Response) => {
   if (!isAdmin(req))
     res.sendStatus(403);
   else {
@@ -272,7 +262,12 @@ router.post('/library-refresh', async (req, res) => {
 
 let statsInProgress = false;
 
-router.get('/stats', async (req, res) => {
+interface UpdateOptions {
+  mkvFlags?: boolean;
+  stats?: boolean;
+}
+
+async function videoWalk(res: Response, options: UpdateOptions): Promise<VideoStats> {
   noCache(res);
 
   const statsStr = getValue('videoStats');
@@ -283,20 +278,29 @@ router.get('/stats', async (req, res) => {
   }
   catch {}
 
-  if (!statsInProgress && toBoolean(req.query.update)) {
+  if (!statsInProgress && (options.stats || options.mkvFlags)) {
     statsInProgress = true;
 
     (async (): Promise<void> => {
       try {
         let lastChar = '';
-        const stats = await walkVideoDirectory({ checkStreaming: true, getMetadata: false },
-          async (path: string, depth: number, info: any): Promise<void> => {
+        const stats = await walkVideoDirectory({
+          canModify: options.mkvFlags,
+          checkStreaming: true,
+          earliest: options.mkvFlags ? new Date(Date.now() - 7 * 86400000) : undefined,
+          getMetadata: options.mkvFlags,
+          mkvFlags: options.mkvFlags
+        },
+          async (path: string, depth: number, options: VideoWalkOptionsPlus, info: VideoWalkInfo): Promise<void> => {
             const startChar = path.charAt(info.videoDirectory.length);
 
             if (depth === 1 && lastChar !== startChar) {
               lastChar = startChar;
               webSocketSend(JSON.stringify({ type: 'videoStatsProgress', data: startChar }));
             }
+
+            if (options.mkvFlags)
+              await examineAndUpdateMkvFlags(path, options, info);
           });
         const statsStr = JSON.stringify(stats, (_key, value) => {
           if (value instanceof Set)
@@ -317,5 +321,10 @@ router.get('/stats', async (req, res) => {
     })().finally();
   }
 
-  jsonOrJsonp(req, res, stats);
+  return stats;
+}
+
+router.get('/stats', async (req, res) => {
+  noCache(res);
+  jsonOrJsonp(req, res, await videoWalk(res, { stats: toBoolean(req.query.update) }));
 });

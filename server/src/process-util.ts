@@ -1,14 +1,8 @@
 import { ChildProcess, spawn as nodeSpawn } from 'child_process';
 import { isFunction, isNumber, isObject, regex } from '@tubular/util';
+import { unref } from './vs-util';
 
 const isWindows = (process.platform === 'win32');
-
-function unref(timer: any): any {
-  if (timer?.unref)
-    timer.unref();
-
-  return timer;
-}
 
 export enum ErrorMode { DEFAULT, FAIL_ON_ANY_ERROR, IGNORE_ERRORS }
 export type ErrorCheck = (s: string) => boolean;

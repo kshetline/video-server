@@ -303,6 +303,7 @@ export interface MKVInfo {
 }
 
 export interface VideoStats {
+  errorCount: number;
   extrasBytes: number;
   extrasCount: number;
   miscFileBytes: number;
@@ -319,4 +320,24 @@ export interface VideoStats {
   tvEpisodeTitles: Set<string> | string[];
   tvShowTitles: Set<string> | string[];
   videoCount: number;
+}
+
+export interface VideoWalkOptions {
+  canModify?: boolean;
+  checkStreaming?: boolean | string;
+  directoryExclude?: (path: string, dir: string, depth: number) => boolean;
+  earliest?: Date;
+  getMetadata?: boolean;
+  isStreamingResource?: (file: string) => boolean;
+  mkvFlags?: boolean;
+  reportStreamingToCallback?: boolean;
+  skipExtras?: boolean;
+  skipMovies?: boolean;
+  skipTV?: boolean;
+  updateExtraMetadata?: boolean;
+}
+
+export interface VideoWalkOptionsPlus extends VideoWalkOptions {
+  streamingDirectory?: string;
+  videoDirectory?: string;
 }

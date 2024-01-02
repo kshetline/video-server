@@ -67,14 +67,20 @@
       <td colspan=2><hr></td>
     </tr>
     <tr>
-      <th>Video file count (not including streaming/misc)</th>
+      <th class="has-footnote">Video file count<span class="star">*</span></th>
       <td>{{videoStats?.videoCount}}</td>
     </tr>
     <tr>
-      <th>Video storage usage (not including streaming/misc)</th>
+      <th class="has-footnote">Video storage usage<span class="star">*</span></th>
       <td>{{videoStats?.videoCount ? formatSize(videoStats.movieBytes + videoStats.tvBytes + videoStats.extrasBytes) : ''}}</td>
     </tr>
+    <tr>
+      <th>Total storage usage</th>
+      <td>{{videoStats?.videoCount ? formatSize(videoStats.movieBytes + videoStats.tvBytes + videoStats.extrasBytes
+        + videoStats.miscFileBytes + videoStats.streamingFileBytes) : ''}}</td>
+    </tr>
   </table>
+  <div class="footnote">*Not including streaming/miscellaneous</div>
 </div>
 <p-dialog header="Header" [(visible)]="showRefreshDialog" [style]="{ width: 'min(35em, calc(100vw - 4em))' }">
   <ng-template pTemplate="header">
