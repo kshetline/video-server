@@ -25,11 +25,12 @@ const DEFAULT_VW_OPTIONS: VideoWalkOptions = {
 
 export interface VideoWalkInfo {
   audio?: AudioTrack[];
-  error?: boolean;
+  error?: string;
   isExtra?: boolean;
   isMovie?: boolean;
   isTV?: boolean;
   mkvInfo?: MKVInfo;
+  skip?: boolean;
   streamingDirectory?: string;
   subtitles?: SubtitlesTrack[];
   video?: VideoTrack[];
@@ -172,74 +173,77 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
         ++stats.movieCountRaw;
       }
 
-      if (info.isExtra && options.skipExtras || info.isMovie && options.skipMovies || info.isTV && options.skipTV)
+      if (info.isExtra && options.skipExtras || info.isMovie && options.skipMovies || info.isTV && options.skipTV) {
         ++stats.skippedForType;
-      else if (options.earliest && +stat.mtime < +options.earliest)
+        info.skip = true;
+      }
+      else if (options.earliest && +stat.mtime < +options.earliest) {
         ++stats.skippedForAge;
-      else {
-        try {
-          if (options.getMetadata) {
-            const mkvJson = (await monitorProcess(spawn('mkvmerge', ['-J', path])))
-            // uid values exceed available numeric precision. Turn into strings instead.
-              .replace(/("uid":\s+)(\d+)/g, '$1"$2"');
+        info.skip = true;
+      }
 
-            info.mkvInfo = JSON.parse(mkvJson) as MKVInfo;
-            info.video = info.mkvInfo.tracks.filter(t => t.type === 'video') as VideoTrack[];
-            info.audio = info.mkvInfo.tracks.filter(t => t.type === 'audio') as AudioTrack[];
-            info.subtitles = info.mkvInfo.tracks.filter(t => t.type === 'subtitles') as SubtitlesTrack[];
+      try {
+        if (options.getMetadata && !info.skip) {
+          const mkvJson = (await monitorProcess(spawn('mkvmerge', ['-J', path])))
+          // uid values exceed available numeric precision. Turn into strings instead.
+            .replace(/("uid":\s+)(\d+)/g, '$1"$2"');
 
-            const mediaJson = await monitorProcess(spawn('mediainfo', [path, '--Output=JSON']));
-            const mediaTracks = (JSON.parse(mediaJson || '{}') as MediaWrapper).media?.track || [];
-            const typeIndices = {} as Record<string, number>;
+          info.mkvInfo = JSON.parse(mkvJson) as MKVInfo;
+          info.video = info.mkvInfo.tracks.filter(t => t.type === 'video') as VideoTrack[];
+          info.audio = info.mkvInfo.tracks.filter(t => t.type === 'audio') as AudioTrack[];
+          info.subtitles = info.mkvInfo.tracks.filter(t => t.type === 'subtitles') as SubtitlesTrack[];
 
-            for (const track of mediaTracks) {
-              const type = track['@type'].toLowerCase();
-              const index = (typeIndices[type] ?? -1) + 1;
-              const mkvSet = (type === 'video' ? info.video : type === 'audio' ? info.audio : []);
+          const mediaJson = await monitorProcess(spawn('mediainfo', [path, '--Output=JSON']));
+          const mediaTracks = (JSON.parse(mediaJson || '{}') as MediaWrapper).media?.track || [];
+          const typeIndices = {} as Record<string, number>;
 
-              typeIndices[type] = index;
+          for (const track of mediaTracks) {
+            const type = track['@type'].toLowerCase();
+            const index = (typeIndices[type] ?? -1) + 1;
+            const mkvSet = (type === 'video' ? info.video : type === 'audio' ? info.audio : []);
 
-              if (mkvSet[index]?.properties)
-                mkvSet[index].properties.media = track;
-            }
+            typeIndices[type] = index;
+
+            if (mkvSet[index]?.properties)
+              mkvSet[index].properties.media = track;
           }
+        }
 
-          if (info.isMovie || info.isTV) {
-            let title = file.replace(/\.mkv$/i, '').replace(/\s*\(.*?[a-z].*?\)/gi, '')
-              .replace(/^\d{1,2} - /, '').replace(/ - /g, ': ')
-              .replace(/：/g, ':').replace(/？/g, '?').trim().replace(/(.+), (A|An|The)$/, '$2 $1');
+        if (info.isMovie || info.isTV) {
+          let title = file.replace(/\.mkv$/i, '').replace(/\s*\(.*?[a-z].*?\)/gi, '')
+            .replace(/^\d{1,2} - /, '').replace(/ - /g, ': ')
+            .replace(/：/g, ':').replace(/？/g, '?').trim().replace(/(.+), (A|An|The)$/, '$2 $1');
 
-            if (info.isMovie) {
-              title = title.replace(/-S\d\dE\d\d-|-M\d-/, ': ');
-              (stats.movieTitles as Set<string>).add(title);
-            }
-            else {
-              (stats.tvEpisodeTitles as Set<string>).add(title);
-
-              let $: RegExpExecArray;
-              let seriesTitle = last(path.replace(/^\w:/, '').split(/[/\\]/).filter(s => s.includes('§')).map(s => s.trim()
-                .replace(/^\d+\s*-\s*/, '')
-                .replace(/§.*$/, '')
-                .replace(/\s+-\s+\d\d\s+-\s+/, ': ')
-                .replace(/\s+-\s+/, ': ')
-                .replace(/\s*\(.*?[a-z].*?\)/gi, '').trim()
-                .replace(/(.+), (A|An|The)$/, '$2 $1')));
-
-              if (!seriesTitle && ($ = /(.*?): S\d\dE\d\d:/.exec(title)))
-                seriesTitle = $[1];
-
-              if (seriesTitle)
-                (stats.tvShowTitles as Set<string>).add(seriesTitle);
-            }
+          if (info.isMovie) {
+            title = title.replace(/-S\d\dE\d\d-|-M\d-/, ': ');
+            (stats.movieTitles as Set<string>).add(title);
           }
+          else {
+            (stats.tvEpisodeTitles as Set<string>).add(title);
 
-          info.streamingDirectory = options.streamingDirectory;
-          info.videoDirectory = options.videoDirectory;
-          await callback(path, depth, options, info);
+            let $: RegExpExecArray;
+            let seriesTitle = last(path.replace(/^\w:/, '').split(/[/\\]/).filter(s => s.includes('§')).map(s => s.trim()
+              .replace(/^\d+\s*-\s*/, '')
+              .replace(/§.*$/, '')
+              .replace(/\s+-\s+\d\d\s+-\s+/, ': ')
+              .replace(/\s+-\s+/, ': ')
+              .replace(/\s*\(.*?[a-z].*?\)/gi, '').trim()
+              .replace(/(.+), (A|An|The)$/, '$2 $1')));
+
+            if (!seriesTitle && ($ = /(.*?): S\d\dE\d\d:/.exec(title)))
+              seriesTitle = $[1];
+
+            if (seriesTitle)
+              (stats.tvShowTitles as Set<string>).add(seriesTitle);
+          }
         }
-        catch (e) {
-          console.error('Error while processing %s:', path, e);
-        }
+
+        info.streamingDirectory = options.streamingDirectory;
+        info.videoDirectory = options.videoDirectory;
+        await callback(path, depth, options, info);
+      }
+      catch (e) {
+        console.error('Error while processing %s:', path, e);
       }
     }
     else {
@@ -267,16 +271,8 @@ interface UpdateOptions {
   stats?: boolean;
 }
 
-async function videoWalk(res: Response, options: UpdateOptions): Promise<VideoStats> {
-  noCache(res);
-
-  const statsStr = getValue('videoStats');
+async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
   let stats: any = null;
-
-  try {
-    stats = statsStr ? JSON.parse(statsStr) : null;
-  }
-  catch {}
 
   if (!statsInProgress && (options.stats || options.mkvFlags)) {
     statsInProgress = true;
@@ -284,7 +280,7 @@ async function videoWalk(res: Response, options: UpdateOptions): Promise<VideoSt
     (async (): Promise<void> => {
       try {
         let lastChar = '';
-        const stats = await walkVideoDirectory({
+        stats = await walkVideoDirectory({
           canModify: options.mkvFlags,
           checkStreaming: true,
           earliest: options.mkvFlags ? new Date(Date.now() - 7 * 86400000) : undefined,
@@ -298,6 +294,9 @@ async function videoWalk(res: Response, options: UpdateOptions): Promise<VideoSt
               lastChar = startChar;
               webSocketSend(JSON.stringify({ type: 'videoStatsProgress', data: startChar }));
             }
+
+            if (info.skip)
+              return;
 
             if (options.mkvFlags)
               await examineAndUpdateMkvFlags(path, options, info);
@@ -326,5 +325,17 @@ async function videoWalk(res: Response, options: UpdateOptions): Promise<VideoSt
 
 router.get('/stats', async (req, res) => {
   noCache(res);
-  jsonOrJsonp(req, res, await videoWalk(res, { stats: toBoolean(req.query.update) }));
+
+  const statsStr = getValue('videoStats');
+  let stats: any = null;
+
+  try {
+    stats = statsStr ? JSON.parse(statsStr) : null;
+  }
+  catch {}
+
+  if (!statsInProgress && toBoolean(req.query.update))
+    videoWalk({ stats: true }).finally();
+
+  jsonOrJsonp(req, res, stats);
 });

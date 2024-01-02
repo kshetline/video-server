@@ -30,7 +30,7 @@ function psQuoteEscape(arg: string): string {
     return '"' + arg + arg.replace(/([`$])/g, '`$1') + '"';
 }
 
-function linuxEscape(arg: string): string {
+export function linuxEscape(arg: string): string {
   if (!/[ (){}@?|$%<>`'"^*+]/.test(arg))
     return arg;
   else if (!/'/.test(arg))

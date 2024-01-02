@@ -2,7 +2,7 @@ import { VideoWalkInfo } from './admin-router';
 import { AudioTrackProperties, GeneralTrack, GeneralTrackProperties, VideoWalkOptionsPlus } from './shared-types';
 import { code2Name, lang3to2 } from './lang';
 import { toInt } from '@tubular/util';
-import { ErrorMode, monitorProcess } from './process-util';
+import { ErrorMode, linuxEscape, monitorProcess } from './process-util';
 import { spawn } from 'child_process';
 
 function getLanguage(props: GeneralTrackProperties): string {
@@ -182,14 +182,14 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
     try {
       if (options.canModify) {
         await monitorProcess(spawn('mkvpropedit', editArgs), null, ErrorMode.FAIL_ON_ANY_ERROR);
-        console.log(editArgs.join(' '));
+        console.log('mkvpropedit ' + editArgs.map(arg => linuxEscape(arg)).join(' '));
       }
 
       info.wasModified = true;
     }
     catch (e) {
-      info.error = true;
-      console.error('Update of %s failed: %s', path, e.message);
+      info.error = `Update of ${path} failed: ${e.message}`;
+      console.error(info.error);
     }
   }
 
