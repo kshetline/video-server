@@ -8,7 +8,8 @@
                  [currentBonus]="bonusSource"></app-show-view>
   <app-bonus-view *ngIf="isLoggedIn()" [class.active]="bonusSource" [source]="bonusSource" (goBack)="bonusSource = null"
                   (playing)="playing = $event"></app-bonus-view>
-  <app-admin-view *ngIf="isAdmin()" [class.active]="showAdminPage" (goBack)="showAdminPage = false"></app-admin-view>
+  <app-admin-view *ngIf="isAdmin()" [class.active]="showAdminPage"
+                  [status]="status" (goBack)="showAdminPage = false"></app-admin-view>
   <div *ngIf="!playing" class="status-panel">
     <p-button *ngIf="isAdmin() && !showAdminPage && !posterWallHidden()"
               [disabled]="status && status?.updateProgress >= 0" icon="pi pi-wrench"

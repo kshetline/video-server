@@ -6,6 +6,7 @@ export interface ServerStatus {
   lastUpdate: string;
   localAccess?: boolean;
   ready: boolean;
+  processing: boolean;
   updateProgress: number;
   wsPort: number;
 }

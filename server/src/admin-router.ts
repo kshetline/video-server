@@ -10,8 +10,10 @@ import { spawn } from 'child_process';
 import { AudioTrack, MediaWrapper, MKVInfo, SubtitlesTrack, VideoStats, VideoTrack, VideoWalkOptions, VideoWalkOptionsPlus } from './shared-types';
 import { comparator, sorter } from './shared-utils';
 import { examineAndUpdateMkvFlags } from './mkv-flags';
+import { sendStatus } from './app';
 
 export const router = Router();
+export let adminProcessing = false;
 
 const DEFAULT_VW_OPTIONS: VideoWalkOptions = {
   checkStreaming: true,
@@ -259,15 +261,30 @@ router.post('/library-refresh', async (req: Request, res: Response) => {
   if (!isAdmin(req))
     res.sendStatus(403);
   else {
-    updateLibrary(toBoolean(req.query.quick)).finally();
-    res.json(null);
+    if (!adminProcessing) {
+      adminProcessing = true;
+      sendStatus();
+      updateLibrary(toBoolean(req.query.quick)).finally(() => {
+        adminProcessing = false;
+        sendStatus();
+      });
+    }
+
+    res.json(!adminProcessing);
   }
 });
 
 let statsInProgress = false;
 
 interface UpdateOptions {
+  canModify?: boolean;
+  checkStreaming?: boolean;
+  earliest?: Date;
+  generateStreaming?: boolean;
   mkvFlags?: boolean;
+  skipExtras?: boolean;
+  skipMovies?: boolean;
+  skipTV?: boolean;
   stats?: boolean;
 }
 
@@ -277,15 +294,15 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
   if (!statsInProgress && (options.stats || options.mkvFlags)) {
     statsInProgress = true;
 
-    (async (): Promise<void> => {
+    await (async (): Promise<void> => {
       try {
         let lastChar = '';
         stats = await walkVideoDirectory({
-          canModify: options.mkvFlags,
-          checkStreaming: true,
-          earliest: options.mkvFlags ? new Date(Date.now() - 7 * 86400000) : undefined,
+          canModify: options.canModify,
+          checkStreaming: options.checkStreaming,
+          earliest: options.earliest,
           getMetadata: options.mkvFlags,
-          mkvFlags: options.mkvFlags
+          mkvFlags: options.mkvFlags || options.generateStreaming
         },
           async (path: string, depth: number, options: VideoWalkOptionsPlus, info: VideoWalkInfo): Promise<void> => {
             const startChar = path.charAt(info.videoDirectory.length);
@@ -317,7 +334,7 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
       }
 
       statsInProgress = false;
-    })().finally();
+    })();
   }
 
   return stats;
@@ -334,8 +351,39 @@ router.get('/stats', async (req, res) => {
   }
   catch {}
 
-  if (!statsInProgress && toBoolean(req.query.update))
-    videoWalk({ stats: true }).finally();
+  if (!statsInProgress && !adminProcessing && toBoolean(req.query.update)) {
+    adminProcessing = true;
+    sendStatus();
+    videoWalk({ checkStreaming: true, stats: true }).finally(() => {
+      adminProcessing = false;
+      sendStatus();
+    });
+  }
 
   jsonOrJsonp(req, res, stats);
+});
+
+router.post('/process', async (req, res) => {
+  noCache(res);
+
+  if (!adminProcessing) {
+    const options: UpdateOptions = {
+      canModify: toBoolean(req.body.canModify, null, true),
+      earliest: req.body.earliest ? new Date(req.body.earliest) : undefined,
+      mkvFlags: toBoolean(req.body.mkvFlags, null, true),
+      skipExtras: toBoolean(req.body.skipExtras, null, true),
+      skipMovies: toBoolean(req.body.skipMovies, null, true),
+      skipTV: toBoolean(req.body.skipTV, null, true),
+    };
+
+    adminProcessing = true;
+    sendStatus();
+    videoWalk(options).finally(() => {
+      adminProcessing = false;
+      sendStatus();
+    });
+    res.send('OK');
+  }
+  else
+    res.send('Busy');
 });

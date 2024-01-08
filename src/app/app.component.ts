@@ -21,6 +21,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   private getSparseLibrary = true;
   private gettingLibrary = false;
   private readyToPoll = false;
+  private reestablishing = false;
   private webSocket: WebSocket;
 
   bonusSource: LibraryItem;
@@ -309,6 +310,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   };
 
   private connectToWebSocket(): void {
+    console.info('connectToWebSocket()');
     const protocol = (/https/.test(location.protocol) ? 'wss' : 'ws');
     const port = this.status.wsPort < 0 ? location.port : this.status.wsPort;
     let socketOpen = false;
@@ -317,16 +319,25 @@ export class AppComponent implements AfterViewInit, OnInit {
     this.webSocket.addEventListener('open', () => {
       socketOpen = true;
       this.wsReady = true;
+
+      if (this.reestablishing) {
+        this.reestablishing = false;
+        this.getStatusObservable().subscribe(status => this.status = status);
+      }
     });
     this.webSocket.addEventListener('close', () => {
+      console.warn('Web socket closed');
       if (socketOpen) {
         socketOpen = false;
+        this.reestablishing = true;
         setTimeout(() => this.connectToWebSocket(), 5000);
       }
     });
     this.webSocket.addEventListener('error', () => {
-      if (!socketOpen)
+      if (!socketOpen) {
+        this.reestablishing = true;
         setTimeout(() => this.connectToWebSocket(), 5000);
+      }
       else {
         socketOpen = false;
         console.warn('Web socket connection failed');

@@ -3,12 +3,16 @@
 </div>
 <div class="content">
   <div class="row">
-    <p-button label="Refresh Video Library" icon="pi pi-refresh" (click)="showRefreshDialog = true"/>
-    <p-progressBar *ngIf="updateProgress >= 0" [value]="updateProgress" [showValue]="false"></p-progressBar>
+    <p-button label="Refresh Video Library" icon="pi pi-refresh"
+              [disabled]="status?.processing" (click)="!status?.processing && (showRefreshDialog = true)"/>
+    <p-progressBar *ngIf="updateProgress >= 0 && status?.processing" [value]="updateProgress"
+                   [showValue]="false"></p-progressBar>
   </div>
   <div class="row">
-    <p-button label="Refresh Video Inventory" icon="pi pi-refresh" (click)="refreshInventory()"/>
-    <p-progressBar *ngIf="inventoryProgress >= 0" [value]="inventoryProgress" [showValue]="false"></p-progressBar>
+    <p-button label="Refresh Video Inventory" icon="pi pi-refresh"
+              [disabled]="status?.processing" (click)="!status?.processing && refreshInventory()"/>
+    <p-progressBar *ngIf="inventoryProgress >= 0 && status?.processing" [value]="inventoryProgress"
+                   [showValue]="false"></p-progressBar>
   </div>
   <table>
     <tr>

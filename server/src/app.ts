@@ -52,7 +52,7 @@ import { Resolver } from 'node:dns';
 import { cachedLibrary, initLibrary, pendingLibrary, router as libraryRouter } from './library-router';
 import { router as imageRouter } from './image-router';
 import { router as streamingRouter } from './streaming-router';
-import { router as adminRouter } from './admin-router';
+import { adminProcessing, router as adminRouter } from './admin-router';
 import { LibraryItem, LibraryStatus, ServerStatus, User, UserSession } from './shared-types';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
@@ -239,6 +239,7 @@ function getStatus(remote?: string): ServerStatus {
   const status: ServerStatus = {
     lastUpdate: cachedLibrary?.lastUpdate,
     ready: cachedLibrary?.status === LibraryStatus.DONE,
+    processing: adminProcessing,
     updateProgress: -1,
     wsPort
   };

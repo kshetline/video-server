@@ -76,7 +76,6 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
   const subtitles = info.subtitles;
   let primaryLang = '';
   let langCount = 0;
-  console.log(path);
 
   if (audio.length > 0) {
     const defaultTrack = audio.find(t => t.properties.default_track) ?? audio[0];

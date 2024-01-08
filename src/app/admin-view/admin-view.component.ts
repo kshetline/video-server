@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { formatSize, webSocketMessagesEmitter } from '../video-ui-utils';
 import { HttpClient } from '@angular/common/http';
 import { ServerStatus, VideoStats } from '../../../server/src/shared-types';
@@ -17,6 +17,8 @@ export class AdminViewComponent implements OnInit {
   showRefreshDialog = false;
   updateProgress = -1;
   videoStats: VideoStats;
+
+  @Input() status: ServerStatus;
 
   @Output() goBack: EventEmitter<void> = new EventEmitter();
 
