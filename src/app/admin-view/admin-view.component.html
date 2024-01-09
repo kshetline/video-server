@@ -64,6 +64,10 @@
       <td>{{videoStats?.videoCount ? videoStats.streamingFileCount : ''}}</td>
     </tr>
     <tr>
+      <th>Unstreamed video count</th>
+      <td>{{videoStats?.videoCount ? $any(videoStats.unstreamedTitles).length : ''}}</td>
+    </tr>
+    <tr>
       <th>Streaming storage usage</th>
       <td>{{videoStats?.videoCount ? formatSize(videoStats.streamingFileBytes) : ''}}</td>
     </tr>

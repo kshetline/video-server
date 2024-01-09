@@ -190,13 +190,20 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
     }
     else if (!/-Extras-|Bonus Disc/i.exec(item.uri || '')) {
       if (item.uri) {
-        const streamUriBase = item.uri.replace(/\.mkv$/, '').replace(/\s*\(2[DK]\)$/, '');
+        const streamUriBase = item.uri.replace(/( ~)?\.mkv$/, '').replace(/\s*\(2[DK]\)$/, '');
 
         for (const ext of ['.mpd', '.av.webm']) {
           const streamUri = streamUriBase + ext;
 
           if (await existsAsync(paths.join(sSource, streamUri))) {
             item.streamUri = streamUri;
+            break;
+          }
+
+          const altUri = streamUri.replace(/([/\\])([^/\\]+$)/, '$1\x32K$1$2');
+
+          if (await existsAsync(paths.join(sSource, altUri))) {
+            item.streamUri = altUri;
             break;
           }
         }

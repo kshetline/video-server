@@ -320,6 +320,7 @@ export interface VideoStats {
   tvEpisodesRaw: number;
   tvEpisodeTitles: Set<string> | string[];
   tvShowTitles: Set<string> | string[];
+  unstreamedTitles: Set<string> | string[];
   videoCount: number;
 }
 

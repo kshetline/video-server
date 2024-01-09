@@ -107,6 +107,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
     tvEpisodesRaw: 0,
     tvEpisodeTitles: new Set(),
     tvShowTitles: new Set(),
+    unstreamedTitles: new Set(),
     videoCount: 0,
   };
 
@@ -116,7 +117,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
     const path = pathJoin(dir, file);
     const stat = await safeLstat(path);
 
-    if (!stat || file.startsWith('.') || file.endsWith('~') || stat.isSymbolicLink()) {
+    if (!stat || file.startsWith('.') || file.endsWith('~') || file.endsWith('~.mkv') || stat.isSymbolicLink()) {
       // Do nothing
     }
     else if (stat.isDirectory()) {
@@ -211,9 +212,10 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
           }
         }
 
+        const baseTitle = file.replace(/( ~)?\.mkv$/i, '');
+
         if (info.isMovie || info.isTV) {
-          let title = file.replace(/\.mkv$/i, '').replace(/\s*\(.*?[a-z].*?\)/gi, '')
-            .replace(/^\d{1,2} - /, '').replace(/ - /g, ': ')
+          let title = baseTitle.replace(/\s*\(.*?[a-z].*?\)/gi, '').replace(/^\d{1,2} - /, '').replace(/ - /g, ': ')
             .replace(/：/g, ':').replace(/？/g, '?').trim().replace(/(.+), (A|An|The)$/, '$2 $1');
 
           if (info.isMovie) {
@@ -238,6 +240,18 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
             if (seriesTitle)
               (stats.tvShowTitles as Set<string>).add(seriesTitle);
           }
+        }
+
+        if (options.checkStreaming && !dontRecurse) {
+          const title = baseTitle.replace(/\s*\([234][DK]\)/gi, '');
+          const sDir = pathJoin(options.streamingDirectory, dir.substring(options.videoDirectory.length));
+          const stream1 = pathJoin(sDir, title + '.mpd');
+          const stream2 = pathJoin(sDir, title + '.av.webm');
+          const stream3 = pathJoin(sDir, '2K', title + '.mpd');
+          const stream4 = pathJoin(sDir, '2K', title + '.av.webm');
+
+          if (!await existsAsync(stream1) && !await existsAsync(stream2) && !await existsAsync(stream3) && !await existsAsync(stream4))
+            (stats.unstreamedTitles as Set<string>).add(title);
         }
 
         info.streamingDirectory = options.streamingDirectory;
