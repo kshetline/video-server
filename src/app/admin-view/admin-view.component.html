@@ -21,7 +21,7 @@
     </tr>
     <tr>
       <th>Unique movie titles</th>
-      <td>{{videoStats?.videoCount ? $any(videoStats.movieTitles).length : ''}}</td>
+      <td>{{videoStats?.videoCount ? $any(videoStats.movieTitles)?.length : ''}}</td>
     </tr>
     <tr>
       <th>Movie storage usage</th>
@@ -33,11 +33,11 @@
     </tr>
     <tr>
       <th>Unique TV show titles</th>
-      <td>{{videoStats?.videoCount ? $any(videoStats.tvShowTitles).length : ''}}</td>
+      <td>{{videoStats?.videoCount ? $any(videoStats.tvShowTitles)?.length : ''}}</td>
     </tr>
     <tr>
       <th>Unique TV show episodes</th>
-      <td>{{videoStats?.videoCount ? $any(videoStats.tvEpisodeTitles).length : ''}}</td>
+      <td>{{videoStats?.videoCount ? $any(videoStats.tvEpisodeTitles)?.length : ''}}</td>
     </tr>
     <tr>
       <th>TV storage usage</th>
@@ -65,7 +65,7 @@
     </tr>
     <tr>
       <th>Unstreamed video count</th>
-      <td>{{videoStats?.videoCount ? $any(videoStats.unstreamedTitles).length : ''}}</td>
+      <td>{{videoStats?.videoCount ? $any(videoStats.unstreamedTitles)?.length : ''}}</td>
     </tr>
     <tr>
       <th>Streaming storage usage</th>
