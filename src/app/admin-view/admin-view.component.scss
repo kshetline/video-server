@@ -34,6 +34,10 @@
     gap: 1em;
   }
 
+  .mono {
+    font-family: "Courier New", monospace;
+  }
+
   table {
     border-spacing: 0;
   }
@@ -41,6 +45,12 @@
   td, th {
     padding-right: 1.5em;
     text-align: right;
+  }
+
+  .skip-options {
+    display: grid;
+    gap: 1em;
+    grid-template-columns: auto auto auto;
   }
 }
 

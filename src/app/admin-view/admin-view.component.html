@@ -89,6 +89,22 @@
     </tr>
   </table>
   <div class="footnote">*Not including streaming/miscellaneous</div>
+  <hr style="width: 100%">
+  <div class="row">
+    <p-checkbox [(ngModel)]="setEarliest" [binary]="true" label="Set earliest"></p-checkbox>
+    <p-calendar [(ngModel)]="options.earliest" dateFormat="yy-mm-dd" [showIcon]="true" [disabled]="!setEarliest"></p-calendar>
+  </div>
+  <div class="skip-options">
+    <p-checkbox [(ngModel)]="options.skipMovies" [binary]="true" label="Skip movies"></p-checkbox>
+    <p-checkbox [(ngModel)]="options.skipTV" [binary]="true" label="Skip TV shows"></p-checkbox>
+    <p-checkbox [(ngModel)]="options.skipExtras" [binary]="true" label="Skip extras"></p-checkbox>
+  </div>
+  <p-checkbox [(ngModel)]="options.generateStreaming" [binary]="true" label="Generate streaming files"></p-checkbox>
+  <p-checkbox [(ngModel)]="options.mkvFlags" [binary]="true" label="Update MKV flags"></p-checkbox>
+  <p-button label="Process" icon="pi pi-wrench"
+            [disabled]="status?.processing" (click)="!status?.processing && runProcess()"/>
+  <div>{{currentFile}}</div>
+  <div class="mono">{{encodeProgress}}</div>
 </div>
 <p-dialog header="Header" [(visible)]="showRefreshDialog" [style]="{ width: 'min(35em, calc(100vw - 4em))' }">
   <ng-template pTemplate="header">

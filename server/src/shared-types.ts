@@ -329,6 +329,7 @@ export interface VideoWalkOptions {
   checkStreaming?: boolean | string;
   directoryExclude?: (path: string, dir: string, depth: number) => boolean;
   earliest?: Date;
+  generateStreaming?: boolean;
   getMetadata?: boolean;
   isStreamingResource?: (file: string) => boolean;
   mkvFlags?: boolean;

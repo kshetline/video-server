@@ -8,6 +8,8 @@ import { AppComponent } from './app.component';
 import { BonusViewComponent } from './bonus-view/bonus-view.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ButtonModule } from 'primeng/button';
+import { CalendarModule } from 'primeng/calendar';
+import { CheckboxModule } from 'primeng/checkbox';
 import { CollectionViewComponent } from './collection-view/collection-view.component';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DashPlayerComponent } from './dash-player/dash-player.component';
@@ -43,6 +45,8 @@ import { AdminViewComponent } from './admin-view/admin-view.component';
     BrowserAnimationsModule,
     BrowserModule,
     ButtonModule,
+    CalendarModule,
+    CheckboxModule,
     ConfirmDialogModule,
     DialogModule,
     FontAwesomeModule,

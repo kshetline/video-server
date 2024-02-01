@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { formatSize, webSocketMessagesEmitter } from '../video-ui-utils';
 import { HttpClient } from '@angular/common/http';
 import { ServerStatus, VideoStats } from '../../../server/src/shared-types';
+import { clone } from '@tubular/util';
 
 @Component({
   selector: 'app-admin-view',
@@ -13,7 +14,14 @@ export class AdminViewComponent implements OnInit {
 
   constructor(private httpClient: HttpClient) {}
 
+  options: any = {
+    earliest: new Date(Date.now() - 86_400_000 * 7)
+  };
+
+  currentFile = '';
+  encodeProgress = '';
   inventoryProgress = -1;
+  setEarliest = false;
   showRefreshDialog = false;
   updateProgress = -1;
   videoStats: VideoStats;
@@ -25,8 +33,21 @@ export class AdminViewComponent implements OnInit {
   ngOnInit(): void {
     webSocketMessagesEmitter().subscribe(msg => {
       switch (msg.type) {
+        case 'audio-progress':
+          this.encodeProgress = 'Audio: ' + msg.data;
+          break;
+
+        case 'currentFile':
+          this.currentFile = msg.data;
+          this.encodeProgress = '';
+          break;
+
         case 'status':
           this.updateProgress = (msg.data as ServerStatus).updateProgress;
+          break;
+
+        case 'video-progress':
+          this.encodeProgress = msg.data;
           break;
 
         case 'videoStatsProgress':
@@ -40,6 +61,8 @@ export class AdminViewComponent implements OnInit {
         case 'videoStats':
           this.videoStats = (msg.data as VideoStats);
           this.inventoryProgress = -1;
+          this.currentFile = '';
+          this.encodeProgress = '';
           break;
       }
     });
@@ -56,5 +79,14 @@ export class AdminViewComponent implements OnInit {
   refreshInventory(): void {
     this.inventoryProgress = 0;
     this.httpClient.get('/api/admin/stats?update=true').subscribe((stats: VideoStats) => this.videoStats = stats);
+  }
+
+  runProcess(): void {
+    const options = clone(this.options);
+
+    if (!this.setEarliest)
+      delete options.earliest;
+
+    this.httpClient.post('/api/admin/process', options).subscribe();
   }
 }

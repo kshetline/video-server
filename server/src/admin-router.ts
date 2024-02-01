@@ -11,6 +11,7 @@ import { AudioTrack, MediaWrapper, MKVInfo, SubtitlesTrack, VideoStats, VideoTra
 import { comparator, sorter } from './shared-utils';
 import { examineAndUpdateMkvFlags } from './mkv-flags';
 import { sendStatus } from './app';
+import { createStreaming } from './streaming';
 
 export const router = Router();
 export let adminProcessing = false;
@@ -305,7 +306,7 @@ interface UpdateOptions {
 async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
   let stats: any = null;
 
-  if (!statsInProgress && (options.stats || options.mkvFlags)) {
+  if (!statsInProgress && (options.stats || options.mkvFlags || options.generateStreaming)) {
     statsInProgress = true;
 
     await (async (): Promise<void> => {
@@ -315,8 +316,9 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
           canModify: options.canModify,
           checkStreaming: options.checkStreaming,
           earliest: options.earliest,
-          getMetadata: options.mkvFlags,
-          mkvFlags: options.mkvFlags || options.generateStreaming
+          getMetadata: options.mkvFlags || options.generateStreaming,
+          mkvFlags: options.mkvFlags,
+          generateStreaming: options.generateStreaming
         },
           async (path: string, depth: number, options: VideoWalkOptionsPlus, info: VideoWalkInfo): Promise<void> => {
             const startChar = path.charAt(info.videoDirectory.length);
@@ -329,8 +331,13 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
             if (info.skip)
               return;
 
+            webSocketSend(JSON.stringify({ type: 'currentFile', data: path.substring(info.videoDirectory.length) }));
+
             if (options.mkvFlags)
               await examineAndUpdateMkvFlags(path, options, info);
+
+            if (options.generateStreaming)
+              await createStreaming(path, options, info);
           });
         const statsStr = JSON.stringify(stats, (_key, value) => {
           if (value instanceof Set)
@@ -346,8 +353,9 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
         console.error('Error compiling video stats');
         console.error(e);
       }
-
-      statsInProgress = false;
+      finally {
+        statsInProgress = false;
+      }
     })();
   }
 
@@ -381,10 +389,14 @@ router.post('/process', async (req, res) => {
   noCache(res);
 
   if (!adminProcessing) {
+    const mkvFlags = toBoolean(req.body.mkvFlags, null, true);
+    const generateStreaming = toBoolean(req.body.generateStreaming, null, true);
+    const canModify = mkvFlags || generateStreaming;
     const options: UpdateOptions = {
-      canModify: toBoolean(req.body.canModify, null, true),
+      canModify,
       earliest: req.body.earliest ? new Date(req.body.earliest) : undefined,
-      mkvFlags: toBoolean(req.body.mkvFlags, null, true),
+      generateStreaming,
+      mkvFlags,
       skipExtras: toBoolean(req.body.skipExtras, null, true),
       skipMovies: toBoolean(req.body.skipMovies, null, true),
       skipTV: toBoolean(req.body.skipTV, null, true),
