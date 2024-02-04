@@ -54,7 +54,7 @@ function aacProgress(data: string, stream: number, progress: Progress): void {
       if (progress.lastPercent !== percent) {
         progress.lastPercent = percent;
         progress.percentStr = percent + '%';
-        webSocketSend(JSON.stringify({ type: 'audio-progress', data: progress.percentStr }));
+        webSocketSend({ type: 'audio-progress', data: progress.percentStr });
       }
     }
   }
@@ -102,7 +102,7 @@ function videoProgress(data: string, stream: number, name: string, done: boolean
           return `${r}:${percentStr} (${speedStr}x)${'*'.repeat(progress.errors.get(r) || 0)}`;
         }).join(', ');
 
-        webSocketSend(JSON.stringify({ type: 'video-progress', data: progress.lastOutput }));
+        webSocketSend({ type: 'video-progress', data: progress.lastOutput });
       }
     }
   }
@@ -201,8 +201,6 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
       if (groupedVideoCount === 0)
         args.splice(args.indexOf('-dash'), 2);
 
-      process.stdout.write('    Generating streaming audio... ');
-
       for (let i = 0; i < audios.length; ++i) {
         try {
           await safeUnlink(tmp(audioPath));
@@ -212,8 +210,6 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
           break;
         }
         catch (e) {
-          process.stdout.write('# ');
-
           if (i === audios.length - 1) {
             await safeUnlink(busyPath);
             throw e;
@@ -298,8 +294,6 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
       args.push('-map_chapters', '-1', '-f', format, tmp(videoPath));
       videoQueue.push({ args, name: resolution.h + 'p', tries: 0, videoPath });
     }
-
-    process.stdout.write(`    Generating streaming video... `);
 
     await new Promise<void>((resolve, reject) => {
       const simultaneousMax = 6;
@@ -408,8 +402,7 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
     }
 
     args.push('-f', 'webm_dash_manifest', '-adaptation_sets', sets, tmp(mpdPath));
-
-    process.stdout.write(`    Generating DASH manifest... `);
+    webSocketSend({ type: 'video-progress', data: 'Generating DASH manifest' });
 
     try {
       await monitorProcess(spawn('ffmpeg', args), null, ErrorMode.DEFAULT);
@@ -432,7 +425,7 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
         return $1 + path + $3;
       }), 'utf8');
 
-    console.log('done');
+    webSocketSend({ type: 'video-progress', data: '' });
   }
 
   const elapsed = Date.now() - start;

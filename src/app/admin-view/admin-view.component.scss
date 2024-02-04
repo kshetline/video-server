@@ -9,6 +9,7 @@
   background-color: black;
   color: white;
   display: flex;
+  gap: 1em;
   height: 3.5em;
   left: 0;
   padding-left: 2em;
@@ -51,6 +52,17 @@
     display: grid;
     gap: 1em;
     grid-template-columns: auto auto auto;
+  }
+
+  .process-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+
+    &.mask {
+      opacity: 33%;
+      pointer-events: none;
+    }
   }
 }
 

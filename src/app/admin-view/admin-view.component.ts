@@ -14,13 +14,12 @@ export class AdminViewComponent implements OnInit {
 
   constructor(private httpClient: HttpClient) {}
 
-  options: any = {
+  options: Record<string, any> = { // TODO: better typing
     earliest: new Date(Date.now() - 86_400_000 * 7)
   };
 
   currentFile = '';
   encodeProgress = '';
-  inventoryProgress = -1;
   setEarliest = false;
   showRefreshDialog = false;
   updateProgress = -1;
@@ -52,15 +51,15 @@ export class AdminViewComponent implements OnInit {
 
         case 'videoStatsProgress':
           if (msg.data <= '9')
-            this.inventoryProgress = 3.57;
+            this.updateProgress = 3.57;
           else if (msg.data >= 'A')
-            this.inventoryProgress = (msg.data.toString().charCodeAt(0) - 63) * 3.57;
+            this.updateProgress = (msg.data.toString().charCodeAt(0) - 63) * 3.57;
 
           break;
 
         case 'videoStats':
           this.videoStats = (msg.data as VideoStats);
-          this.inventoryProgress = -1;
+          this.updateProgress = -1;
           this.currentFile = '';
           this.encodeProgress = '';
           break;
@@ -77,7 +76,7 @@ export class AdminViewComponent implements OnInit {
   }
 
   refreshInventory(): void {
-    this.inventoryProgress = 0;
+    this.updateProgress = 0;
     this.httpClient.get('/api/admin/stats?update=true').subscribe((stats: VideoStats) => this.videoStats = stats);
   }
 

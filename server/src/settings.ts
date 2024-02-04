@@ -29,8 +29,12 @@ export async function openSettings(): Promise<void> {
 }
 
 export async function closeSettings(): Promise<void> {
-  if (db)
-    await db.close();
+  if (db) {
+    try {
+      await db.close();
+    }
+    catch {}
+  }
 }
 
 export function getValue(key: string): string {

@@ -1,19 +1,14 @@
 <div class="go-back-panel">
   <p-button label="Back" icon="pi pi-chevron-left" (click)="goBack.emit()"/>
-</div>
-<div class="content">
-  <div class="row">
-    <p-button label="Refresh Video Library" icon="pi pi-refresh"
-              [disabled]="status?.processing" (click)="!status?.processing && (showRefreshDialog = true)"/>
     <p-progressBar *ngIf="updateProgress >= 0 && status?.processing" [value]="updateProgress"
                    [showValue]="false"></p-progressBar>
-  </div>
-  <div class="row">
-    <p-button label="Refresh Video Inventory" icon="pi pi-refresh"
-              [disabled]="status?.processing" (click)="!status?.processing && refreshInventory()"/>
-    <p-progressBar *ngIf="inventoryProgress >= 0 && status?.processing" [value]="inventoryProgress"
-                   [showValue]="false"></p-progressBar>
-  </div>
+</div>
+<div class="content">
+  <p-button label="Refresh Video Library" icon="pi pi-refresh"
+            [disabled]="status?.processing" (click)="!status?.processing && (showRefreshDialog = true)"/>
+
+  <p-button label="Refresh Video Inventory" icon="pi pi-refresh"
+            [disabled]="status?.processing" (click)="!status?.processing && refreshInventory()"/>
   <table>
     <tr>
       <th>Movie file count</th>
@@ -90,17 +85,19 @@
   </table>
   <div class="footnote">*Not including streaming/miscellaneous</div>
   <hr style="width: 100%">
-  <div class="row">
-    <p-checkbox [(ngModel)]="setEarliest" [binary]="true" label="Set earliest"></p-checkbox>
-    <p-calendar [(ngModel)]="options.earliest" dateFormat="yy-mm-dd" [showIcon]="true" [disabled]="!setEarliest"></p-calendar>
+  <div class="process-options" [class.mask]="status?.processing">
+    <div class="row">
+      <p-checkbox [(ngModel)]="setEarliest" [binary]="true" label="Set earliest"></p-checkbox>
+      <p-calendar [(ngModel)]="options.earliest" dateFormat="yy-mm-dd" [showIcon]="true" [disabled]="!setEarliest"></p-calendar>
+    </div>
+    <div class="skip-options">
+      <p-checkbox [(ngModel)]="options.skipMovies" [binary]="true" label="Skip movies"></p-checkbox>
+      <p-checkbox [(ngModel)]="options.skipTV" [binary]="true" label="Skip TV shows"></p-checkbox>
+      <p-checkbox [(ngModel)]="options.skipExtras" [binary]="true" label="Skip extras"></p-checkbox>
+    </div>
+    <p-checkbox [(ngModel)]="options.generateStreaming" [binary]="true" label="Generate streaming files"></p-checkbox>
+    <p-checkbox [(ngModel)]="options.mkvFlags" [binary]="true" label="Update MKV flags"></p-checkbox>
   </div>
-  <div class="skip-options">
-    <p-checkbox [(ngModel)]="options.skipMovies" [binary]="true" label="Skip movies"></p-checkbox>
-    <p-checkbox [(ngModel)]="options.skipTV" [binary]="true" label="Skip TV shows"></p-checkbox>
-    <p-checkbox [(ngModel)]="options.skipExtras" [binary]="true" label="Skip extras"></p-checkbox>
-  </div>
-  <p-checkbox [(ngModel)]="options.generateStreaming" [binary]="true" label="Generate streaming files"></p-checkbox>
-  <p-checkbox [(ngModel)]="options.mkvFlags" [binary]="true" label="Update MKV flags"></p-checkbox>
   <p-button label="Process" icon="pi pi-wrench"
             [disabled]="status?.processing" (click)="!status?.processing && runProcess()"/>
   <div>{{currentFile}}</div>

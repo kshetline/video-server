@@ -289,7 +289,7 @@ router.post('/library-refresh', async (req: Request, res: Response) => {
   }
 });
 
-let statsInProgress = false;
+export let statsInProgress = false;
 
 interface UpdateOptions {
   canModify?: boolean;
@@ -306,8 +306,9 @@ interface UpdateOptions {
 async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
   let stats: any = null;
 
-  if (!statsInProgress && (options.stats || options.mkvFlags || options.generateStreaming)) {
+  if (!statsInProgress && !adminProcessing && (options.stats || options.mkvFlags || options.generateStreaming)) {
     statsInProgress = true;
+    sendStatus();
 
     await (async (): Promise<void> => {
       try {
@@ -325,13 +326,13 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
 
             if (depth === 1 && lastChar !== startChar) {
               lastChar = startChar;
-              webSocketSend(JSON.stringify({ type: 'videoStatsProgress', data: startChar }));
+              webSocketSend({ type: 'videoStatsProgress', data: startChar });
             }
 
             if (info.skip)
               return;
 
-            webSocketSend(JSON.stringify({ type: 'currentFile', data: path.substring(info.videoDirectory.length) }));
+            webSocketSend({ type: 'currentFile', data: path.substring(info.videoDirectory.length) });
 
             if (options.mkvFlags)
               await examineAndUpdateMkvFlags(path, options, info);
@@ -347,7 +348,7 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
         }, 2);
 
         setValue('videoStats', statsStr);
-        webSocketSend(JSON.stringify({ type: 'videoStats', data: statsStr }));
+        webSocketSend({ type: 'videoStats', data: statsStr });
       }
       catch (e) {
         console.error('Error compiling video stats');
@@ -355,6 +356,7 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
       }
       finally {
         statsInProgress = false;
+        sendStatus();
       }
     })();
   }

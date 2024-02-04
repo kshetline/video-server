@@ -5,6 +5,7 @@ import paths from 'path';
 import { LibraryItem } from './shared-types';
 import { hashTitle } from './shared-utils';
 import { WebSocketServer } from 'ws';
+import { isObject } from '@tubular/util';
 
 const guestFilter = new Set(process.env.VS_GUEST_FILTER ? process.env.VS_GUEST_FILTER.split(';') : []);
 const demoFilter = new Set(process.env.VS_DEMO_FILTER ? process.env.VS_DEMO_FILTER.split(';') : []);
@@ -29,9 +30,12 @@ export function setWebSocketServer(wss: WebSocketServer): void {
   wsServer = wss;
 }
 
-export function webSocketSend(message: string): void {
+export function webSocketSend(message: string | object): void {
+  if (isObject(message))
+    message = JSON.stringify(message);
+
   if (wsServer)
-    wsServer.clients.forEach(client => client.send(message));
+    wsServer.clients.forEach(client => client.send(message as string));
 }
 
 export function noCache(res: Response): void {

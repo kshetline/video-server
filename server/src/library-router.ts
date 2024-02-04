@@ -711,6 +711,7 @@ export async function updateLibrary(quick = false): Promise<void> {
   }
 
   pendingLibrary = undefined;
+  sendStatus();
 }
 
 export function initLibrary(): void {

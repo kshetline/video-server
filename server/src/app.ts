@@ -52,7 +52,7 @@ import { Resolver } from 'node:dns';
 import { cachedLibrary, initLibrary, pendingLibrary, router as libraryRouter } from './library-router';
 import { router as imageRouter } from './image-router';
 import { router as streamingRouter } from './streaming-router';
-import { adminProcessing, router as adminRouter } from './admin-router';
+import { adminProcessing, router as adminRouter, statsInProgress } from './admin-router';
 import { LibraryItem, LibraryStatus, ServerStatus, User, UserSession } from './shared-types';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
@@ -232,14 +232,14 @@ function shutdown(signal?: string): void {
     wsServer.close();
 
   httpServer.close(() => process.exit(0));
-  closeSettings().finally();
+  closeSettings().finally(() => process.exit(0));
 }
 
 function getStatus(remote?: string): ServerStatus {
   const status: ServerStatus = {
     lastUpdate: cachedLibrary?.lastUpdate,
     ready: cachedLibrary?.status === LibraryStatus.DONE,
-    processing: adminProcessing,
+    processing: adminProcessing || statsInProgress || !!pendingLibrary,
     updateProgress: -1,
     wsPort
   };
@@ -270,7 +270,7 @@ export function sendStatus(): void {
     statusTimer = setTimeout(() => {
       statusTimer = undefined;
       statusTime = 0;
-      webSocketSend(JSON.stringify({ type: 'status', data: getStatus() }));
+      webSocketSend({ type: 'status', data: getStatus() });
     }, 1000 + statusTime - processMillis());
   }
 }
@@ -285,7 +285,7 @@ function getApp(): Express {
 
   // hashed_password = crypto.pbkdf2Sync("password", salt, 100000, 64, 'sha512').toString('hex')
   theApp.use((req, res, next) => {
-    const token = req.cookies.vs_jwt;
+    const token = (req.cookies as NodeJS.Dict<string>).vs_jwt;
     const userInfo = token?.split('.')[1];
 
     if (!/^\/api\//.test(req.url) || /^\/api\/(login|status)\b/.test(req.url))
