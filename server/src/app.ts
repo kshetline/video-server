@@ -224,15 +224,22 @@ function shutdown(signal?: string): void {
 
   console.log(`\n*** ${signal ? signal + ': ' : ''}closing server at ${timeStamp()} ***`);
 
+  let cbCount = 0;
+  const closeCheck = (closeNow = false): void => {
+    if (closeNow || ++cbCount === 4)
+      process.exit(0);
+  };
+
   // Make sure that if the orderly clean-up gets stuck, shutdown still happens.
   if (insecureServer)
-    insecureServer.close();
+    insecureServer.close(() => closeCheck());
 
   if (wsServer)
-    wsServer.close();
+    wsServer.close(() => closeCheck());
 
-  httpServer.close(() => process.exit(0));
-  closeSettings().finally(() => process.exit(0));
+  httpServer.close(() => closeCheck());
+  closeSettings().finally(() => closeCheck());
+  unref(setTimeout(() => closeCheck(true), 3000));
 }
 
 function getStatus(remote?: string): ServerStatus {

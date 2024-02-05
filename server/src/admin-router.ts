@@ -308,6 +308,7 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
 
   if (!statsInProgress && !adminProcessing && (options.stats || options.mkvFlags || options.generateStreaming)) {
     statsInProgress = true;
+    adminProcessing = true;
     sendStatus();
 
     await (async (): Promise<void> => {
@@ -376,8 +377,6 @@ router.get('/stats', async (req, res) => {
   catch {}
 
   if (!statsInProgress && !adminProcessing && toBoolean(req.query.update)) {
-    adminProcessing = true;
-    sendStatus();
     videoWalk({ checkStreaming: true, stats: true }).finally(() => {
       adminProcessing = false;
       sendStatus();

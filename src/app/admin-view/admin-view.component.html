@@ -6,7 +6,6 @@
 <div class="content">
   <p-button label="Refresh Video Library" icon="pi pi-refresh"
             [disabled]="status?.processing" (click)="!status?.processing && (showRefreshDialog = true)"/>
-
   <p-button label="Refresh Video Inventory" icon="pi pi-refresh"
             [disabled]="status?.processing" (click)="!status?.processing && refreshInventory()"/>
   <table>
