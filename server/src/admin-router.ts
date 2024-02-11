@@ -403,7 +403,6 @@ router.post('/process', async (req, res) => {
       skipTV: toBoolean(req.body.skipTV, null, true),
     };
 
-    adminProcessing = true;
     sendStatus();
     videoWalk(options).finally(() => {
       adminProcessing = false;
