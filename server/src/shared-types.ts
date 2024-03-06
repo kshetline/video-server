@@ -1,4 +1,3 @@
-export enum Cut { NA, THEATRICAL, INT_THEATRICAL, UNRATED, EXTENDED, DIRECTORS, FINAL, SPECIAL_EDITION }
 export enum VType { FILE = 0, MOVIE, COLLECTION, TV_SHOW, TV_SEASON, TV_EPISODE, TV_COLLECTION }
 export enum LibraryStatus { NOT_STARTED, INITIALIZED, BONUS_MATERIAL_LINKED, ALL_VIDEOS, MEDIA_DETAILS, DONE = 100 }
 
@@ -50,8 +49,9 @@ export interface LibraryItem {
   audio?: Track[];
   backdropPath?: string;
   certification?: string
-  codec?: string;
-  cut?: Cut;
+  codec?: string
+  cut?: string;
+  cutSort?: number;
   directors?: {
     name: string;
     profilePath: string;

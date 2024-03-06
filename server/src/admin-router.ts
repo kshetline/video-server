@@ -244,7 +244,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
         }
 
         if (options.checkStreaming && !dontRecurse) {
-          const title = baseTitle.replace(/\s*\([234][DK]\)/gi, '');
+          const title = baseTitle.replace(/\s*\([234][DK]\)/gi, '').replace(/\s*\((\d*)#([-_.a-z0-9]+)\)/i, '').replace(/#/g, '_');
           const sDir = pathJoin(options.streamingDirectory, dir.substring(options.videoDirectory.length));
           const stream1 = pathJoin(sDir, title + '.mpd');
           const stream2 = pathJoin(sDir, title + '.av.webm');
@@ -395,6 +395,7 @@ router.post('/process', async (req, res) => {
     const canModify = mkvFlags || generateStreaming;
     const options: UpdateOptions = {
       canModify,
+      checkStreaming: generateStreaming,
       earliest: req.body.earliest ? new Date(req.body.earliest) : undefined,
       generateStreaming,
       mkvFlags,

@@ -498,7 +498,7 @@ function getApp(): Express {
     if (streamUri)
       result = streamUri;
     else if (uri) {
-      const streamUriBase = uri.replace(/\.mkv$/, '').replace(/\s*\([234][DK]\)$/, '');
+      const streamUriBase = uri.replace(/\.mkv$/, '').replace(/\s*\([234][DK]\)$/, '').replace(/#/g, '_');
       const extensions = demo ? ['.sample.mp4'] : mobile ? ['.mobile.mp4'] : ['.mpd', '.av.webm'];
 
       for (const ext of extensions) {

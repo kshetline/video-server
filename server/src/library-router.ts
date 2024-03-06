@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { Cut, LibraryItem, LibraryStatus, MediaInfo, MediaInfoTrack, ShowInfo, Track, VideoLibrary, VType } from './shared-types';
+import { LibraryItem, LibraryStatus, MediaInfo, MediaInfoTrack, ShowInfo, Track, VideoLibrary, VType } from './shared-types';
 import { clone, forEach, isNumber, toBoolean, toInt, toNumber } from '@tubular/util';
 import { abs, floor, min } from '@tubular/math';
 import { requestJson } from 'by-request';
@@ -190,7 +190,7 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
     }
     else if (!/-Extras-|Bonus Disc/i.exec(item.uri || '')) {
       if (item.uri) {
-        const streamUriBase = item.uri.replace(/( ~)?\.mkv$/, '').replace(/\s*\(2[DK]\)$/, '');
+        const streamUriBase = item.uri.replace(/( ~)?\.mkv$/, '').replace(/\s*\(2[DK]\)$/, '').replace(/#/g, '_');
 
         for (const ext of ['.mpd', '.av.webm']) {
           const streamUri = streamUriBase + ext;
@@ -219,22 +219,44 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
           item.sampleUri = sampleUri;
       }
 
-      if (DIRECTORS.test(item.uri))
-        item.cut = Cut.DIRECTORS;
-      else if (FINAL.test(item.uri))
-        item.cut = Cut.FINAL;
-      else if (EXTENDED.test(item.uri))
-        item.cut = Cut.EXTENDED;
-      else if (INT_THEATRICAL.test(item.uri))
-        item.cut = Cut.INT_THEATRICAL;
-      else if (SPECIAL_EDITION.test(item.uri))
-        item.cut = Cut.SPECIAL_EDITION;
-      else if (UNRATED.test(item.uri))
-        item.cut = Cut.UNRATED;
-      else if (THEATRICAL.test(item.uri))
-        item.cut = Cut.THEATRICAL;
-      else
-        item.cut = Cut.NA;
+      const $ = /\((\d*)#([-_.a-z0-9]+)\)/i.exec(item.uri);
+
+      if ($) {
+        item.cut = $[2];
+        item.cutSort = toInt($[1]);
+      }
+      else if (DIRECTORS.test(item.uri)) {
+        item.cut = 'DC';
+        item.cutSort = 3;
+      }
+      else if (FINAL.test(item.uri)) {
+        item.cut = 'FC';
+        item.cutSort = 2;
+      }
+      else if (EXTENDED.test(item.uri)) {
+        item.cut = 'EC';
+        item.cutSort = 4;
+      }
+      else if (INT_THEATRICAL.test(item.uri)) {
+        item.cut = 'ITC';
+        item.cutSort = 6;
+      }
+      else if (SPECIAL_EDITION.test(item.uri)) {
+        item.cut = 'SE';
+        item.cutSort = 1;
+      }
+      else if (UNRATED.test(item.uri)) {
+        item.cut = 'UR';
+        item.cutSort = 5;
+      }
+      else if (THEATRICAL.test(item.uri)) {
+        item.cut = 'TC';
+        item.cutSort = 7;
+      }
+      else {
+        item.cut = '';
+        item.cutSort = 999;
+      }
     }
 
     if (isTvEpisode(item) && item.data?.length > 0) {

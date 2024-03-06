@@ -1,7 +1,7 @@
 import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
-import { Cut, LibraryItem } from '../../../server/src/shared-types';
+import { LibraryItem } from '../../../server/src/shared-types';
 import { areImagesSimilar, canPlayVP9, getImageParam, getSeasonTitle, setCssVariable } from '../video-ui-utils';
-import { encodeForUri } from '@tubular/util';
+import { compareCaseSecondary, encodeForUri } from '@tubular/util';
 import { floor, max, round } from '@tubular/math';
 import { HttpClient } from '@angular/common/http';
 import { checksum53, isFile, isMovie, isTvSeason } from '../../../server/src/shared-utils';
@@ -114,7 +114,7 @@ export class ShowViewComponent implements OnInit {
       let count4k = 0;
       let count3d = 0;
       let countOSE = 0;
-      const cuts = new Map<number, number>();
+      const cutSorts = new Map<string, number>();
       const episodes = new Set<number>();
       let hasDuplicateEpisodes = false;
       const gatherVideos = (item: LibraryItem): void => {
@@ -122,7 +122,7 @@ export class ShowViewComponent implements OnInit {
           choices.push(item);
 
           if (item.cut)
-            cuts.set(item.cut, (cuts.get(item.cut) || 0) + 1);
+            cutSorts.set(item.cut, item.cutSort || 0);
 
           count2k += (item.isFHD || item.is2k) && !item.is3d ? 1 : 0;
           count4k += item.is4k ? 1 : 0;
@@ -144,11 +144,14 @@ export class ShowViewComponent implements OnInit {
       gatherVideos(value);
 
       choices.sort((a, b) => {
+        if (a.cutSort !== b.cutSort)
+          return a.cutSort - b.cutSort;
+
         if (isTV && a.parent.episode !== b.parent.episode)
           return (a.parent.episode || 0) - (b.parent.episode || 0);
 
         if (!isTV && a.cut !== b.cut)
-          return (b.cut || Cut.NA) - (a.cut || Cut.NA);
+          return compareCaseSecondary(a.cut, b.cut);
 
         if (count4k && a.is4k && !b.is4k)
           return -1;
@@ -194,22 +197,17 @@ export class ShowViewComponent implements OnInit {
             return `${vc.parent.episode}-${episodeIndex++}`;
         }
 
-        let cut = '';
+        let cut = vc.cut || '';
 
-        if (!isTV && cuts.size > 0)
-          cut = ['', 'TC-', 'ITC-', 'UR-', 'EC-', 'DC-', 'FC-', 'SE-'][vc.cut];
-
-        if (vc.is4k && count4k === max(cuts.size, 1) && (count2k > 0 || count3d > 0))
-          return cut + '4K';
-
-        if (vc.is3d && count3d === max(cuts.size, 1) && (count2k > 0 || count4k > 0))
-          return cut + '3D';
-
-        if ((vc.isFHD || vc.is2k) && count2k === max(cuts.size, 1) && (count3d > 0 || count4k > 0))
-          return cut + (count3d && !count4k ? '2D' : '2K');
+        if (vc.is4k && count4k === max(cutSorts.size, 1) && (count2k > 0 || count3d > 0))
+          cut += '-4K';
+        else if (vc.is3d && count3d === max(cutSorts.size, 1) && (count2k > 0 || count4k > 0))
+          cut += '-3D';
+        else if ((vc.isFHD || vc.is2k) && count2k === max(cutSorts.size, 1) && (count3d > 0 || count4k > 0))
+          cut += (count3d && !count4k ? '2D' : '2K');
 
         if (cut)
-          return cut.slice(0, -1);
+          return cut.replace(/^-/, '');
 
         return String.fromCharCode(65 + i);
       });
