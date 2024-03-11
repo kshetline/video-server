@@ -139,7 +139,7 @@ export function canPlayVP9(): boolean {
 }
 
 export function searchForm(s: string): string {
-  return stripDiacriticals_lc(s.trim()).replace(/[^_0-9a-z]/i, '');
+  return stripDiacriticals_lc(s.trim()).replace(/[^_0-9a-z]/gi, '');
 }
 
 async function getImageData(image: string | HTMLImageElement): Promise<ImageData> {

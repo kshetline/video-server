@@ -263,7 +263,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   }
 
   isAdmin(): boolean {
-    return this.auth.getSession()?.role === 'admin';
+    return this.auth.isAdmin();
   }
 
   userName(): string {

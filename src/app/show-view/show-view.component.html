@@ -60,6 +60,7 @@
         <div *ngIf="people.length > 0" class="tab" (click)="toggleCast()">
           <span>{{showCast ? 'SUMMARY' : 'CAST'}}</span>
         </div>
+        <div *ngIf="people.length === 0" class="tab"></div>
         <div *ngIf="people.length > 0" class="gallery-wrapper" [class.expand]="showCast">
           <div class="gallery">
             <div *ngFor="let person of people" class="person"

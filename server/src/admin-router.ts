@@ -244,15 +244,20 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
         }
 
         if (options.checkStreaming && !dontRecurse) {
-          const title = baseTitle.replace(/\s*\([234][DK]\)/gi, '').replace(/\s*\((\d*)#([-_.a-z0-9]+)\)/i, '').replace(/#/g, '_');
-          const sDir = pathJoin(options.streamingDirectory, dir.substring(options.videoDirectory.length));
-          const stream1 = pathJoin(sDir, title + '.mpd');
-          const stream2 = pathJoin(sDir, title + '.av.webm');
-          const stream3 = pathJoin(sDir, '2K', title + '.mpd');
-          const stream4 = pathJoin(sDir, '2K', title + '.av.webm');
+          let title = baseTitle.replace(/\s*\([234][DK]\)/gi, '').replace(/#/g, '_');
 
-          if (!await existsAsync(stream1) && !await existsAsync(stream2) && !await existsAsync(stream3) && !await existsAsync(stream4))
-            (stats.unstreamedTitles as Set<string>).add(title);
+          if (!/[-_(](4K|3D)\)/.test(title)) {
+            const sDir = pathJoin(options.streamingDirectory, dir.substring(options.videoDirectory.length));
+            const stream1 = pathJoin(sDir, title + '.mpd');
+            const stream2 = pathJoin(sDir, title + '.av.webm');
+            const stream3 = pathJoin(sDir, '2K', title + '.mpd');
+            const stream4 = pathJoin(sDir, '2K', title + '.av.webm');
+
+            if (!await existsAsync(stream1) && !await existsAsync(stream2) && !await existsAsync(stream3) && !await existsAsync(stream4)) {
+              title = title.replace(/\s*\((\d*)#([-_.a-z0-9]+)\)/i, '');
+              (stats.unstreamedTitles as Set<string>).add(title);
+            }
+          }
         }
 
         info.streamingDirectory = options.streamingDirectory;

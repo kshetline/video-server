@@ -87,4 +87,12 @@ export class AuthService {
 
     return this.currentSession;
   }
+
+  isAdmin(): boolean {
+    return this.getSession()?.role === 'admin';
+  }
+
+  isDemo(): boolean {
+    return this.getSession()?.role === 'demo';
+  }
 }

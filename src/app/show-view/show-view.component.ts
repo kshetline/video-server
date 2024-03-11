@@ -322,7 +322,8 @@ export class ShowViewComponent implements OnInit {
     this.video = this.videoChoices[this.videoCategory][index];
     this.selection = this.video.parent ?? this.video;
     this.updateBadges();
-    this.streamUri = canPlayVP9() ? this.video.streamUri : this.video.mobileUri;
+    this.streamUri = this.auth.isDemo() ? this.video.sampleUri :
+      canPlayVP9() ? this.video.streamUri : this.video.mobileUri;
 
     if (!this.streamUri && !this.checkedForStream.has(this.video.id))
       this.httpClient.get<string>(`/api/stream-check?id=${this.video.id}${canPlayVP9() ? '' : '&mobile=true'}`)
@@ -461,6 +462,9 @@ export class ShowViewComponent implements OnInit {
       b.push('2K');
     else if (v.isHD)
       b.push('720p');
+
+    if (v.aspectRatio)
+      b.push(v.aspectRatio);
 
     if ((v.video || [])[0]?.codec)
       b.push(v.video[0].codec.replace(/\s+.*$/, ''));

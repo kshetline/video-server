@@ -190,8 +190,9 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
     }
     else if (!/-Extras-|Bonus Disc/i.exec(item.uri || '')) {
       if (item.uri) {
-        const streamUriBase = item.uri.replace(/( ~)?\.mkv$/, '').replace(/\s*\(2[DK]\)$/, '').replace(/#/g, '_');
+        let streamUriBase = item.uri.replace(/( ~)?\.mkv$/, '').replace(/\s*\(2[DK]\)$/, '').replace(/#/g, '_');
 
+        outer:
         for (const ext of ['.mpd', '.av.webm']) {
           const streamUri = streamUriBase + ext;
 
@@ -200,13 +201,30 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
             break;
           }
 
-          const altUri = streamUri.replace(/([/\\])([^/\\]+$)/, '$1\x32K$1$2');
+          let altUri = streamUri.replace(/([/\\])([^/\\]+$)/, '$1\x32K$1$2');
 
           if (await existsAsync(paths.join(sSource, altUri))) {
             item.streamUri = altUri;
             break;
           }
+
+          const $ = /^(.+)\(\d*_([^)]*)\b(4K|3D)\)(.*)/.exec(streamUri);
+
+          if ($) {
+            for (const alt of ['2K', '2D']) {
+              for (let i = 0; i < 10; ++i) {
+                altUri = `${$[1]}(${i === 0 ? '' : i}_${$[2]}${alt})${$[4]}`;
+
+                if (await existsAsync(paths.join(process.env.VS_STREAMING_SOURCE, altUri))) {
+                  item.streamUri = altUri;
+                  break outer;
+                }
+              }
+            }
+          }
         }
+
+        streamUriBase = (item.streamUri ? item.streamUri.replace(/(\.mpd|\.av\.webm)$/, '') : streamUriBase);
 
         const mobileUri = streamUriBase + '.mobile.mp4';
 

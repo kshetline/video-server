@@ -501,6 +501,7 @@ function getApp(): Express {
       const streamUriBase = uri.replace(/\.mkv$/, '').replace(/\s*\([234][DK]\)$/, '').replace(/#/g, '_');
       const extensions = demo ? ['.sample.mp4'] : mobile ? ['.mobile.mp4'] : ['.mpd', '.av.webm'];
 
+      outer:
       for (const ext of extensions) {
         const streamUri = streamUriBase + ext;
 
@@ -513,13 +514,34 @@ function getApp(): Express {
           continue;
         }
 
-        const altUri = streamUri.replace(/([/\\])([^/\\]+$)/, '$1\x32K$1$2');
+        let altUri = streamUri.replace(/([/\\])([^/\\]+$)/, '$1\x32K$1$2');
 
         if (await existsAsync(paths.join(process.env.VS_STREAMING_SOURCE, altUri))) {
           result = altUri;
 
           if (video && !demo)
             video.streamUri = altUri;
+
+          continue;
+        }
+
+        const $ = /^(.+)\(\d*_([^)]*)\b(4K|3D)\)(.*)/.exec(streamUri);
+
+        if ($) {
+          for (const alt of ['2K', '2D']) {
+            for (let i = 0; i < 10; ++i) {
+              altUri = `${$[1]}(${i === 0 ? '' : i}_${$[2]}${alt})${$[4]}`;
+
+              if (await existsAsync(paths.join(process.env.VS_STREAMING_SOURCE, altUri))) {
+                result = altUri;
+
+                if (video && !demo)
+                  video.streamUri = altUri;
+
+                continue outer;
+              }
+            }
+          }
         }
       }
     }
