@@ -17,6 +17,14 @@ export async function openSettings(): Promise<void> {
   db = await AsyncDatabase.open(process.env.VS_DB_PATH || 'db.sqlite');
 
   await db.exec(
+   `CREATE TABLE IF NOT EXISTS "aspects" (
+      "key" TEXT NOT NULL UNIQUE,
+      "mdate" REAL NOT NULL,
+      "aspect" REAL,
+      PRIMARY KEY ("key")
+    )`);
+
+  await db.exec(
    `CREATE TABLE IF NOT EXISTS "settings" (
       "key" TEXT NOT NULL UNIQUE,
       "value" TEXT,

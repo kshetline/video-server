@@ -262,7 +262,8 @@ export interface SubtitlesTrackProperties extends GeneralTrackProperties {
   flag_hearing_impaired: boolean;
 }
 
-export interface VideoTrackProperties extends GeneralTrackProperties{
+export interface VideoTrackProperties extends GeneralTrackProperties {
+  aspect?: number;
   display_dimensions: string;
   pixel_dimensions: string;
   stereo_mode?: number;

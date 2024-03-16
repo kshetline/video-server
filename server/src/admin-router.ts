@@ -1,17 +1,19 @@
 import { Request, Response, Router } from 'express';
 import { existsAsync, isAdmin, jsonOrJsonp, noCache, safeLstat, webSocketSend } from './vs-util';
 import { updateLibrary } from './library-router';
-import { clone, forEach, isFunction, isNumber, isObject, isString, last, toBoolean } from '@tubular/util';
+import { asLines, clone, forEach, isFunction, isNumber, isObject, isString, last, toBoolean, toInt } from '@tubular/util';
 import { readdir } from 'fs/promises';
 import { getValue, setValue } from './settings';
 import { join as pathJoin, sep } from 'path';
-import { monitorProcess } from './process-util';
+import { ErrorMode, monitorProcess } from './process-util';
 import { spawn } from 'child_process';
 import { AudioTrack, MediaWrapper, MKVInfo, SubtitlesTrack, VideoStats, VideoTrack, VideoWalkOptions, VideoWalkOptionsPlus } from './shared-types';
 import { comparator, sorter } from './shared-utils';
 import { examineAndUpdateMkvFlags } from './mkv-flags';
 import { sendStatus } from './app';
 import { createStreaming } from './streaming';
+import { abs, max, min } from '@tubular/math';
+import { AsyncDatabase } from 'promised-sqlite3';
 
 export const router = Router();
 export let adminProcessing = false;
@@ -210,6 +212,52 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
 
             if (mkvSet[index]?.properties)
               mkvSet[index].properties.media = track;
+          }
+
+          const duration = info.mkvInfo.container.properties.duration / 1E9;
+          const step = min(600, duration / 5);
+          let [w, h] = (info.video[0]?.properties?.pixel_dimensions || '1x1').split('x').map(d => toInt(d));
+
+          if (w > 1880 || h > 1000) {
+            const key = path.substring(options.videoDirectory.length).normalize();
+            const db = await AsyncDatabase.open(process.env.VS_DB_PATH || 'db.sqlite');
+            const row = await db.get<any>('SELECT * FROM aspects WHERE key = ?', key);
+
+            if (row && row.mdate === stat.mtimeMs) {
+              info.video[0].properties.aspect = row.aspect;
+            }
+            else {
+              [w, h] = (info.video[0]?.properties?.display_dimensions || '1x1').split('x').map(d => toInt(d));
+              let newAspect = w / h;
+              let sizeInfo = '';
+
+              w = h = 0;
+
+              if (abs(newAspect - 1.78) < 0.03) {
+                for (let i = 1; i <= 4; ++i) {
+                  sizeInfo += (await monitorProcess(spawn('ffmpeg', ['-t', '5', '-ss', (step * i).toString(), '-i', path,
+                    '-vf', 'cropdetect,metadata=mode=print', '-f', 'null', '-']), null, ErrorMode.COLLECT_ERROR_STREAM));
+                }
+
+                for (const line of asLines(sizeInfo)) {
+                  const $ = /\bcropdetect\.([wh])=(\d+)/.exec(line);
+
+                  if ($ && $[1] === 'w')
+                    w = max(w, toInt($[2]));
+                  else if ($ && $[1] === 'h')
+                    h = max(h, toInt($[2]));
+                }
+
+                if (w === 0 || h === 0)
+                  newAspect = null;
+                else
+                  newAspect = w / h;
+              }
+              else
+                newAspect = null;
+
+              await db.run('INSERT OR REPLACE INTO aspects (key, mdate, aspect) VALUES (?, ?, ?)', key, stat.mtimeMs, newAspect);
+            }
           }
         }
 

@@ -4,7 +4,7 @@ import { unref } from './vs-util';
 
 const isWindows = (process.platform === 'win32');
 
-export enum ErrorMode { DEFAULT, FAIL_ON_ANY_ERROR, IGNORE_ERRORS }
+export enum ErrorMode { DEFAULT, FAIL_ON_ANY_ERROR, IGNORE_ERRORS, COLLECT_ERROR_STREAM }
 export type ErrorCheck = (s: string) => boolean;
 
 export class ProcessError extends Error {
@@ -131,6 +131,9 @@ export function monitorProcess(proc: ChildProcess, markTime: (data?: string, str
     proc.stderr.on('data', data => {
       (markTime || NO_OP)(data?.toString() || '', 1);
       data = stripFormatting(data.toString());
+
+      if (errorMode === ErrorMode.COLLECT_ERROR_STREAM)
+        output += data;
 
       // If process is webpack, error checking gets confusing because a lot of non-error progress messaging goes to
       // stderr, and the webpack process doesn't exit with an error for compilation errors unless you make it do so.

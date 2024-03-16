@@ -78,9 +78,9 @@ function formatAspectRatio(track: MediaInfoTrack): string {
 
   if (abs(ratio - 1.33) < 0.02)
     return '4:3';
-  else if (abs(ratio - 1.78) < 0.02)
+  else if (abs(ratio - 1.78) < 0.03)
     return '16:9';
-  else if (abs(ratio - 1.85) < 0.02)
+  else if (abs(ratio - 1.85) < 0.03)
     return 'Wide';
   else
     return ratio.toFixed(2) + ':1';
