@@ -1,3 +1,5 @@
+import { AsyncDatabase } from 'promised-sqlite3';
+
 export enum VType { FILE = 0, MOVIE, COLLECTION, TV_SHOW, TV_SEASON, TV_EPISODE, TV_COLLECTION }
 export enum LibraryStatus { NOT_STARTED, INITIALIZED, BONUS_MATERIAL_LINKED, ALL_VIDEOS, MEDIA_DETAILS, DONE = 100 }
 
@@ -342,6 +344,7 @@ export interface VideoWalkOptions {
 }
 
 export interface VideoWalkOptionsPlus extends VideoWalkOptions {
+  db?: AsyncDatabase;
   streamingDirectory?: string;
   videoDirectory?: string;
 }

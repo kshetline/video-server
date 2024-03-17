@@ -11,6 +11,7 @@ import {
   comparator, isAnyCollection, isCollection, isFile, isMovie, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter
 } from './shared-utils';
 import { sendStatus } from './app';
+import { AsyncDatabase } from 'promised-sqlite3';
 
 export const router = Router();
 
@@ -61,6 +62,17 @@ interface Mappings {
   collections?: Collection[]
 }
 
+function formatAspectRatioNumber(ratio: number): string {
+  if (abs(ratio - 1.33) < 0.02)
+    return '4:3';
+  else if (abs(ratio - 1.78) < 0.03)
+    return '16:9';
+  else if (abs(ratio - 1.85) < 0.03)
+    return 'Wide';
+  else
+    return ratio.toFixed(2) + ':1';
+}
+
 function formatAspectRatio(track: MediaInfoTrack): string {
   if (!track)
     return '';
@@ -76,14 +88,7 @@ function formatAspectRatio(track: MediaInfoTrack): string {
     ratio = w / h;
   }
 
-  if (abs(ratio - 1.33) < 0.02)
-    return '4:3';
-  else if (abs(ratio - 1.78) < 0.03)
-    return '16:9';
-  else if (abs(ratio - 1.85) < 0.03)
-    return 'Wide';
-  else
-    return ratio.toFixed(2) + ':1';
+  return formatAspectRatioNumber(ratio);
 }
 
 function formatResolution(track: MediaInfoTrack): string {
@@ -325,6 +330,8 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
 }
 
 async function getMediaInfo(items: LibraryItem[]): Promise<void> {
+  const db = await AsyncDatabase.open(process.env.VS_DB_PATH || 'db.sqlite');
+
   for (const item of (items || [])) {
     if (isFile(item)) {
       const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getVideoInfo?id=${item.aggregationId}`;
@@ -349,10 +356,19 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
               item.title = track.Title || track.Movie;
               break;
             case 'Video':
-              item.aspectRatio = formatAspectRatio(track);
-              item.resolution = formatResolution(track);
-              item.video = item.video ?? [];
-              item.video.push(t);
+              {
+                const key = item.uri.replace(/^[\\/]/, '').normalize();
+                const row = await db.get<any>('SELECT * FROM aspects WHERE key = ?', key);
+
+                if (row?.aspect)
+                  item.aspectRatio = formatAspectRatioNumber(row.aspect);
+                else
+                  item.aspectRatio = formatAspectRatio(track);
+
+                item.resolution = formatResolution(track);
+                item.video = item.video ?? [];
+                item.video.push(t);
+              }
               break;
             case 'Audio':
               t.channels = channelString(track);
@@ -375,6 +391,8 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
       sendStatus();
     }
   }
+
+  await db.close();
 }
 
 async function getDirectories(dir: string, bonusDirs: Set<string>, map: Map<string, string[]>): Promise<number> {

@@ -84,11 +84,16 @@ export async function walkVideoDirectory(
 
   (options as VideoWalkOptionsPlus).streamingDirectory = terminateDir(getValue('streamingDirectory'));
   (options as VideoWalkOptionsPlus).videoDirectory = terminateDir(getValue('videoDirectory'));
+  (options as VideoWalkOptionsPlus).db = await AsyncDatabase.open(process.env.VS_DB_PATH || 'db.sqlite');
 
   if (options.checkStreaming === true)
     options.checkStreaming = getValue('videoDirectory') + '\t' + getValue('streamingDirectory');
 
-  return await walkVideoDirectoryAux(dir, 0, options, callback);
+  const stats = await walkVideoDirectoryAux(dir, 0, options, callback);
+
+  await (options as VideoWalkOptionsPlus).db.close();
+
+  return stats;
 }
 
 async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoWalkOptionsPlus,
@@ -219,8 +224,8 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
           let [w, h] = (info.video[0]?.properties?.pixel_dimensions || '1x1').split('x').map(d => toInt(d));
 
           if (w > 1880 || h > 1000) {
+            const db = (options as VideoWalkOptionsPlus).db;
             const key = path.substring(options.videoDirectory.length).normalize();
-            const db = await AsyncDatabase.open(process.env.VS_DB_PATH || 'db.sqlite');
             const row = await db.get<any>('SELECT * FROM aspects WHERE key = ?', key);
 
             if (row && row.mdate === stat.mtimeMs) {
@@ -235,8 +240,9 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
 
               if (abs(newAspect - 1.78) < 0.03) {
                 for (let i = 1; i <= 4; ++i) {
-                  sizeInfo += (await monitorProcess(spawn('ffmpeg', ['-t', '5', '-ss', (step * i).toString(), '-i', path,
-                    '-vf', 'cropdetect,metadata=mode=print', '-f', 'null', '-']), null, ErrorMode.COLLECT_ERROR_STREAM));
+                  sizeInfo += (await monitorProcess(spawn('ffmpeg',
+                    ['-t', '5', '-ss', (step * i).toString(), '-i', path, '-vf', 'cropdetect,metadata=mode=print',
+                     '-f', 'null', '-']), null, ErrorMode.COLLECT_ERROR_STREAM));
                 }
 
                 for (const line of asLines(sizeInfo)) {
