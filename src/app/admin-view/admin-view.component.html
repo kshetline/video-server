@@ -38,6 +38,14 @@
       <td>{{videoStats?.videoCount ? formatSize(videoStats.tvBytes) : ''}}</td>
     </tr>
     <tr>
+      <th>DVD ISO image count</th>
+      <td>{{videoStats?.dvdIsoCount ? videoStats.dvdIsoCount : '0'}}</td>
+    </tr>
+    <tr>
+      <th>Non-DVD ISO image count</th>
+      <td>{{videoStats?.isoCount ? videoStats.isoCount : '0'}}</td>
+    </tr>
+    <tr>
       <th>Bonus materials file count</th>
       <td>{{videoStats?.videoCount ? videoStats.extrasCount : ''}}</td>
     </tr>

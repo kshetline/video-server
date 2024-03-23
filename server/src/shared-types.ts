@@ -307,9 +307,11 @@ export interface MKVInfo {
 }
 
 export interface VideoStats {
+  dvdIsoCount: number;
   errorCount: number;
   extrasBytes: number;
   extrasCount: number;
+  isoCount: number;
   miscFileBytes: number;
   miscFileCount: number;
   movieBytes: number;

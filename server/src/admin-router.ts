@@ -99,9 +99,11 @@ export async function walkVideoDirectory(
 async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoWalkOptionsPlus,
                                      callback: VideoWalkCallback, dontRecurse = false): Promise<VideoStats> {
   const stats: VideoStats = {
+    dvdIsoCount: 0,
     errorCount: 0,
     extrasBytes: 0,
     extrasCount: 0,
+    isoCount: 0,
     miscFileBytes: 0,
     miscFileCount: 0,
     movieBytes: 0,
@@ -125,7 +127,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
     const path = pathJoin(dir, file);
     const stat = await safeLstat(path);
 
-    if (!stat || file.startsWith('.') || file.endsWith('~') || file.endsWith('~.mkv') || stat.isSymbolicLink()) {
+    if (!stat || file.startsWith('.') || file.endsWith('~') || /~\.mkv$/i.test(file) || stat.isSymbolicLink()) {
       // Do nothing
     }
     else if (stat.isDirectory()) {
@@ -153,7 +155,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
         }
       }
     }
-    else if (/\.tmp\./.test(file)) {
+    else if (/\.tmp\./i.test(file)) {
       // Do nothing
     }
     else if (options.isStreamingResource && options.isStreamingResource(file)) {
@@ -163,10 +165,27 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
       if (options.reportStreamingToCallback)
         await callback(path, depth);
     }
-    else if (/\.mkv$/.test(file)) {
+    else if (/\.(mkv|iso)$/i.test(file)) {
       ++stats.videoCount;
 
       const info: VideoWalkInfo = {};
+      let iso = false;
+
+      if (/\.iso$/i.test(file)) {
+        iso = true;
+
+        try {
+          const content = asLines((await monitorProcess(spawn('7z', ['l', '-slt', path]))));
+
+          if (content.find(entry => entry === 'Path = VIDEO_TS'))
+            ++stats.dvdIsoCount;
+          else
+            ++stats.isoCount;
+        }
+        catch {
+          ++stats.isoCount;
+        }
+      }
 
       if (/[\\/](-Extras-|.*Bonus Disc.*)[\\/]/i.test(path)) {
         info.isExtra = true;
@@ -194,7 +213,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
       }
 
       try {
-        if (options.getMetadata && !info.skip) {
+        if (!iso && options.getMetadata && !info.skip) {
           const mkvJson = (await monitorProcess(spawn('mkvmerge', ['-J', path])))
           // uid values exceed available numeric precision. Turn into strings instead.
             .replace(/("uid":\s+)(\d+)/g, '$1"$2"');
@@ -297,7 +316,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
           }
         }
 
-        if (options.checkStreaming && !dontRecurse) {
+        if (!iso && options.checkStreaming && !dontRecurse) {
           let title = baseTitle.replace(/\s*\([234][DK]\)/gi, '').replace(/#/g, '_');
 
           if (!/[-_(](4K|3D)\)/.test(title)) {
