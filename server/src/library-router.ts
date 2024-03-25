@@ -302,24 +302,40 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
     let uri: string;
 
     if (item.data?.length > 0) {
-      if (isTvShow(item))
-        uri = paths.dirname(item.data[0]?.data[0]?.data[0]?.uri);
-      else if (isTvSeason(item))
-        uri = item.data[0]?.data[0]?.uri;
-      else
-        uri = item.data[0].uri;
-    }
+      const checkedUris = new Set<string>();
+      const extras = new Set<string>();
 
-    if (uri && (isMovie(item) || isTvShow(item) || isTvSeason(item))) {
-      const basePath = paths.dirname(paths.join(vSource, uri));
+      for (let i = 0; i < item.data.length; ++i) {
+        if (i === 0)
+          item.extras = [];
 
-      for (const bonusDir of Array.from(bonusDirs)) {
-        const checkPath = paths.join(basePath, bonusDir);
+        if (isTvShow(item))
+          uri = paths.dirname(item.data[i]?.data[0]?.data[0]?.uri);
+        else if (isTvSeason(item))
+          uri = item.data[i]?.data[0]?.uri;
+        else
+          uri = item.data[i].uri;
 
-        if (directoryMap.has(checkPath))
-          item.extras = directoryMap.get(checkPath).map(
-            file => paths.join(checkPath, file).substring(vSource.length).replace(/\\/g, '/'));
+        if (uri && !checkedUris.has(uri)) {
+          checkedUris.add(uri);
+
+          if (isMovie(item) || isTvShow(item) || isTvSeason(item)) {
+            const basePath = paths.dirname(paths.join(vSource, uri));
+
+            for (const bonusDir of Array.from(bonusDirs)) {
+              const checkPath = paths.join(basePath, bonusDir);
+
+              if (directoryMap.has(checkPath))
+                directoryMap.get(checkPath).map(
+                  file => paths.join(checkPath, file).substring(vSource.length).replace(/\\/g, '/'))
+                  .forEach(x => extras.add(x));
+            }
+          }
+        }
       }
+
+      if (extras.size > 0)
+        item.extras = Array.from(extras);
     }
 
     if (items === pendingLibrary.array) {
