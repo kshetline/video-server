@@ -77,7 +77,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
   let primaryLang = '';
   let langCount = 0;
 
-  if (audio.length > 0) {
+  if (audio?.length > 0) {
     const defaultTrack = audio.find(t => t.properties.default_track) ?? audio[0];
     const languages = new Set<string>();
 
@@ -91,7 +91,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
 
     langCount = languages.size;
 
-    for (let i = 1; i <= audio.length; ++i) {
+    for (let i = 1; i <= audio?.length || 0; ++i) {
       const track = audio[i - 1];
       const tp = track.properties;
       const lang = getLanguage(tp);
@@ -137,7 +137,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
     }
   }
 
-  if (subtitles.length > 0) {
+  if (subtitles?.length > 0) {
     for (let i = 1; i <= subtitles.length; ++i) {
       const track = subtitles[i - 1];
       const tp = track.properties;

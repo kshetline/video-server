@@ -8,7 +8,7 @@ import { join as pathJoin, sep } from 'path';
 import { ErrorMode, monitorProcess } from './process-util';
 import { spawn } from 'child_process';
 import { AudioTrack, MediaWrapper, MKVInfo, SubtitlesTrack, VideoStats, VideoTrack, VideoWalkOptions, VideoWalkOptionsPlus } from './shared-types';
-import { comparator, sorter } from './shared-utils';
+import { comparator, sorter, toStreamPath } from './shared-utils';
 import { examineAndUpdateMkvFlags } from './mkv-flags';
 import { sendStatus } from './app';
 import { createStreaming } from './streaming';
@@ -316,20 +316,19 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
           }
         }
 
-        if (!iso && options.checkStreaming && !dontRecurse) {
-          let title = baseTitle.replace(/\s*\([234][DK]\)/gi, '').replace(/#/g, '_');
+        if (!iso && options.checkStreaming && !dontRecurse && !/[-_(](4K|3D)\)/.test(baseTitle)) {
+          let title = toStreamPath(baseTitle);
 
-          if (!/[-_(](4K|3D)\)/.test(title)) {
-            const sDir = pathJoin(options.streamingDirectory, dir.substring(options.videoDirectory.length));
-            const stream1 = pathJoin(sDir, title + '.mpd');
-            const stream2 = pathJoin(sDir, title + '.av.webm');
-            const stream3 = pathJoin(sDir, '2K', title + '.mpd');
-            const stream4 = pathJoin(sDir, '2K', title + '.av.webm');
+          const sDir = pathJoin(options.streamingDirectory, dir.substring(options.videoDirectory.length));
+          const stream1 = pathJoin(sDir, title + '.mpd');
+          const stream2 = pathJoin(sDir, title + '.av.webm');
+          const stream3 = pathJoin(sDir, '2K', title + '.mpd');
+          const stream4 = pathJoin(sDir, '2K', title + '.av.webm');
 
-            if (!await existsAsync(stream1) && !await existsAsync(stream2) && !await existsAsync(stream3) && !await existsAsync(stream4)) {
-              title = title.replace(/\s*\((\d*)#([-_.a-z0-9]+)\)/i, '');
-              (stats.unstreamedTitles as Set<string>).add(title);
-            }
+          if (!await existsAsync(stream1) && !await existsAsync(stream2) && !await existsAsync(stream3) &&
+              !await existsAsync(stream4)) {
+            title = title.replace(/\s*\((\d*)#([-_.a-z0-9]+)\)/i, '');
+            (stats.unstreamedTitles as Set<string>).add(title);
           }
         }
 
@@ -402,6 +401,7 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
         },
           async (path: string, depth: number, options: VideoWalkOptionsPlus, info: VideoWalkInfo): Promise<void> => {
             const startChar = path.charAt(info.videoDirectory.length);
+            const isMkv = /\.mkv$/i.test(path);
 
             if (depth === 1 && lastChar !== startChar) {
               lastChar = startChar;
@@ -413,10 +413,10 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
 
             webSocketSend({ type: 'currentFile', data: path.substring(info.videoDirectory.length) });
 
-            if (options.mkvFlags)
+            if (options.mkvFlags && isMkv)
               await examineAndUpdateMkvFlags(path, options, info);
 
-            if (options.generateStreaming)
+            if (options.generateStreaming && isMkv)
               await createStreaming(path, options, info);
           });
         const statsStr = JSON.stringify(stats, (_key, value) => {

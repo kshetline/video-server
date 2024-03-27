@@ -474,7 +474,7 @@ export class ShowViewComponent implements OnInit {
 
     const codecs = new Set<string>();
 
-    for (let i = 0; i < (v.audio ? v.audio.length : 0); ++i) {
+    for (let i = 0; i < v.audio?.length || 0; ++i) {
       const a = v.audio[i];
       let codec = a?.codec || '';
       let chan = a?.channels || '';

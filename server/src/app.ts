@@ -56,7 +56,7 @@ import { adminProcessing, router as adminRouter, statsInProgress } from './admin
 import { LibraryItem, LibraryStatus, ServerStatus, User, UserSession } from './shared-types';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { isFile } from './shared-utils';
+import { isFile, toStreamPath } from './shared-utils';
 import { readdir } from 'fs/promises';
 import { requestText } from 'by-request';
 import { closeSettings, openSettings } from './settings';
@@ -498,7 +498,7 @@ function getApp(): Express {
     if (streamUri)
       result = streamUri;
     else if (uri) {
-      const streamUriBase = uri.replace(/\.mkv$/, '').replace(/\s*\([234][DK]\)$/, '').replace(/#/g, '_');
+      const streamUriBase = toStreamPath(uri);
       const extensions = demo ? ['.sample.mp4'] : mobile ? ['.mobile.mp4'] : ['.mpd', '.av.webm'];
 
       outer:

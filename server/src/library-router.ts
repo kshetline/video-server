@@ -8,7 +8,7 @@ import { readdir, readFile, writeFile } from 'fs/promises';
 import { cacheDir, existsAsync, isAdmin, isDemo, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat, unref } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
 import {
-  comparator, isAnyCollection, isCollection, isFile, isMovie, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter
+  comparator, isAnyCollection, isCollection, isFile, isMovie, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, toStreamPath
 } from './shared-utils';
 import { sendStatus } from './app';
 import { AsyncDatabase } from 'promised-sqlite3';
@@ -195,7 +195,7 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
     }
     else if (!/-Extras-|Bonus Disc/i.exec(item.uri || '')) {
       if (item.uri) {
-        let streamUriBase = item.uri.replace(/( ~)?\.mkv$/, '').replace(/\s*\(2[DK]\)$/, '').replace(/#/g, '_');
+        let streamUriBase = toStreamPath(item.uri);
 
         outer:
         for (const ext of ['.mpd', '.av.webm']) {
@@ -444,7 +444,7 @@ async function getDirectories(dir: string, bonusDirs: Set<string>, map: Map<stri
       if (!map.has(dir))
         map.set(dir, []);
 
-      if (file.endsWith('.mkv')) {
+      if (/\.(mkv|iso)$/i.test(file)) {
         map.get(dir).push(file);
         ++count;
       }

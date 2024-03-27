@@ -91,3 +91,21 @@ export function librarySorter(a: LibraryItem, b: LibraryItem): number {
 
   return sa.length - sb.length;
 }
+
+export function toStreamPath(s: string, volumeBase?: string, streamBase?: string): string {
+  let parent = '';
+  const $ = /^(.*[\\/])(.*)$/.exec(s);
+
+  if ($) {
+    parent = $[1];
+    s = $[2];
+
+    if (volumeBase && streamBase && parent.startsWith(volumeBase))
+      parent = streamBase + parent.substring(volumeBase.length);
+  }
+
+  s = s.replace(/(\.mkv)$/i, '').replace(/\s*\([234][DK]\)(?=\(|$)/, '').replace(/(?<=\()\d+(?=#.*\))/, '')
+    .replace(/#/g, '_').replace(/[-_][234][DK](?=\))/, '').replace('()', '');
+
+  return parent + s;
+}

@@ -8,6 +8,7 @@ import { existsAsync, safeUnlink, webSocketSend } from './vs-util';
 import { abs, floor, min, round } from '@tubular/math';
 import { ErrorMode, monitorProcess, spawn } from './process-util';
 import { VideoWalkInfo } from './admin-router';
+import { toStreamPath } from './shared-utils';
 
 interface Progress {
   duration?: number;
@@ -129,8 +130,7 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
                                       info: VideoWalkInfo): Promise<boolean> {
   const start = Date.now();
   const resolutions = [{ w: 1920, h: 1080 }, { w: 1280, h: 720 }, { w: 853.33, h: 480 }, { w: 640, h: 360 }, { w: 569, h: 320 }];
-  const mpdRoot = options.streamingDirectory +
-    path.substring(options.videoDirectory.length).replace(/\s*\([234][DK]\)(?!.*[/\\].*)/, '').replace(/#/g, '_').replace(/\.mkv$/, '');
+  const mpdRoot = toStreamPath(path, options.videoDirectory, options.streamingDirectory);
   const mpdPath = mpdRoot + '.mpd';
   const avPath = mpdRoot + '.av.webm';
   const mobilePath = mpdRoot + '.mobile.mp4';
