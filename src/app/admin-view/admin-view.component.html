@@ -107,7 +107,7 @@
   </div>
   <p-button label="Process" icon="pi pi-wrench"
             [disabled]="status?.processing" (click)="!status?.processing && runProcess()"/>
-  <div>{{currentFile}}<span style="font-size: 1.2em">&nbsp;</span></div>
+  <div>{{currentFile}}<span style="opacity: 0; user-select: none">：</span></div>
   <div class="mono">{{encodeProgress}}</div>
 </div>
 <p-dialog header="Header" [(visible)]="showRefreshDialog" [style]="{ width: 'min(35em, calc(100vw - 4em))' }">

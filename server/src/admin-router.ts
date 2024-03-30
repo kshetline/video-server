@@ -8,7 +8,7 @@ import { join as pathJoin, sep } from 'path';
 import { ErrorMode, monitorProcess } from './process-util';
 import { spawn } from 'child_process';
 import { AudioTrack, MediaWrapper, MKVInfo, SubtitlesTrack, VideoStats, VideoTrack, VideoWalkOptions, VideoWalkOptionsPlus } from './shared-types';
-import { comparator, sorter, toStreamPath } from './shared-utils';
+import { characterToProgress, comparator, sorter, toStreamPath } from './shared-utils';
 import { examineAndUpdateMkvFlags } from './mkv-flags';
 import { sendStatus } from './app';
 import { createStreaming } from './streaming';
@@ -17,6 +17,8 @@ import { AsyncDatabase } from 'promised-sqlite3';
 
 export const router = Router();
 export let adminProcessing = false;
+export let currentFile = '';
+export let updateProgress = -1;
 
 const DEFAULT_VW_OPTIONS: VideoWalkOptions = {
   checkStreaming: true,
@@ -386,6 +388,7 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
   if (!statsInProgress && !adminProcessing && (options.stats || options.mkvFlags || options.generateStreaming)) {
     statsInProgress = true;
     adminProcessing = true;
+    updateProgress = 0;
     sendStatus();
 
     await (async (): Promise<void> => {
@@ -405,13 +408,15 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
 
             if (depth === 1 && lastChar !== startChar) {
               lastChar = startChar;
+              updateProgress = characterToProgress(startChar);
               webSocketSend({ type: 'videoStatsProgress', data: startChar });
             }
 
             if (info.skip)
               return;
 
-            webSocketSend({ type: 'currentFile', data: path.substring(info.videoDirectory.length) });
+            currentFile = path.substring(info.videoDirectory.length);
+            webSocketSend({ type: 'currentFile', data: currentFile });
 
             if (options.mkvFlags && isMkv)
               await examineAndUpdateMkvFlags(path, options, info);
@@ -434,6 +439,8 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
         console.error(e);
       }
       finally {
+        currentFile = '';
+        updateProgress = -1;
         statsInProgress = false;
         sendStatus();
       }

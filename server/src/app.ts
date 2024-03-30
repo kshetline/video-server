@@ -52,7 +52,7 @@ import { Resolver } from 'node:dns';
 import { cachedLibrary, initLibrary, pendingLibrary, router as libraryRouter } from './library-router';
 import { router as imageRouter } from './image-router';
 import { router as streamingRouter } from './streaming-router';
-import { adminProcessing, router as adminRouter, statsInProgress } from './admin-router';
+import { adminProcessing, currentFile, router as adminRouter, statsInProgress, updateProgress } from './admin-router';
 import { LibraryItem, LibraryStatus, ServerStatus, User, UserSession } from './shared-types';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
@@ -244,6 +244,7 @@ function shutdown(signal?: string): void {
 
 function getStatus(remote?: string): ServerStatus {
   const status: ServerStatus = {
+    currentFile,
     lastUpdate: cachedLibrary?.lastUpdate,
     ready: cachedLibrary?.status === LibraryStatus.DONE,
     processing: adminProcessing || statsInProgress || !!pendingLibrary,
@@ -257,6 +258,8 @@ function getStatus(remote?: string): ServerStatus {
 
   if (pendingLibrary)
     status.updateProgress = pendingLibrary.progress;
+  else if (updateProgress >= 0)
+    status.updateProgress = updateProgress;
 
   return status;
 }

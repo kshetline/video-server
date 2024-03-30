@@ -109,3 +109,12 @@ export function toStreamPath(s: string, volumeBase?: string, streamBase?: string
 
   return parent + s;
 }
+
+export function characterToProgress(ch: string): number {
+  if (ch <= '9')
+    return 3.57;
+  else if (ch >= 'A')
+    return (ch.toString().charCodeAt(0) - 63) * 3.57;
+  else
+    return -1;
+}

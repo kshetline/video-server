@@ -3,6 +3,7 @@ import { formatSize, webSocketMessagesEmitter } from '../video-ui-utils';
 import { HttpClient } from '@angular/common/http';
 import { ServerStatus, VideoStats } from '../../../server/src/shared-types';
 import { clone } from '@tubular/util';
+import { characterToProgress } from '../../../server/src/shared-utils';
 
 @Component({
   selector: 'app-admin-view',
@@ -42,6 +43,7 @@ export class AdminViewComponent implements OnInit {
           break;
 
         case 'status':
+          this.currentFile = (msg.data as ServerStatus).currentFile;
           this.updateProgress = (msg.data as ServerStatus).updateProgress;
           break;
 
@@ -50,11 +52,7 @@ export class AdminViewComponent implements OnInit {
           break;
 
         case 'videoStatsProgress':
-          if (msg.data <= '9')
-            this.updateProgress = 3.57;
-          else if (msg.data >= 'A')
-            this.updateProgress = (msg.data.toString().charCodeAt(0) - 63) * 3.57;
-
+          this.updateProgress = characterToProgress(msg.data);
           break;
 
         case 'videoStats':

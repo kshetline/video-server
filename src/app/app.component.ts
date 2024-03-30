@@ -33,6 +33,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   logoffTime = 0;
   playing = false;
   showAdminPage = false;
+  socketOpen = false;
   status: ServerStatus;
   wsReady = false;
 
@@ -313,11 +314,12 @@ export class AppComponent implements AfterViewInit, OnInit {
     console.info('connectToWebSocket()');
     const protocol = (/https/.test(location.protocol) ? 'wss' : 'ws');
     const port = this.status.wsPort < 0 ? location.port : this.status.wsPort;
-    let socketOpen = false;
+    let socketEverOpen = false;
 
     this.webSocket = new WebSocket(`${protocol}://${location.hostname}:${port}`);
     this.webSocket.addEventListener('open', () => {
-      socketOpen = true;
+      socketEverOpen = true;
+      this.socketOpen = true;
       this.wsReady = true;
 
       if (this.reestablishing) {
@@ -327,19 +329,20 @@ export class AppComponent implements AfterViewInit, OnInit {
     });
     this.webSocket.addEventListener('close', () => {
       console.warn('Web socket closed');
-      if (socketOpen) {
-        socketOpen = false;
+      if (this.socketOpen) {
+        this.socketOpen = false;
         this.reestablishing = true;
-        setTimeout(() => this.connectToWebSocket(), 5000);
+        setTimeout(() => this.connectToWebSocket(), 500);
       }
     });
     this.webSocket.addEventListener('error', () => {
-      if (!socketOpen) {
+      if (socketEverOpen) {
+        this.socketOpen = false;
         this.reestablishing = true;
-        setTimeout(() => this.connectToWebSocket(), 5000);
+        setTimeout(() => this.connectToWebSocket(), 500);
       }
       else {
-        socketOpen = false;
+        this.socketOpen = false;
         console.warn('Web socket connection failed');
         this.webSocket = undefined;
         this.wsReady = false;
