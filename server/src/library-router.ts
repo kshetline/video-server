@@ -38,9 +38,11 @@ let pendingUpdate: any;
 let nextId: number;
 
 interface Alias {
+  aspectRatioOverride?: string;
   collection?: string;
   hideOriginal?: boolean;
   isTV?: boolean;
+  isTvMovie?: boolean;
   name?: string;
   newType?: number;
   path?: string;
@@ -58,7 +60,7 @@ interface Collection {
 
 interface Mappings {
   aliases?: Alias[],
-  typeChanges?: Alias[],
+  changes?: Alias[],
   collections?: Collection[]
 }
 
@@ -372,7 +374,9 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
               item.title = track.Title || track.Movie;
               break;
             case 'Video':
-              {
+              if (item.aspectRatioOverride)
+                item.aspectRatio = item.aspectRatioOverride;
+              else {
                 const key = item.uri.replace(/^[\\/]/, '').normalize();
                 const row = await db.get<any>('SELECT * FROM aspects WHERE key = ?', key);
 
@@ -382,9 +386,11 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
                   item.aspectRatio = formatAspectRatio(track);
 
                 item.resolution = formatResolution(track);
-                item.video = item.video ?? [];
-                item.video.push(t);
               }
+
+              item.video = item.video ?? [];
+              item.video.push(t);
+
               break;
             case 'Audio':
               t.channels = channelString(track);
@@ -626,7 +632,7 @@ function findMatchingUri(items: LibraryItem[], uri: string, parent?: LibraryItem
   return null;
 }
 
-function matchAliases(aliases: Alias[], changeType = false): LibraryItem[] {
+function matchAliases(aliases: Alias[], changeInfo = false): LibraryItem[] {
   const aliasedItems: LibraryItem[] = [];
 
   for (const alias of aliases || []) {
@@ -650,11 +656,14 @@ function matchAliases(aliases: Alias[], changeType = false): LibraryItem[] {
     }
 
     if (item) {
-      if (changeType) {
+      if (changeInfo) {
         if (alias.newType != null)
           item.type = alias.newType;
-        else
+        else (alias.isTvMovie)
           item.isTvMovie = true;
+
+        if (alias.aspectRatioOverride)
+          item.aspectRatioOverride = alias.aspectRatioOverride;
       }
       else {
         const copy = clone(item);
@@ -690,7 +699,7 @@ async function addMappings(): Promise<void> {
   const mappings = JSON.parse(await readFile(paths.join(vSource, 'mappings.json'), 'utf8')) as Mappings;
   const aliasedItems = matchAliases(mappings.aliases);
 
-  matchAliases(mappings.typeChanges, true);
+  matchAliases(mappings.changes, true);
   nextId = 0.5;
 
   for (const collection of mappings.collections || []) {

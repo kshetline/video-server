@@ -49,6 +49,7 @@ export interface LibraryItem {
   airDate?: string;
   aliasPosterPath?: string;
   aspectRatio?: string;
+  aspectRatioOverride?: string;
   audio?: Track[];
   backdropPath?: string;
   certification?: string
