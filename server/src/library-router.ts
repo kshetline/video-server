@@ -659,7 +659,7 @@ function matchAliases(aliases: Alias[], changeInfo = false): LibraryItem[] {
       if (changeInfo) {
         if (alias.newType != null)
           item.type = alias.newType;
-        else (alias.isTvMovie)
+        else if (alias.isTvMovie)
           item.isTvMovie = true;
 
         if (alias.aspectRatioOverride)
