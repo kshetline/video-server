@@ -71,8 +71,10 @@ function formatAspectRatioNumber(ratio: number): string {
     return '16:9';
   else if (abs(ratio - 1.85) < 0.03)
     return 'Wide';
-  else
+  else if (isNumber(ratio))
     return ratio.toFixed(2) + ':1';
+  else
+    return '';
 }
 
 function formatAspectRatio(track: MediaInfoTrack): string {

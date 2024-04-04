@@ -284,11 +284,19 @@ export class AppComponent implements AfterViewInit, OnInit {
     this.logoffTime = processMillis();
   }
 
-  private receiveStatus(status: ServerStatus): void {
+  clickAdminPage(): void {
+    this.showAdminPage = true;
+    this.getStatusObservable();
+  }
+
+  private receiveStatus(status: ServerStatus, broadcast = false): void {
     const finished = status.ready && (!this.status || !this.status.ready);
 
     status.localAccess = status.localAccess ?? this.status.localAccess;
     this.status = status;
+
+    if (broadcast)
+      broadcastMessage('status', status);
 
     if (finished ||
         (this.library && status.lastUpdate && new Date(this.library.lastUpdate) < new Date(status.lastUpdate)))
@@ -302,7 +310,7 @@ export class AppComponent implements AfterViewInit, OnInit {
     else {
       this.getStatusObservable().subscribe({
         next: status => {
-          this.receiveStatus(status);
+          this.receiveStatus(status, true);
           setTimeout(() => this.pollStatus(), this.status.updateProgress < 0 ? 60000 : 2000);
         },
         error: () => setTimeout(() => this.pollStatus(), 1000)
@@ -324,7 +332,7 @@ export class AppComponent implements AfterViewInit, OnInit {
 
       if (this.reestablishing) {
         this.reestablishing = false;
-        this.getStatusObservable().subscribe(status => this.status = status);
+        this.getStatusObservable();
       }
     });
     this.webSocket.addEventListener('close', () => {
@@ -361,6 +369,10 @@ export class AppComponent implements AfterViewInit, OnInit {
   }
 
   private getStatusObservable(): Observable<ServerStatus> {
-    return this.httpClient.get<ServerStatus>('/api/status').pipe(shareReplay());
+    const observable = this.httpClient.get<ServerStatus>('/api/status').pipe(shareReplay());
+
+    observable.subscribe(status => this.status = status);
+
+    return observable;
   }
 }

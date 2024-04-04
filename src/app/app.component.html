@@ -13,7 +13,7 @@
   <div *ngIf="!playing" class="status-panel">
     <p-button *ngIf="isAdmin() && !showAdminPage && !posterWallHidden()"
               [disabled]="status && status?.updateProgress >= 0" icon="pi pi-wrench"
-              styleClass="p-button-rounded p-button-danger" (click)="showAdminPage = true"></p-button>
+              styleClass="p-button-rounded p-button-danger" (click)="clickAdminPage()"></p-button>
     <span *ngIf="!posterWallHidden()">{{userName()}}</span>
     <p-button *ngIf="posterWallHidden()" icon="pi pi-home" styleClass="p-button-rounded p-button-success" (click)="goHome()"></p-button>
     <p-button icon="pi pi-sign-out" styleClass="p-button-rounded" (click)="logOut()"></p-button>
