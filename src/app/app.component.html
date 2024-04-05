@@ -11,8 +11,7 @@
   <app-admin-view *ngIf="isAdmin()" [class.active]="showAdminPage"
                   [status]="status" (goBack)="showAdminPage = false"></app-admin-view>
   <div *ngIf="!playing" class="status-panel">
-    <p-button *ngIf="isAdmin() && !showAdminPage && !posterWallHidden()"
-              [disabled]="status && status?.updateProgress >= 0" icon="pi pi-wrench"
+    <p-button *ngIf="isAdmin() && !showAdminPage && !posterWallHidden()" icon="pi pi-wrench"
               styleClass="p-button-rounded p-button-danger" (click)="clickAdminPage()"></p-button>
     <span *ngIf="!posterWallHidden()">{{userName()}}</span>
     <p-button *ngIf="posterWallHidden()" icon="pi pi-home" styleClass="p-button-rounded p-button-success" (click)="goHome()"></p-button>
