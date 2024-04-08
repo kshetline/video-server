@@ -1,6 +1,6 @@
 import { Request, Response, Router } from 'express';
 import { existsAsync, isAdmin, jsonOrJsonp, noCache, safeLstat, webSocketSend } from './vs-util';
-import { updateLibrary } from './library-router';
+import { mappedDurations, updateLibrary } from './library-router';
 import { asLines, clone, forEach, isFunction, isNumber, isObject, isString, last, toBoolean, toInt } from '@tubular/util';
 import { readdir } from 'fs/promises';
 import { getValue, setValue } from './settings';
@@ -101,6 +101,7 @@ export async function walkVideoDirectory(
 async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoWalkOptionsPlus,
                                      callback: VideoWalkCallback, dontRecurse = false): Promise<VideoStats> {
   const stats: VideoStats = {
+    durations: new Map<string, number>(),
     dvdIsoCount: 0,
     errorCount: 0,
     extrasBytes: 0,
@@ -137,10 +138,16 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
         continue;
 
       const consolidateStats = (subStats: VideoStats): void => forEach(stats as any, (key, value) => {
+        const counterpart = (subStats as any)[key];
+
         if (isNumber(value))
           (stats as any)[key] += (subStats as any)[key];
-        else
-          ((subStats as any)[key] as Set<string>).forEach(s => ((stats as any)[key] as Set<string>).add(s));
+        else if (value instanceof Set)
+          (counterpart as Set<string>).forEach(s => (value as Set<string>).add(s));
+        else if (value instanceof Map)
+          (counterpart as Map<string, number>).forEach((value2, key2) =>
+            value.set(key2, max(value2 as number, value.get(key2) as number || 0))
+          );
       });
       const subStats = await walkVideoDirectoryAux(path, depth + 1, options, callback);
 
@@ -289,9 +296,10 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
         }
 
         const baseTitle = file.replace(/( ~)?\.mkv$/i, '');
+        let title = baseTitle;
 
         if (info.isMovie || info.isTV) {
-          let title = baseTitle.replace(/\s*\(.*?[a-z].*?\)/gi, '').replace(/^\d{1,2} - /, '').replace(/ - /g, ': ')
+          title = baseTitle.replace(/\s*\(.*?[a-z].*?\)/gi, '').replace(/^\d{1,2} - /, '').replace(/ - /g, ': ')
             .replace(/：/g, ':').replace(/？/g, '?').trim().replace(/(.+), (A|An|The)$/, '$2 $1');
 
           if (info.isMovie) {
@@ -318,8 +326,18 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
           }
         }
 
+        title = title.normalize();
+
+        const uri = ('/' + path.substring(options.videoDirectory.length)).replace(/\\/g, '/').replace(/^\/\//, '/');
+
+        if (mappedDurations.has(uri)) {
+          const lastDuration = stats.durations.get(title) || 0;
+
+          stats.durations.set(title, max(lastDuration, mappedDurations.get(uri)));
+        }
+
         if (!iso && options.checkStreaming && !dontRecurse && !/[-_(](4K|3D)\)/.test(baseTitle)) {
-          let title = toStreamPath(baseTitle);
+          title = toStreamPath(baseTitle);
 
           const sDir = pathJoin(options.streamingDirectory, dir.substring(options.videoDirectory.length));
           const stream1 = pathJoin(sDir, title + '.mpd');
@@ -383,7 +401,7 @@ interface UpdateOptions {
 }
 
 async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
-  let stats: any = null;
+  let stats: VideoStats = null;
 
   if (!statsInProgress && !adminProcessing && (options.stats || options.mkvFlags || options.generateStreaming)) {
     statsInProgress = true;
@@ -424,6 +442,10 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
             if (options.generateStreaming && isMkv)
               await createStreaming(path, options, info);
           });
+
+        stats.totalDuration = Array.from(stats.durations).map(d => d[1]).reduce((total, val) => total + val, 0);
+        delete stats.durations;
+
         const statsStr = JSON.stringify(stats, (_key, value) => {
           if (value instanceof Set)
             return Array.from(value.values()).sort(sorter);

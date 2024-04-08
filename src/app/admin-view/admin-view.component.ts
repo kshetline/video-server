@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { formatSize, webSocketMessagesEmitter } from '../video-ui-utils';
+import { formatMillisToDays, formatSize, webSocketMessagesEmitter } from '../video-ui-utils';
 import { HttpClient } from '@angular/common/http';
 import { ServerStatus, VideoStats } from '../../../server/src/shared-types';
 import { clone } from '@tubular/util';
@@ -11,7 +11,10 @@ import { characterToProgress } from '../../../server/src/shared-utils';
   styleUrls: ['./admin-view.component.scss']
 })
 export class AdminViewComponent implements OnInit {
+  readonly formatMillisToDays = formatMillisToDays;
   readonly formatSize = formatSize;
+
+  private lastStatus: ServerStatus;
 
   constructor(private httpClient: HttpClient) {}
 
@@ -43,8 +46,9 @@ export class AdminViewComponent implements OnInit {
           break;
 
         case 'status':
-          this.currentFile = (msg.data as ServerStatus).currentFile;
-          this.updateProgress = (msg.data as ServerStatus).updateProgress;
+          this.lastStatus = (msg.data as ServerStatus);
+          this.currentFile = this.lastStatus.currentFile;
+          this.updateProgress = this.lastStatus.updateProgress;
           break;
 
         case 'video-progress':
@@ -58,7 +62,7 @@ export class AdminViewComponent implements OnInit {
         case 'videoStats':
           this.videoStats = (msg.data as VideoStats);
           this.updateProgress = -1;
-          this.currentFile = '';
+          this.currentFile = this.lastStatus?.currentFile || '';
           this.encodeProgress = '';
           break;
       }

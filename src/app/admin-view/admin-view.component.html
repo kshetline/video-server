@@ -77,11 +77,15 @@
       <td colspan=2><hr></td>
     </tr>
     <tr>
-      <th class="has-footnote">Video file count<span class="star">*</span></th>
+      <th class="has-footnote">Total viewing time<span class="star">*</span></th>
+      <td>{{videoStats?.totalDuration ? formatMillisToDays(videoStats.totalDuration) : ''}}</td>
+    </tr>
+    <tr>
+      <th class="has-footnote">Video file count<span class="star">**</span></th>
       <td>{{videoStats?.videoCount}}</td>
     </tr>
     <tr>
-      <th class="has-footnote">Video storage usage<span class="star">*</span></th>
+      <th class="has-footnote">Video storage usage<span class="star">**</span></th>
       <td>{{videoStats?.videoCount ? formatSize(videoStats.movieBytes + videoStats.tvBytes + videoStats.extrasBytes) : ''}}</td>
     </tr>
     <tr>
@@ -90,7 +94,8 @@
         + videoStats.miscFileBytes + videoStats.streamingFileBytes) : ''}}</td>
     </tr>
   </table>
-  <div class="footnote">*Not including streaming/miscellaneous</div>
+  <div class="footnote">*Not including bonus material, only longest duration of movies/shows with multiple cuts/formats</div>
+  <div class="footnote">**Not including streaming/miscellaneous</div>
   <hr style="width: 100%">
   <div class="process-options" [class.mask]="status?.processing">
     <div class="row">

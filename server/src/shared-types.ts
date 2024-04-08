@@ -309,6 +309,7 @@ export interface MKVInfo {
 }
 
 export interface VideoStats {
+  durations?: Map<string, number>;
   dvdIsoCount: number;
   errorCount: number;
   extrasBytes: number;
@@ -323,6 +324,7 @@ export interface VideoStats {
   skippedForType: number;
   streamingFileBytes: number;
   streamingFileCount: number;
+  totalDuration?: number;
   tvBytes: number;
   tvEpisodesRaw: number;
   tvEpisodeTitles: Set<string> | string[];

@@ -5,6 +5,7 @@ import { fromEvent } from 'rxjs/internal/observable/fromEvent';
 import { debounceTime } from 'rxjs/internal/operators/debounceTime';
 import { compare as imageCompare } from 'resemblejs';
 import { EventEmitter } from '@angular/core';
+import { floor, round } from '@tubular/math';
 
 let imageIndex = 0;
 
@@ -216,4 +217,16 @@ export function broadcastMessage(type: string, data: any): void {
 
 export function webSocketMessagesEmitter(): EventEmitter<WSMessage> {
   return wsEmitter;
+}
+
+export function formatMillisToDays(millis: number): string {
+  let secs = round(millis / 1000);
+  const days = floor(secs / 86400);
+  secs -= days * 86400;
+  const hours = floor(secs / 3600);
+  secs -= hours * 3600;
+  const minutes = floor(secs / 60);
+  secs -= minutes * 60;
+
+  return `${days}d${hours.toString().padStart(2, '0')}h${minutes.toString().padStart(2, '0')}m${secs.toString().padStart(2, '0')}s`;
 }

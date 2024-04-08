@@ -33,6 +33,7 @@ const sSource = process.env.VS_STREAMING_SOURCE;
 
 export let cachedLibrary = { status: LibraryStatus.NOT_STARTED, progress: -1 } as VideoLibrary;
 export let pendingLibrary: VideoLibrary;
+export let mappedDurations = new Map<string, number>();
 
 let pendingUpdate: any;
 let nextId: number;
@@ -754,8 +755,10 @@ export async function updateLibrary(quick = false): Promise<void> {
     pendingLibrary.bonusFileCount = 0;
     sendStatus();
 
-    if (cachedLibrary.status === LibraryStatus.NOT_STARTED)
+    if (cachedLibrary.status === LibraryStatus.NOT_STARTED) {
       cachedLibrary = pendingLibrary;
+      mapDurations();
+    }
 
     const directoryMap = new Map<string, string[]>();
 
@@ -787,6 +790,7 @@ export async function updateLibrary(quick = false): Promise<void> {
     pendingLibrary.lastUpdate = new Date().toISOString();
     pendingLibrary.progress = 100;
     cachedLibrary = pendingLibrary;
+    mapDurations();
     sendStatus();
 
     await writeFile(libraryFile, JSON.stringify(cachedLibrary), 'utf8');
@@ -799,11 +803,29 @@ export async function updateLibrary(quick = false): Promise<void> {
   sendStatus();
 }
 
+function mapDurationsAux(items: LibraryItem[]): void {
+  for (const item of items) {
+    if (item.uri && item.duration)
+      mappedDurations.set(item.uri.normalize(), item.duration);
+
+    if (item.data)
+      mapDurationsAux(item.data);
+  }
+}
+
+function mapDurations(): void {
+  mappedDurations = new Map<string, number>();
+
+  mapDurationsAux(cachedLibrary?.array || []);
+}
+
 export function initLibrary(): void {
   const stats = existsSync(libraryFile) && lstatSync(libraryFile);
 
-  if (stats)
+  if (stats) {
     cachedLibrary = JSON.parse(readFileSync(libraryFile).toString('utf8'));
+    mapDurations();
+  }
 
   const age = +Date.now() - +stats.mtime;
 

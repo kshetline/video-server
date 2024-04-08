@@ -298,8 +298,8 @@ export class AppComponent implements AfterViewInit, OnInit {
     if (broadcast)
       broadcastMessage('status', status);
 
-    if (finished ||
-        (this.library && status.lastUpdate && new Date(this.library.lastUpdate) < new Date(status.lastUpdate)))
+    if (this.wsReady && (finished ||
+        (this.library && status.lastUpdate && new Date(this.library.lastUpdate) < new Date(status.lastUpdate))))
       this.pollLibrary();
   }
 
@@ -347,6 +347,7 @@ export class AppComponent implements AfterViewInit, OnInit {
       if (socketEverOpen) {
         this.socketOpen = false;
         this.reestablishing = true;
+        this.wsReady = false;
         setTimeout(() => this.connectToWebSocket(), 500);
       }
       else {
@@ -371,7 +372,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   private getStatusObservable(): Observable<ServerStatus> {
     const observable = this.httpClient.get<ServerStatus>('/api/status').pipe(shareReplay());
 
-    observable.subscribe(status => this.status = status);
+    observable.subscribe(status => this.receiveStatus(status, true));
 
     return observable;
   }
