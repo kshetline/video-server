@@ -16,6 +16,10 @@
   right: 0;
   top: 0;
   z-index: 410;
+
+  p-progressBar {
+    max-width: calc(100vw - 240px);
+  }
 }
 
 .content {

@@ -118,3 +118,7 @@ export function characterToProgress(ch: string): number {
   else
     return -1;
 }
+
+export function ts(): string {
+  return new Date().toISOString().slice(0, -5).replace('T', ' ');
+}

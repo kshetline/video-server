@@ -6,7 +6,7 @@ import { isEqual, isValidJson, processMillis } from '@tubular/util';
 import { floor } from '@tubular/math';
 import { AuthService } from './auth.service';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { checksum53, isAnyCollection, isMovie, isTvSeason, isTvShow } from '../../server/src/shared-utils';
+import { checksum53, isAnyCollection, isMovie, isTvSeason, isTvShow, ts } from '../../server/src/shared-utils';
 import { StatusInterceptor } from './status.service';
 import { Observable } from 'rxjs';
 import { shareReplay } from 'rxjs/internal/operators/shareReplay';
@@ -22,6 +22,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   private gettingLibrary = false;
   private readyToPoll = false;
   private reestablishing = false;
+  private socketEverOpen = false;
   private webSocket: WebSocket;
 
   bonusSource: LibraryItem;
@@ -319,16 +320,42 @@ export class AppComponent implements AfterViewInit, OnInit {
   };
 
   private connectToWebSocket(): void {
-    console.info('connectToWebSocket()');
+    console.info(ts(), 'Connect to web socket');
     const protocol = (/https/.test(location.protocol) ? 'wss' : 'ws');
     const port = this.status.wsPort < 0 ? location.port : this.status.wsPort;
-    let socketEverOpen = false;
 
     this.webSocket = new WebSocket(`${protocol}://${location.hostname}:${port}`);
     this.webSocket.addEventListener('open', () => {
-      socketEverOpen = true;
+      console.info(ts(), 'Web socket opened');
       this.socketOpen = true;
       this.wsReady = true;
+
+      if (!this.socketEverOpen) {
+        let lastTick = processMillis();
+        let sleepDetected = false;
+
+        this.socketEverOpen = true;
+        setInterval(() => {
+          const currTick = processMillis();
+          const gap = currTick - lastTick;
+
+          if (!sleepDetected && gap > 2000) {
+            sleepDetected = true;
+            console.info(ts(), 'Sleep detected');
+          }
+          else if (sleepDetected && gap < 1500) {
+            sleepDetected = false;
+            console.info(ts(), 'Sleep ended');
+
+            if (this.socketOpen)
+              this.webSocket.close();
+            else
+              this.connectToWebSocket();
+          }
+
+          lastTick = currTick;
+        }, 1000);
+      }
 
       if (this.reestablishing) {
         this.reestablishing = false;
@@ -336,15 +363,17 @@ export class AppComponent implements AfterViewInit, OnInit {
       }
     });
     this.webSocket.addEventListener('close', () => {
-      console.warn('Web socket closed');
+      console.warn(ts(), 'Web socket closed');
       if (this.socketOpen) {
         this.socketOpen = false;
         this.reestablishing = true;
+        this.wsReady = false;
         setTimeout(() => this.connectToWebSocket(), 500);
       }
     });
-    this.webSocket.addEventListener('error', () => {
-      if (socketEverOpen) {
+    this.webSocket.addEventListener('error', evt => {
+      console.error(ts(), 'Web socket error:', evt.type);
+      if (this.socketEverOpen) {
         this.socketOpen = false;
         this.reestablishing = true;
         this.wsReady = false;
@@ -352,7 +381,7 @@ export class AppComponent implements AfterViewInit, OnInit {
       }
       else {
         this.socketOpen = false;
-        console.warn('Web socket connection failed');
+        console.warn(ts(), 'Web socket connection failed');
         this.webSocket = undefined;
         this.wsReady = false;
         this.pollStatus();

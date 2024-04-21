@@ -386,6 +386,14 @@ router.post('/library-refresh', async (req: Request, res: Response) => {
   }
 });
 
+router.post('/stop', async (req: Request, res: Response) => {
+  if (!isAdmin(req))
+    res.sendStatus(403);
+  else {
+    res.json(adminProcessing);
+  }
+});
+
 export let statsInProgress = false;
 
 interface UpdateOptions {
