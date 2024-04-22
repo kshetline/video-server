@@ -9,6 +9,7 @@ export interface ServerStatus {
   localAccess?: boolean;
   ready: boolean;
   processing: boolean;
+  stopPending: boolean;
   updateProgress: number;
   wsPort: number;
 }

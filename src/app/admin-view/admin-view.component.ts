@@ -26,6 +26,7 @@ export class AdminViewComponent implements OnInit {
   encodeProgress = '';
   setEarliest = false;
   showRefreshDialog = false;
+  stopPending = false;
   updateProgress = -1;
   videoStats: VideoStats;
 
@@ -48,6 +49,7 @@ export class AdminViewComponent implements OnInit {
         case 'status':
           this.lastStatus = (msg.data as ServerStatus);
           this.currentFile = this.lastStatus.currentFile;
+          this.stopPending = this.lastStatus.stopPending;
           this.updateProgress = this.lastStatus.updateProgress;
           break;
 
@@ -89,5 +91,10 @@ export class AdminViewComponent implements OnInit {
       delete options.earliest;
 
     this.httpClient.post('/api/admin/process', options).subscribe();
+  }
+
+  sendStop(): void {
+    if (this.status?.processing && !this.stopPending)
+      this.httpClient.post('/api/admin/stop', null).subscribe();
   }
 }

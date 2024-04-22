@@ -18,7 +18,12 @@ import { AsyncDatabase } from 'promised-sqlite3';
 export const router = Router();
 export let adminProcessing = false;
 export let currentFile = '';
+export let stopPending = false;
 export let updateProgress = -1;
+
+export function setStopPending(state: boolean): void {
+  stopPending = state;
+}
 
 const DEFAULT_VW_OPTIONS: VideoWalkOptions = {
   checkStreaming: true,
@@ -127,6 +132,9 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
   const files = (await readdir(dir)).sort(comparator);
 
   for (const file of files) {
+    if (stopPending)
+      break;
+
     const path = pathJoin(dir, file);
     const stat = await safeLstat(path);
 
@@ -378,6 +386,7 @@ router.post('/library-refresh', async (req: Request, res: Response) => {
       sendStatus();
       updateLibrary(toBoolean(req.query.quick)).finally(() => {
         adminProcessing = false;
+        stopPending = false;
         sendStatus();
       });
     }
@@ -390,6 +399,11 @@ router.post('/stop', async (req: Request, res: Response) => {
   if (!isAdmin(req))
     res.sendStatus(403);
   else {
+    if (!stopPending) {
+      stopPending = true;
+      sendStatus();
+    }
+
     res.json(adminProcessing);
   }
 });
@@ -461,8 +475,10 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
             return value;
         }, 2);
 
-        setValue('videoStats', statsStr);
-        webSocketSend({ type: 'videoStats', data: statsStr });
+        if (!stopPending) {
+          setValue('videoStats', statsStr);
+          webSocketSend({ type: 'videoStats', data: statsStr });
+        }
       }
       catch (e) {
         console.error('Error compiling video stats');
@@ -472,6 +488,7 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
         currentFile = '';
         updateProgress = -1;
         statsInProgress = false;
+        stopPending = false;
         sendStatus();
       }
     })();
@@ -494,6 +511,7 @@ router.get('/stats', async (req, res) => {
   if (!statsInProgress && !adminProcessing && toBoolean(req.query.update)) {
     videoWalk({ checkStreaming: true, stats: true }).finally(() => {
       adminProcessing = false;
+      stopPending = false;
       sendStatus();
     });
   }
@@ -522,6 +540,7 @@ router.post('/process', async (req, res) => {
     sendStatus();
     videoWalk(options).finally(() => {
       adminProcessing = false;
+      stopPending = false;
       sendStatus();
     });
     res.send('OK');

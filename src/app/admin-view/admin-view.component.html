@@ -1,7 +1,9 @@
 <div class="go-back-panel">
   <p-button label="Back" icon="pi pi-chevron-left" (click)="goBack.emit()"/>
-    <p-progressBar *ngIf="updateProgress >= 0 && status?.processing" [value]="updateProgress"
-                   [showValue]="false"></p-progressBar>
+  <p-button icon="pi pi-stop" styleClass="p-button-rounded p-button-danger" (click)="sendStop()"
+    [disabled]="!status?.processing || stopPending"></p-button>
+  <p-progressBar *ngIf="updateProgress >= 0 && status?.processing" [value]="updateProgress"
+                 [showValue]="false"></p-progressBar>
 </div>
 <div class="content">
   <p-button label="Refresh Video Library" icon="pi pi-refresh"

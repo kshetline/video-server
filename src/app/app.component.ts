@@ -291,6 +291,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   }
 
   private receiveStatus(status: ServerStatus, broadcast = false): void {
+    console.info(ts(), 'Status received');
     const finished = status.ready && (!this.status || !this.status.ready);
 
     status.localAccess = status.localAccess ?? this.status.localAccess;
@@ -331,12 +332,12 @@ export class AppComponent implements AfterViewInit, OnInit {
       this.wsReady = true;
 
       if (!this.socketEverOpen) {
-        let lastTick = processMillis();
+        let lastTick = Date.now();
         let sleepDetected = false;
 
         this.socketEverOpen = true;
         setInterval(() => {
-          const currTick = processMillis();
+          const currTick = Date.now();
           const gap = currTick - lastTick;
 
           if (!sleepDetected && gap > 2000) {
@@ -349,8 +350,10 @@ export class AppComponent implements AfterViewInit, OnInit {
 
             if (this.socketOpen)
               this.webSocket.close();
-            else
+            else {
+              this.reestablishing = true;
               this.connectToWebSocket();
+            }
           }
 
           lastTick = currTick;

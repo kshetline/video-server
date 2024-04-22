@@ -12,6 +12,7 @@ import {
 } from './shared-utils';
 import { sendStatus } from './app';
 import { AsyncDatabase } from 'promised-sqlite3';
+import { setStopPending, stopPending } from './admin-router';
 
 export const router = Router();
 
@@ -177,6 +178,9 @@ function filter(item: LibraryItem): void {
 
 async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directoryMap: Map<string, string[]>): Promise<void> {
   for (const item of (items || [])) {
+    if (stopPending)
+      break;
+
     if (item.videoinfo) {
       item.duration = item.videoinfo.duration;
       item.uri = item.videoinfo.uri;
@@ -354,9 +358,12 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
   const db = await AsyncDatabase.open(process.env.VS_DB_PATH || 'db.sqlite');
 
   for (const item of (items || [])) {
+    if (stopPending)
+      break;
+
     if (isFile(item)) {
       const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getVideoInfo?id=${item.aggregationId}`;
-      const data: any = await requestJson(url);
+      const data: { mediaJson: string } = await requestJson(url);
       const mediaInfo: MediaInfo = JSON.parse(data.mediaJson || 'null');
 
       if (mediaInfo?.media?.track) {
@@ -425,6 +432,9 @@ async function getDirectories(dir: string, bonusDirs: Set<string>, map: Map<stri
   let count = 0;
 
   for (const file of files) {
+    if (stopPending)
+      break;
+
     const path = paths.join(dir, file);
     const stat = await safeLstat(path);
 
@@ -800,6 +810,7 @@ export async function updateLibrary(quick = false): Promise<void> {
   }
 
   pendingLibrary = undefined;
+  setStopPending(false);
   sendStatus();
 }
 
