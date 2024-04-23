@@ -11,7 +11,7 @@ import { AudioTrack, MediaWrapper, MKVInfo, SubtitlesTrack, VideoStats, VideoTra
 import { characterToProgress, comparator, sorter, toStreamPath } from './shared-utils';
 import { examineAndUpdateMkvFlags } from './mkv-flags';
 import { sendStatus } from './app';
-import { createStreaming } from './streaming';
+import { createStreaming, killStreamingProcesses } from './streaming';
 import { abs, max, min } from '@tubular/math';
 import { AsyncDatabase } from 'promised-sqlite3';
 
@@ -365,7 +365,8 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
         await callback(path, depth, options, info);
       }
       catch (e) {
-        console.error('Error while processing %s:', path, e);
+        if (e !== null)
+          console.error('Error while processing %s:', path, e);
       }
     }
     else {
@@ -401,6 +402,7 @@ router.post('/stop', async (req: Request, res: Response) => {
   else {
     if (!stopPending) {
       stopPending = true;
+      await killStreamingProcesses();
       sendStatus();
     }
 

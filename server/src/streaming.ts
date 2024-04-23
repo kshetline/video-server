@@ -7,7 +7,7 @@ import { VideoWalkOptionsPlus } from './shared-types';
 import { existsAsync, safeUnlink, webSocketSend } from './vs-util';
 import { abs, floor, min, round } from '@tubular/math';
 import { ErrorMode, monitorProcess, spawn } from './process-util';
-import { VideoWalkInfo } from './admin-router';
+import { stopPending, VideoWalkInfo } from './admin-router';
 import { toStreamPath } from './shared-utils';
 
 interface Progress {
@@ -35,6 +35,58 @@ interface VideoRender {
   promise?: Promise<string>;
   tries: number;
   videoPath: string;
+}
+
+let currentProcesses: ChildProcess[] = [];
+let currentTempFiles: string[] = [];
+
+function trackProcess(process: ChildProcess): ChildProcess {
+  currentProcesses.push(process);
+
+  const cleanUp = (): void => { currentProcesses = currentProcesses.filter(p => p !== process); };
+
+  process.on('close', cleanUp);
+  process.on('error', cleanUp);
+  process.on('exit', cleanUp);
+
+  return process;
+}
+
+function trackTempFile(file: string, remove = false): string {
+  if (remove)
+    currentTempFiles = currentTempFiles.filter(f => f !== file);
+  else
+    currentTempFiles.push(file);
+
+  return file;
+}
+
+export async function killStreamingProcesses(): Promise<void> {
+  for (const process of currentProcesses) {
+    try {
+      process.kill();
+    }
+    catch {}
+  }
+
+  await new Promise<void>(resolve => {
+    let count = 0;
+    const check = (): void => {
+      if (currentProcesses.length === 0 || ++count > 100)
+        resolve();
+      else
+        setTimeout(check, 100);
+    };
+
+    check();
+  });
+
+  currentProcesses = [];
+
+  for (const file of currentTempFiles)
+    await safeUnlink(file);
+
+  currentTempFiles = [];
 }
 
 function aacProgress(data: string, stream: number, progress: Progress): void {
@@ -128,6 +180,9 @@ function formatTime(nanos: number): string {
 //                                duration: number, videoBase: string, streamBase: string): Promise<boolean> {
 export async function createStreaming(path: string, options: VideoWalkOptionsPlus,
                                       info: VideoWalkInfo): Promise<boolean> {
+  currentProcesses = [];
+  currentTempFiles = [];
+
   const start = Date.now();
   const resolutions = [{ w: 1920, h: 1080 }, { w: 1280, h: 720 }, { w: 853.33, h: 480 }, { w: 640, h: 360 }, { w: 569, h: 320 }];
   const mpdRoot = toStreamPath(path, options.videoDirectory, options.streamingDirectory);
@@ -158,6 +213,7 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
 
   try {
     closeSync(openSync(busyPath, 'wx'));
+    trackTempFile(busyPath);
   }
   catch {
     return false;
@@ -194,7 +250,7 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
     audioPath = `${mpdRoot}.${groupedVideoCount === 0 ? 'av' : 'audio'}.webm`;
 
     if (!await existsAsync(audioPath)) {
-      const args = ['-i', path, '-vn', '-sn', ...audioArgs, '-dash', '1', '-f', 'webm', tmp(audioPath),
+      const args = ['-i', path, '-vn', '-sn', ...audioArgs, '-dash', '1', '-f', 'webm', trackTempFile(tmp(audioPath)),
                     '-map_chapters', '-1'];
       const progress: Progress = { path };
 
@@ -204,15 +260,22 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
       for (let i = 0; i < audios.length; ++i) {
         try {
           await safeUnlink(tmp(audioPath));
-          await monitorProcess(spawn('ffmpeg', args), (data, stream) => aacProgress(data, stream, progress),
+          await monitorProcess(trackProcess(spawn('ffmpeg', args)), (data, stream) => aacProgress(data, stream, progress),
             ErrorMode.DEFAULT, 4096);
-          await rename(tmp(audioPath), audioPath);
+          await rename(trackTempFile(tmp(audioPath), true), audioPath);
           break;
         }
         catch (e) {
+          if (stopPending)
+            return false;
+
           if (i === audios.length - 1) {
             await safeUnlink(busyPath);
-            throw e;
+
+            if (stopPending)
+              return false;
+            else
+              throw e;
           }
 
           args[4] = '0:a:' + (audioIndex !== 0 && i === audioIndex ? 0 : i + 1);
@@ -291,7 +354,7 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
       if (!small && !hasAudio)
         args.push('-dash', '1');
 
-      args.push('-map_chapters', '-1', '-f', format, tmp(videoPath));
+      args.push('-map_chapters', '-1', '-f', format, trackTempFile(tmp(videoPath)));
       videoQueue.push({ args, name: resolution.h + 'p', tries: 0, videoPath });
     }
 
@@ -317,19 +380,21 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
       };
 
       const startTask = (task: VideoRender): void => {
-        task.process = spawn('ffmpeg', task.args, { maxbuffer: 20971520 });
+        task.process = trackProcess(spawn('ffmpeg', task.args, { maxbuffer: 20971520 }));
         task.promise = monitorProcess(task.process, (data, stream, done) =>
           videoProgress(data, stream, task.name, done, progress), ErrorMode.DEFAULT, 4096);
       };
 
       const checkQueue = (): void => {
+        if (stopPending)
+          cleanUpAndFail(null);
         if (running < simultaneousMax && videoQueue.length > 0) {
           const task = videoQueue.pop();
 
           ++running;
           startTask(task);
           task.promise.then(() => {
-            rename(tmp(task.videoPath), task.videoPath).finally(() => {
+            rename(trackTempFile(tmp(task.videoPath), true), task.videoPath).finally(() => {
               --running;
               checkQueue();
             });
@@ -357,7 +422,7 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
           const task = redoQueue.splice(0, 1)[0];
 
           startTask(task);
-          task.promise.then(() => rename(tmp(task.videoPath), task.videoPath).finally(() => checkQueue()))
+          task.promise.then(() => rename(trackTempFile(tmp(task.videoPath), true), task.videoPath).finally(() => checkQueue()))
           .catch(err => {
             if (++task.tries < maxTries) {
               task.process = undefined;
@@ -379,7 +444,9 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
     console.log();
   }
 
-  if (groupedVideoCount > 1) {
+  if (stopPending)
+    return false;
+  else if (groupedVideoCount > 1) {
     const args: string[] = [];
 
     dashVideos.reverse().forEach(v => args.push('-f', 'webm_dash_manifest', '-i', v));
@@ -401,14 +468,20 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
         sets += ' id=1,streams=' + dashVideos.length;
     }
 
-    args.push('-f', 'webm_dash_manifest', '-adaptation_sets', sets, tmp(mpdPath));
+    args.push('-f', 'webm_dash_manifest', '-adaptation_sets', sets, trackTempFile(tmp(mpdPath)));
     webSocketSend({ type: 'video-progress', data: 'Generating DASH manifest' });
 
     try {
-      await monitorProcess(spawn('ffmpeg', args), null, ErrorMode.DEFAULT);
-      await rename(tmp(mpdPath), mpdPath);
+      await monitorProcess(trackProcess(spawn('ffmpeg', args)), null, ErrorMode.DEFAULT);
+      await rename(trackTempFile(tmp(mpdPath), true), mpdPath);
     }
     catch (e) {
+      if (stopPending) {
+        await safeUnlink(mpdPath);
+
+        return false;
+      }
+
       console.error(e);
       await safeUnlink(busyPath);
       throw e;
