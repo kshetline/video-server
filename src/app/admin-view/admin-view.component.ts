@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { ServerStatus, VideoStats } from '../../../server/src/shared-types';
 import { clone } from '@tubular/util';
 import { characterToProgress } from '../../../server/src/shared-utils';
+import { ConfirmationService } from 'primeng/api';
 
 @Component({
   selector: 'app-admin-view',
@@ -16,7 +17,7 @@ export class AdminViewComponent implements OnInit {
 
   private lastStatus: ServerStatus;
 
-  constructor(private httpClient: HttpClient) {}
+  constructor(private httpClient: HttpClient, private confirmationService: ConfirmationService) {}
 
   options: Record<string, any> = { // TODO: better typing
     earliest: new Date(Date.now() - 86_400_000 * 7)
@@ -95,6 +96,13 @@ export class AdminViewComponent implements OnInit {
 
   sendStop(): void {
     if (this.status?.processing && !this.stopPending)
-      this.httpClient.post('/api/admin/stop', null).subscribe();
+      this.confirmationService.confirm({
+        message: 'Are you sure you stop the current process?',
+        header: 'Stop Process',
+        icon: 'pi pi-exclamation-triangle',
+        accept: () => {
+          this.httpClient.post('/api/admin/stop', null).subscribe();
+        }
+      });
   }
 }
