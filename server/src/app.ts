@@ -141,7 +141,7 @@ function createAndStartServer(): void {
 
   if (wsPort) {
     let tries = 0;
-    const openWebSocket = () => {
+    const openWebSocket = (): void => {
       if (wsPort < 0 || wsPort === httpPort)
         wsServer = new WebSocketServer({ server: httpServer });
       else {
