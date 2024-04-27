@@ -479,7 +479,7 @@ const SEASON_DETAILS = new Set(['episodeCount', 'overview', 'posterPath', 'seaso
 const EPISODE_DETAILS = new Set(['airDate', 'episodeCount', 'overview', 'posterPath', 'seasonNumber', 'watched']);
 
 async function getShowInfo(items: LibraryItem[]): Promise<void> {
-  for (const item of items) {
+  for (const item of items || []) {
     if (isNumber((item as any).seasonNumber)) {
       item.season = (item as any).seasonNumber;
       delete (item as any).seasonNumber;
@@ -679,26 +679,28 @@ function matchAliases(aliases: Alias[], changeInfo = false): LibraryItem[] {
           item.aspectRatioOverride = alias.aspectRatioOverride;
       }
       else {
-        const copy = clone(item);
+        if (alias.name !== '*HIDE*') {
+          const copy = clone(item);
 
-        copy.isAlias = true;
-        copy.originalName = copy.name;
-        copy.name = alias.name || copy.name;
-        copy.isLink = true;
+          copy.isAlias = true;
+          copy.originalName = copy.name;
+          copy.name = alias.name || copy.name;
+          copy.isLink = true;
 
-        if (alias.isTV || isTvSeason(item) || isTvShow(item))
-          copy.isTV = true;
+          if (alias.isTV || isTvSeason(item) || isTvShow(item))
+            copy.isTV = true;
 
-        if (alias.newType)
-          copy.type = alias.newType;
+          if (alias.newType)
+            copy.type = alias.newType;
+
+          if (alias.poster)
+            copy.aliasPosterPath = alias.poster;
+
+          aliasedItems.push(copy);
+        }
 
         if (alias.hideOriginal)
           item.hide = true;
-
-        if (alias.poster)
-          copy.aliasPosterPath = alias.poster;
-
-        aliasedItems.push(copy);
       }
     }
     else

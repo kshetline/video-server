@@ -37,6 +37,7 @@ const DEFAULT_VW_OPTIONS: VideoWalkOptions = {
 
 export interface VideoWalkInfo {
   audio?: AudioTrack[];
+  createdStreaming?: boolean;
   error?: string;
   isExtra?: boolean;
   isMovie?: boolean;
@@ -45,6 +46,7 @@ export interface VideoWalkInfo {
   skip?: boolean;
   streamingDirectory?: string;
   subtitles?: SubtitlesTrack[];
+  title?: string;
   video?: VideoTrack[];
   videoDirectory?: string;
   wasModified?: boolean;
@@ -353,9 +355,10 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
           const stream3 = pathJoin(sDir, '2K', title + '.mpd');
           const stream4 = pathJoin(sDir, '2K', title + '.av.webm');
 
+          info.title = title = title.replace(/\s*\((\d*)#([-_.a-z0-9]+)\)/i, '');
+
           if (!await existsAsync(stream1) && !await existsAsync(stream2) && !await existsAsync(stream3) &&
               !await existsAsync(stream4)) {
-            title = title.replace(/\s*\((\d*)#([-_.a-z0-9]+)\)/i, '');
             (stats.unstreamedTitles as Set<string>).add(title);
           }
         }
@@ -363,6 +366,9 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
         info.streamingDirectory = options.streamingDirectory;
         info.videoDirectory = options.videoDirectory;
         await callback(path, depth, options, info);
+
+        if (info.createdStreaming)
+          (stats.unstreamedTitles as Set<string>).delete(info.title);
       }
       catch (e) {
         if (e !== null)
@@ -424,6 +430,20 @@ interface UpdateOptions {
   stats?: boolean;
 }
 
+function saveVideoStats(stats: VideoStats): void {
+  const statsStr = JSON.stringify(stats, (_key, value) => {
+    if (value instanceof Set)
+      return Array.from(value.values()).sort(sorter);
+    else
+      return value;
+  }, 2);
+
+  if (!stopPending) {
+    setValue('videoStats', statsStr);
+    webSocketSend({ type: 'videoStats', data: statsStr });
+  }
+}
+
 async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
   let stats: VideoStats = null;
 
@@ -469,18 +489,7 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
 
         stats.totalDuration = Array.from(stats.durations).map(d => d[1]).reduce((total, val) => total + val, 0);
         delete stats.durations;
-
-        const statsStr = JSON.stringify(stats, (_key, value) => {
-          if (value instanceof Set)
-            return Array.from(value.values()).sort(sorter);
-          else
-            return value;
-        }, 2);
-
-        if (!stopPending) {
-          setValue('videoStats', statsStr);
-          webSocketSend({ type: 'videoStats', data: statsStr });
-        }
+        saveVideoStats(stats);
       }
       catch (e) {
         console.error('Error compiling video stats');
@@ -537,6 +546,7 @@ router.post('/process', async (req, res) => {
       skipExtras: toBoolean(req.body.skipExtras, null, true),
       skipMovies: toBoolean(req.body.skipMovies, null, true),
       skipTV: toBoolean(req.body.skipTV, null, true),
+      stats: true
     };
 
     sendStatus();

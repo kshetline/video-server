@@ -507,5 +507,7 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
     formatTime(elapsed * 1000000).slice(0, -3), (duration / elapsed).toFixed(2));
   await safeUnlink(busyPath);
 
+  info.createdStreaming = true;
+
   return true;
 }
