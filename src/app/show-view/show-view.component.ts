@@ -287,7 +287,8 @@ export class ShowViewComponent implements OnInit {
   }
 
   hasBonusMaterial(): boolean {
-    return !!(this.video?.extras || this.video?.parent?.extras || this.show?.extras || this.show?.parent?.extras);
+    return (this.video?.extras || this.video?.parent?.extras || this.show?.extras ||
+            this.show?.parent?.extras || []).length > 0;
   }
 
   hasYear(): boolean {
