@@ -251,37 +251,38 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
           item.sampleUri = sampleUri;
       }
 
-      const $ = /\((\d*)#([-_.a-z0-9]+)\)/i.exec(item.uri);
+      const file = (/^.*?([^\\/]*)$/.exec(item.uri) || [])[1] || item.uri;
+      const $ = /\((\d*)#([-_.a-z0-9]+)\)/i.exec(file);
 
       if ($) {
         item.cut = $[2];
         item.cutSort = toInt($[1]);
       }
-      else if (DIRECTORS.test(item.uri)) {
+      else if (DIRECTORS.test(file)) {
         item.cut = 'DC';
         item.cutSort = 3;
       }
-      else if (FINAL.test(item.uri)) {
+      else if (FINAL.test(file)) {
         item.cut = 'FC';
         item.cutSort = 2;
       }
-      else if (EXTENDED.test(item.uri)) {
+      else if (EXTENDED.test(file)) {
         item.cut = 'EC';
         item.cutSort = 4;
       }
-      else if (INT_THEATRICAL.test(item.uri)) {
+      else if (INT_THEATRICAL.test(file)) {
         item.cut = 'ITC';
         item.cutSort = 6;
       }
-      else if (SPECIAL_EDITION.test(item.uri)) {
+      else if (SPECIAL_EDITION.test(file)) {
         item.cut = 'SE';
         item.cutSort = 1;
       }
-      else if (UNRATED.test(item.uri)) {
+      else if (UNRATED.test(file)) {
         item.cut = 'UR';
         item.cutSort = 5;
       }
-      else if (THEATRICAL.test(item.uri)) {
+      else if (THEATRICAL.test(file)) {
         item.cut = 'TC';
         item.cutSort = 7;
       }

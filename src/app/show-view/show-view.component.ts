@@ -129,11 +129,13 @@ export class ShowViewComponent implements OnInit {
           count3d += item.is3d ? 1 : 0;
           countOSE += /Original Special Effects/i.test(item.uri) ? 1 : 0;
 
-          if (item.parent.episode > 0) {
-            if (episodes.has(item.parent.episode))
+          const episode = item.parent.episode + (item.cutSort || 0) / 100;
+
+          if (episode > 0) {
+            if (episodes.has(episode))
               hasDuplicateEpisodes = true;
             else
-              episodes.add(item.parent.episode);
+              episodes.add(episode);
           }
         }
 
@@ -144,11 +146,14 @@ export class ShowViewComponent implements OnInit {
       gatherVideos(value);
 
       choices.sort((a, b) => {
-        if (a.cutSort !== b.cutSort)
+        if (!isTV && a.cutSort !== b.cutSort)
           return a.cutSort - b.cutSort;
 
         if (isTV && a.parent.episode !== b.parent.episode)
           return (a.parent.episode || 0) - (b.parent.episode || 0);
+
+        if (a.cutSort !== b.cutSort)
+          return a.cutSort - b.cutSort;
 
         if (!isTV && a.cut !== b.cut)
           return compareCaseSecondary(a.cut, b.cut);
@@ -182,7 +187,7 @@ export class ShowViewComponent implements OnInit {
       this.videoLabels = choices.map((vc, i) => {
         if ((isTvSeason(this.show) || this.show.isTV) && episodes.size > 1) {
           if (!hasDuplicateEpisodes)
-            return vc.parent.episode.toString();
+            return vc.parent.episode.toString() + (vc.cut ? '-' + vc.cut : '');
 
           if (vc.parent.episode !== lastEpisode) {
             lastEpisode = vc.parent.episode;
@@ -192,7 +197,7 @@ export class ShowViewComponent implements OnInit {
           ++episodeIndex;
 
           if ((countOSE > 0 && countOSE === episodes.size) || (count4k > 0 && count4k === count2k))
-            return `${vc.parent.episode}`;
+            return vc.parent.episode.toString();
           else
             return `${vc.parent.episode}-${episodeIndex++}`;
         }
