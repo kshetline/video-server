@@ -50,6 +50,10 @@ function containsTV(item: LibraryItem): boolean {
   return false;
 }
 
+function titleAdjust(title: string): string {
+  return title.replace(/\s+Season\s+\d/i, '');
+}
+
 @Component({
   selector: 'app-poster-view',
   templateUrl: './poster-view.component.html',
@@ -61,6 +65,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   readonly floor = floor;
   readonly hashTitle = hashTitle;
   readonly isCollection = isCollection;
+  readonly titleAdjust = titleAdjust;
 
   private _library: VideoLibrary;
   private _filter = 'All';

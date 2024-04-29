@@ -140,31 +140,19 @@ function createAndStartServer(): void {
   }
 
   if (wsPort) {
-    let tries = 0;
-    const openWebSocket = (): void => {
-      if (wsPort < 0 || wsPort === httpPort)
-        wsServer = new WebSocketServer({ server: httpServer });
-      else {
-        const server = useHttps ? https.createServer({
-          key: fs.readFileSync(process.env.VS_KEY),
-          cert: fs.readFileSync(process.env.VS_CERT)
-        }) :
-          http.createServer();
-        wsServer = new WebSocketServer({ server });
-        wsServer.on('error', err => {
-          if (++tries < 10) {
-            console.warn(err.message, ' - trying again');
-            setTimeout(openWebSocket, 2000);
-          }
-          else
-            throw err;
-        });
-        wsServer.on('connection', () => setWebSocketServer(wsServer));
-        server.listen(wsPort);
-      }
-    };
+    if (wsPort < 0 || wsPort === httpPort)
+      wsServer = new WebSocketServer({ server: httpServer });
+    else {
+      const server = useHttps ? https.createServer({
+        key: fs.readFileSync(process.env.VS_KEY),
+        cert: fs.readFileSync(process.env.VS_CERT)
+      }) :
+        http.createServer();
+      wsServer = new WebSocketServer({ server });
+      server.listen(wsPort);
+    }
 
-    openWebSocket();
+    setWebSocketServer(wsServer);
   }
 
   httpServer.listen(httpPort);
@@ -251,7 +239,7 @@ function shutdown(signal?: string): void {
 
   httpServer.close(() => closeCheck());
   closeSettings().finally(() => closeCheck());
-  setTimeout(() => closeCheck(true), 5000);
+  unref(setTimeout(() => closeCheck(true), 3000));
 }
 
 function getStatus(remote?: string): ServerStatus {
