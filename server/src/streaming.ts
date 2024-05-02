@@ -94,19 +94,21 @@ function aacProgress(data: string, stream: number, progress: Progress): void {
   progress.lastPercent = progress.lastPercent ?? -1;
   progress.percentStr = progress.percentStr ?? '';
 
-  if (stream === 1) {
+  const repair = (data === '#');
+
+  if (repair || stream === 1) {
     let $: RegExpExecArray;
 
     if (progress.duration < 1 && ($ = /\bduration\b\s*:\s*(\d\d):(\d\d):(\d\d)/i.exec(data)))
       progress.duration = toInt($[1]) * 3600 + toInt($[2]) * 60 + toInt($[3]);
 
-    if (progress.duration > 0 && ($ = /.*\btime=(\d\d):(\d\d):(\d\d)/.exec(data))) {
-      const elapsed = toInt($[1]) * 3600 + toInt($[2]) * 60 + toInt($[3]);
-      const percent = round(elapsed * 100 / progress.duration);
+    if (progress.duration > 0 && (repair || ($ = /.*\btime=(\d\d):(\d\d):(\d\d)/.exec(data)))) {
+      const elapsed = repair ? 0 : toInt($[1]) * 3600 + toInt($[2]) * 60 + toInt($[3]);
+      const percent = repair ? 100 : round(elapsed * 100 / progress.duration);
 
       if (progress.lastPercent !== percent) {
         progress.lastPercent = percent;
-        progress.percentStr = percent + '%';
+        progress.percentStr = percent + '%' + (repair ? '#' : '');
         webSocketSend({ type: 'audio-progress', data: progress.percentStr });
       }
     }
@@ -119,12 +121,16 @@ function videoProgress(data: string, stream: number, name: string, done: boolean
   progress.errors = progress.errors ?? new Map();
   progress.lastOutput = progress.lastOutput ?? '';
 
-  if (stream === 0 || (data && progress.readFromError) || done) {
+  const repair = (data === '#');
+
+  if (repair || stream === 0 || (data && progress.readFromError) || done) {
     const duration = (name === '320p' ? 180000 : progress.duration);
     let $ = /task.+,\s*(\d+\.\d+)\s*%/.exec(data);
     let rawPercent = 0;
 
-    if ($)
+    if (repair)
+      rawPercent = 100;
+    else if ($)
       rawPercent = toNumber($[1]);
     else {
       $ = /time=(\d\d):(\d\d):(\d\d(\.\d+)?)/.exec(data);
@@ -148,7 +154,7 @@ function videoProgress(data: string, stream: number, name: string, done: boolean
         progress.speed.set(name, stream < 0 ? -1 : duration * percent / 100 / elapsed);
         progress.lastOutput = resolutions.map(r => {
           const percent = progress.percent.get(r);
-          const percentStr = percent < 0 ? '(redo)' : percent.toFixed(1).padStart(5) + '%';
+          const percentStr = percent < 0 ? '(redo)' : percent.toFixed(1).padStart(5) + '%' + (repair ? '#' : '');
           const speed = progress.speed.get(r) || 0;
           const speedStr = speed <= 0 ? '----' : speed.toFixed(2);
 
@@ -175,15 +181,27 @@ function formatTime(nanos: number): string {
   return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toFixed(2).padStart(5, '0')}`;
 }
 
-async function checkAndFixBadDuration(path: string): Promise<void> {
+async function checkAndFixBadDuration(path: string, progress: Progress | VideoProgress, name?: string): Promise<void> {
   const mediaJson = await monitorProcess(spawn('mediainfo', [path, '--Output=JSON']));
   const mediaInfo = (JSON.parse(mediaJson || '{}') as MediaWrapper);
 
   if (toNumber(mediaInfo.media.track[0].Duration) > 86400) {
+    if (name)
+      videoProgress('#', 0, name, true, progress as VideoProgress);
+    else
+      aacProgress('#', 0, progress as Progress);
+
     const tmp = path.slice(0, -4) + 'tmp.webm';
 
     await rename(path, tmp);
-    await monitorProcess(spawn('ffmpeg', ['-i', tmp, '-c', 'copy', '-fflags', '+genpts', path]));
+
+    try {
+      await monitorProcess(trackProcess(spawn('ffmpeg', ['-i', tmp, '-c', 'copy', '-fflags', '+genpts', path])));
+    }
+    catch {
+      await safeUnlink(path);
+    }
+
     await safeUnlink(tmp);
   }
 }
@@ -276,7 +294,7 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
           await monitorProcess(trackProcess(spawn('ffmpeg', args)), (data, stream) => aacProgress(data, stream, progress),
             ErrorMode.DEFAULT, 4096);
           await rename(trackTempFile(tmp(audioPath), true), audioPath);
-          await checkAndFixBadDuration(audioPath);
+          await checkAndFixBadDuration(audioPath, progress);
           break;
         }
         catch (e) {
@@ -409,7 +427,7 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
           startTask(task);
           task.promise.then(() => {
             rename(trackTempFile(tmp(task.videoPath), true), task.videoPath).finally(() => {
-              checkAndFixBadDuration(task.videoPath).finally(() => {
+              checkAndFixBadDuration(task.videoPath, progress, task.name).finally(() => {
                 --running;
                 checkQueue();
               });
@@ -439,7 +457,7 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
 
           startTask(task);
           task.promise.then(() => rename(trackTempFile(tmp(task.videoPath), true), task.videoPath).finally(() =>
-            checkAndFixBadDuration(task.videoPath).finally(() => checkQueue())
+            checkAndFixBadDuration(task.videoPath, progress, task.name).finally(() => checkQueue())
           ))
           .catch(err => {
             if (++task.tries < maxTries) {
