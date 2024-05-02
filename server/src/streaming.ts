@@ -3,7 +3,7 @@ import { ChildProcess } from 'child_process';
 import { dirname } from 'path';
 import { closeSync, mkdirSync, openSync } from 'fs';
 import { readFile, rename, writeFile } from 'fs/promises';
-import { VideoWalkOptionsPlus } from './shared-types';
+import { MediaWrapper, VideoWalkOptionsPlus } from './shared-types';
 import { existsAsync, safeUnlink, webSocketSend } from './vs-util';
 import { abs, floor, min, round } from '@tubular/math';
 import { ErrorMode, monitorProcess, spawn } from './process-util';
@@ -175,6 +175,19 @@ function formatTime(nanos: number): string {
   return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toFixed(2).padStart(5, '0')}`;
 }
 
+async function checkAndFixBadDuration(path: string): Promise<void> {
+  const mediaJson = await monitorProcess(spawn('mediainfo', [path, '--Output=JSON']));
+  const mediaInfo = (JSON.parse(mediaJson || '{}') as MediaWrapper);
+
+  if (toNumber(mediaInfo.media.track[0].Duration) > 86400) {
+    const tmp = path.slice(0, -4) + 'tmp.webm';
+
+    await rename(path, tmp);
+    await monitorProcess(spawn('ffmpeg', ['-i', tmp, '-c', 'copy', '-fflags', '+genpts', path]));
+    await safeUnlink(tmp);
+  }
+}
+
 // export async function createStreaming(path: string, audios: AudioTrack[], video: VideoTrack,
 //                                subtitles: SubtitlesTrack[], isMovie: boolean, isExtra: boolean,
 //                                duration: number, videoBase: string, streamBase: string): Promise<boolean> {
@@ -263,6 +276,7 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
           await monitorProcess(trackProcess(spawn('ffmpeg', args)), (data, stream) => aacProgress(data, stream, progress),
             ErrorMode.DEFAULT, 4096);
           await rename(trackTempFile(tmp(audioPath), true), audioPath);
+          await checkAndFixBadDuration(audioPath);
           break;
         }
         catch (e) {
@@ -395,8 +409,10 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
           startTask(task);
           task.promise.then(() => {
             rename(trackTempFile(tmp(task.videoPath), true), task.videoPath).finally(() => {
-              --running;
-              checkQueue();
+              checkAndFixBadDuration(task.videoPath).finally(() => {
+                --running;
+                checkQueue();
+              });
             });
           }).catch(() => {
             task.process = undefined;
@@ -422,7 +438,9 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
           const task = redoQueue.splice(0, 1)[0];
 
           startTask(task);
-          task.promise.then(() => rename(trackTempFile(tmp(task.videoPath), true), task.videoPath).finally(() => checkQueue()))
+          task.promise.then(() => rename(trackTempFile(tmp(task.videoPath), true), task.videoPath).finally(() =>
+            checkAndFixBadDuration(task.videoPath).finally(() => checkQueue())
+          ))
           .catch(err => {
             if (++task.tries < maxTries) {
               task.process = undefined;

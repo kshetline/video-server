@@ -231,8 +231,9 @@ interface MediaTrack {
   ChannelLayout?: string;
   ChannelLayout_Original?: string;
   CodecID?: string;
-  Encoded_Library?: string;
   DisplayAspectRatio?: string;
+  Duration?: string;
+  Encoded_Library?: string;
   HDR_Format?: string;
 }
 

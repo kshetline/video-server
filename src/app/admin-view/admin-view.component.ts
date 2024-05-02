@@ -91,13 +91,13 @@ export class AdminViewComponent implements OnInit {
     if (!this.setEarliest)
       delete options.earliest;
 
-    this.httpClient.post('/api/admin/process', options).subscribe();
+    this.httpClient.post('/api/admin/process', options, { responseType: 'text' }).subscribe();
   }
 
   sendStop(): void {
     if (this.status?.processing && !this.stopPending)
       this.confirmationService.confirm({
-        message: 'Are you sure you stop the current process?',
+        message: 'Are you sure you want to stop the current process?',
         header: 'Stop Process',
         icon: 'pi pi-exclamation-triangle',
         accept: () => {
