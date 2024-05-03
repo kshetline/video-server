@@ -394,6 +394,7 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
       const simultaneousMax = 6;
       const maxTries = 6;
       let running = 0;
+      let done = false;
       const redoQueue: VideoRender[] = [];
 
       const cleanUpAndFail = (err: any): void => {
@@ -418,9 +419,13 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
       };
 
       const checkQueue = (): void => {
-        if (stopPending)
+        if (done) {}
+        else if (stopPending) {
           cleanUpAndFail(null);
-        if (running < simultaneousMax && videoQueue.length > 0) {
+          done = true;
+          resolve();
+        }
+        else if (running < simultaneousMax && videoQueue.length > 0) {
           const task = videoQueue.pop();
 
           ++running;
@@ -470,8 +475,10 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
               cleanUpAndFail(err);
           });
         }
-        else if (running === 0)
+        else if (running === 0) {
+          done = true;
           resolve();
+        }
       };
 
       checkQueue();

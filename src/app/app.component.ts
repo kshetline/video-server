@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { LibraryItem, ServerStatus, VideoLibrary } from '../../server/src/shared-types';
-import { addBackLinks, broadcastMessage, getZIndex, incrementImageIndex } from './video-ui-utils';
+import { LibraryItem, ServerStatus, VideoLibrary, VideoStats } from '../../server/src/shared-types';
+import { addBackLinks, broadcastMessage, getZIndex, incrementImageIndex, webSocketMessagesEmitter } from './video-ui-utils';
 import { isEqual, isValidJson, processMillis } from '@tubular/util';
 import { floor } from '@tubular/math';
 import { AuthService } from './auth.service';
@@ -362,6 +362,7 @@ export class AppComponent implements AfterViewInit, OnInit {
       if (this.reestablishing) {
         this.reestablishing = false;
         this.getStatusObservable();
+        this.httpClient.get('/api/admin/stats').subscribe((stats: VideoStats) => broadcastMessage('videoStats', stats));
       }
     });
     this.webSocket.addEventListener('close', () => {
