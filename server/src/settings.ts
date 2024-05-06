@@ -25,6 +25,14 @@ export async function openSettings(): Promise<void> {
     )`);
 
   await db.exec(
+   `CREATE TABLE IF NOT EXISTS "mediainfo" (
+      "key" TEXT NOT NULL UNIQUE,
+      "mdate" REAL NOT NULL,
+      "info" TEXT,
+      PRIMARY KEY ("key")
+    )`);
+
+  await db.exec(
    `CREATE TABLE IF NOT EXISTS "settings" (
       "key" TEXT NOT NULL UNIQUE,
       "value" TEXT,

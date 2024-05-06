@@ -1,5 +1,5 @@
 import { Request, Response, Router } from 'express';
-import { existsAsync, isAdmin, jsonOrJsonp, noCache, safeLstat, webSocketSend } from './vs-util';
+import { existsAsync, getMediaInfo, isAdmin, jsonOrJsonp, noCache, safeLstat, webSocketSend } from './vs-util';
 import { mappedDurations, updateLibrary } from './library-router';
 import { asLines, clone, forEach, isFunction, isNumber, isObject, isString, last, toBoolean, toInt } from '@tubular/util';
 import { readdir } from 'fs/promises';
@@ -242,8 +242,8 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
           info.audio = info.mkvInfo.tracks.filter(t => t.type === 'audio') as AudioTrack[];
           info.subtitles = info.mkvInfo.tracks.filter(t => t.type === 'subtitles') as SubtitlesTrack[];
 
-          const mediaJson = await monitorProcess(spawn('mediainfo', [path, '--Output=JSON']));
-          const mediaTracks = (JSON.parse(mediaJson || '{}') as MediaWrapper).media?.track || [];
+          const mediainfo = await getMediaInfo(path, (options as VideoWalkOptionsPlus).db);
+          const mediaTracks = (mediainfo as MediaWrapper).media?.track || [];
           const typeIndices = {} as Record<string, number>;
 
           for (const track of mediaTracks) {
