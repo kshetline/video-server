@@ -6,10 +6,6 @@ import { LibraryItem } from './shared-types';
 import { hashTitle } from './shared-utils';
 import { WebSocketServer } from 'ws';
 import { isObject } from '@tubular/util';
-import { AsyncDatabase } from 'promised-sqlite3';
-import { monitorProcess } from './process-util';
-import { spawn } from 'child_process';
-import { getValue } from './settings';
 
 const guestFilter = new Set(process.env.VS_GUEST_FILTER ? process.env.VS_GUEST_FILTER.split(';') : []);
 const demoFilter = new Set(process.env.VS_DEMO_FILTER ? process.env.VS_DEMO_FILTER.split(';') : []);
@@ -186,31 +182,4 @@ export function getRemoteAddress(req: Request): string {
   return ((req.headers['x-real-ip'] as string) ||
     (req.headers['x-forwarded-for'] as string) ||
     req.socket.remoteAddress || '').replace(/.*:/, '');
-}
-
-export async function getMediaInfo(path: string, db?: AsyncDatabase): Promise<any> {
-  const stat = await safeLstat(path);
-  const dir = getValue('videoDirectory');
-  let closeDb = false;
-  let mediaJson: string;
-
-  if (!db) {
-    db = await AsyncDatabase.open(process.env.VS_DB_PATH || 'db.sqlite');
-    closeDb = true;
-  }
-
-  const key = path.substring(dir.length).normalize();
-  const row = await db.get<any>('SELECT * FROM aspects WHERE key = ?', key);
-
-  if (row && row.mdate === stat.mtimeMs)
-    mediaJson = row.info;
-  else {
-    mediaJson = await monitorProcess(spawn('mediainfo', [path, '--Output=JSON']));
-    await db.run('INSERT OR REPLACE INTO mediainfo (key, mdate, info) VALUES (?, ?, ?)', key, stat.mtimeMs, mediaJson);
-  }
-
-  if (closeDb)
-    await db.close();
-
-  return JSON.parse(mediaJson || '{}');
 }
