@@ -64,7 +64,6 @@ export class AdminViewComponent implements OnInit {
 
         case 'videoStats':
           this.videoStats = (msg.data as VideoStats);
-          this.updateProgress = -1;
           this.currentFile = this.lastStatus?.currentFile || '';
           this.encodeProgress = '';
           break;

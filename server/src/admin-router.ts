@@ -487,9 +487,11 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
               await createStreaming(path, options, info);
           });
 
-        stats.totalDuration = Array.from(stats.durations).map(d => d[1]).reduce((total, val) => total + val, 0);
-        delete stats.durations;
-        saveVideoStats(stats);
+        if (options.generateStreaming || options.checkStreaming) {
+          stats.totalDuration = Array.from(stats.durations).map(d => d[1]).reduce((total, val) => total + val, 0);
+          delete stats.durations;
+          saveVideoStats(stats);
+        }
       }
       catch (e) {
         console.error('Error compiling video stats');
