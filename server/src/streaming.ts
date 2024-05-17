@@ -532,10 +532,10 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
 
     // Fix manifest file paths
     await writeFile(mpdPath, (await readFile(mpdPath, 'utf8')).toString()
-      .replace(/(<BaseURL>).*[/\\](.*?)(<\/BaseURL>)/g, (_0, $1, $2, $3) => {
+      .replace(/(<BaseURL>)(.*?)(<\/BaseURL>)/g, (_0, $1, $2, $3) => {
         let path = $2;
 
-        if (/[&<>]/.test(path) && !/&[#a-z0-9]+;/.test(path))
+        if (/[&<>]/.test(path) && !/&[#a-z0-9]+;/i.test(path))
           path = htmlEscape($2);
 
         return $1 + path + $3;
