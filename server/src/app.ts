@@ -59,7 +59,7 @@ import crypto from 'crypto';
 import { isFile, toStreamPath } from './shared-utils';
 import { readdir } from 'fs/promises';
 import { requestText } from 'by-request';
-import { closeSettings, openSettings } from './settings';
+import { closeSettings, openSettings, users } from './settings';
 
 const debug = require('debug')('express:server');
 
@@ -79,7 +79,6 @@ let insecureServer: http.Server;
 let wsServer: WebSocketServer;
 const MAX_START_ATTEMPTS = 3;
 let startAttempts = 0;
-let users: User[] = [];
 let hostIps: string[];
 
 process.on('SIGINT', shutdown);
@@ -129,7 +128,6 @@ function createAndStartServer(): void {
   httpServer.on('error', onError);
   httpServer.on('listening', onListening);
 
-  users = JSON.parse(fs.readFileSync('users.json').toString('utf8'));
   initLibrary();
 
   if (useHttps && insecurePort) {

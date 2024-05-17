@@ -1,6 +1,8 @@
 import { AsyncDatabase } from 'promised-sqlite3';
 import os from 'os';
 import { toNumber } from '@tubular/util';
+import { User } from './shared-types';
+import crypto from 'crypto';
 
 let db: AsyncDatabase;
 
@@ -12,6 +14,7 @@ const defaults: Record<string, string> = {
   videoDirectory: isWindows ? 'V:' : isMac ? '/Volumes/video' : '/mnt/video'
 };
 const settings: Record<string, string> = {};
+export const users: User[] = [];
 
 export async function openSettings(): Promise<void> {
   db = await AsyncDatabase.open(process.env.VS_DB_PATH || 'db.sqlite');
@@ -34,6 +37,33 @@ export async function openSettings(): Promise<void> {
   await db.each('SELECT * FROM settings', undefined, (row: any) =>
     settings[row.key] = row.value
   );
+
+  await db.each('SELECT * FROM users', undefined, async (row: any) => {
+    users.push({
+      name: row.name,
+      hash: await hashPassword(row.name, row.hash),
+      role: row.role,
+      time_to_expire: row.time_to_expire
+    });
+  });
+}
+
+export async function hashPassword(name: string, hash: string): Promise<string> {
+  if (hash.length < 128) {
+    hash = await new Promise((resolve, reject) =>
+      crypto.pbkdf2(hash, process.env.VS_SALT, 100000, 64, 'sha512', (err, key) => {
+        if (err)
+          reject(err);
+        else
+          resolve(key.toString('hex'));
+      }));
+
+    return new Promise<string>(resolve => {
+      db.run('UPDATE users SET hash = ? WHERE name = ?', hash, name).finally(() => resolve(hash));
+    });
+  }
+  else
+    return hash;
 }
 
 export async function closeSettings(): Promise<void> {
