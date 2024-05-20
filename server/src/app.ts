@@ -60,6 +60,7 @@ import { isFile, toStreamPath } from './shared-utils';
 import { readdir } from 'fs/promises';
 import { requestText } from 'by-request';
 import { closeSettings, openSettings, users } from './settings';
+import { doZidooDbMaintenance } from './zidoo-db-maintenance';
 
 const debug = require('debug')('express:server');
 
@@ -155,6 +156,8 @@ function createAndStartServer(): void {
 
   httpServer.listen(httpPort);
   cacheCheckTimer = setTimeout(() => cacheCheck(), CACHE_CHECK_INTERVAL);
+
+  doZidooDbMaintenance().finally();
 }
 
 function onError(error: any): void {
