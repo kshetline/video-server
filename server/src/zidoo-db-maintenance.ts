@@ -9,16 +9,19 @@ export async function doZidooDbMaintenance(): Promise<void> {
     return;
 
   const db = await AsyncDatabase.open(dbPath);
+  const rows: any[] = [];
   const missing: number[] = [];
 
-  await db.each('SELECT * FROM VIDEO_INFO', undefined, async (row: any) => {
-    const path = paths.join(process.env.VS_VIDEO_SOURCE, row.URI);
+  await db.each('SELECT * FROM VIDEO_INFO', undefined, (row: any) => rows.push({ uri: row.URI, id: row._id }));
+
+  for await (const row of rows) {
+    const path = paths.join(process.env.VS_VIDEO_SOURCE, row.uri);
 
     if (!await existsAsync(path)) {
       console.log('Missing:', path);
-      missing.push(row._id);
+      missing.push(row.id);
     }
-  });
+  }
 
   console.log(missing.length, 'paths for missing files to remove.');
 
@@ -26,6 +29,6 @@ export async function doZidooDbMaintenance(): Promise<void> {
     await db.run('DELETE FROM VIDEO_INFO WHERE _id = ?', id);
   }
 
-  console.log('DB clean-up done');
   await db.close();
+  console.log('DB clean-up done');
 }
