@@ -80,6 +80,7 @@
         "VariableDeclarator": true
       }
     }],
+    "no-multi-str": "off",
     "no-new": "off",
     "no-return-assign": "off",
     "no-undef-init": "off",

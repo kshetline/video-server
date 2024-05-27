@@ -5,7 +5,8 @@ import paths from 'path';
 import { LibraryItem } from './shared-types';
 import { hashTitle } from './shared-utils';
 import { WebSocketServer } from 'ws';
-import { isObject } from '@tubular/util';
+import { isObject, isString } from '@tubular/util';
+import { getDb } from './settings';
 
 const guestFilter = new Set(process.env.VS_GUEST_FILTER ? process.env.VS_GUEST_FILTER.split(';') : []);
 const demoFilter = new Set(process.env.VS_DEMO_FILTER ? process.env.VS_DEMO_FILTER.split(';') : []);
@@ -150,6 +151,10 @@ export function isDemo(req: any): boolean {
   return req.user?.role === 'demo';
 }
 
+export function username(req: any): string {
+  return req.user?.name;
+}
+
 export function itemAccessAllowed(item: LibraryItem, role: string): boolean {
   const filters = [guestFilter];
 
@@ -182,4 +187,34 @@ export function getRemoteAddress(req: Request): string {
   return ((req.headers['x-real-ip'] as string) ||
     (req.headers['x-forwarded-for'] as string) ||
     req.socket.remoteAddress || '').replace(/.*:/, '');
+}
+
+export async function watched(video: string, user: string): Promise<boolean>;
+export async function watched(time: number, duration: number, video?: string, user?: string): Promise<boolean>;
+export async function watched(timeOrVideo: number | string, durationOrUser?: number | string,
+                        video?: string, user?: string): Promise<boolean> {
+  let time = 0;
+  let duration = 0;
+  let wasWatched = false;
+
+  if (isString(timeOrVideo))
+    video = timeOrVideo;
+  else
+    time = timeOrVideo;
+
+  if (isString(durationOrUser))
+    user = durationOrUser;
+  else
+    duration = durationOrUser;
+
+  if (video && user)
+    wasWatched =
+      !!((await getDb().get('SELECT watched FROM watched WHERE video = ? AND user = ?', video, user)) as any)?.watched;
+
+  if (wasWatched || time >= duration - 1)
+    return true;
+
+  const percent = time * 100 / duration;
+
+  return time >= 3600 && percent > 93 || percent > 95;
 }

@@ -356,3 +356,9 @@ export interface VideoWalkOptionsPlus extends VideoWalkOptions {
   streamingDirectory?: string;
   videoDirectory?: string;
 }
+
+export interface PlaybackProgress {
+  cs: string;
+  duration: number;
+  time: number;
+}

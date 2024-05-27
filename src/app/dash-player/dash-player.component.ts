@@ -6,6 +6,7 @@ import { AuthService } from '../auth.service';
 import { StatusInterceptor } from '../status.service';
 import { HttpClient } from '@angular/common/http';
 import { checksum53 } from '../../../server/src/shared-utils';
+import { PlaybackProgress } from '../../../server/src/shared-types';
 
 @Component({
   selector: 'app-dash-player',
@@ -171,7 +172,7 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
           cs: checksum53(this.videoUri.normalize()),
           time: this.player ? this.player.time() : this.playerElem.currentTime,
           duration: this.player ? this.player.duration() : this.playerElem.duration
-        })
+        } as PlaybackProgress)
         .subscribe();
   }
 

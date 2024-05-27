@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import paths from 'path';
-import { existsAsync, isDemo } from './vs-util';
+import { existsAsync, isDemo, username, watched } from './vs-util';
+import { PlaybackProgress } from './shared-types';
+import { getDb } from './settings';
 
 export const router = Router();
 
@@ -28,6 +30,12 @@ router.get('/*', async (req, res) => {
 });
 
 router.put('/progress', async (req, res) => {
-  console.log(req.body);
+  const progress = req.body as PlaybackProgress;
+  const db = getDb();
+  const wasWatched = await watched(progress.time, progress.duration, progress.cs, username(req));
+
+  db.run('INSERT OR REPLACE INTO watched (user, video, offset, watched) \
+    VALUES (?, ?, ?, ?)', username(req), progress.cs, progress.time, wasWatched ? 1 : 0).finally();
+
   res.sendStatus(200);
 });
