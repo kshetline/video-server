@@ -11,8 +11,8 @@ import {
   comparator, isAnyCollection, isCollection, isFile, isMovie, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, toStreamPath
 } from './shared-utils';
 import { sendStatus } from './app';
-import { AsyncDatabase } from 'promised-sqlite3';
 import { setStopPending, stopPending } from './admin-router';
+import { getDb } from './settings';
 
 export const router = Router();
 
@@ -356,7 +356,7 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
 }
 
 async function getMediaInfo(items: LibraryItem[]): Promise<void> {
-  const db = await AsyncDatabase.open(process.env.VS_DB_PATH || 'db.sqlite');
+  const db = getDb();
 
   for (const item of (items || [])) {
     if (stopPending)
@@ -424,8 +424,6 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
       sendStatus();
     }
   }
-
-  await db.close();
 }
 
 async function getDirectories(dir: string, bonusDirs: Set<string>, map: Map<string, string[]>): Promise<number> {

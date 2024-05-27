@@ -3,7 +3,7 @@ import { existsAsync, isAdmin, jsonOrJsonp, noCache, safeLstat, webSocketSend } 
 import { mappedDurations, updateLibrary } from './library-router';
 import { asLines, clone, forEach, isFunction, isNumber, isObject, isString, last, toBoolean, toInt } from '@tubular/util';
 import { readdir } from 'fs/promises';
-import { getValue, setValue } from './settings';
+import { getDb, getValue, setValue } from './settings';
 import { join as pathJoin, sep } from 'path';
 import { ErrorMode, monitorProcess } from './process-util';
 import { spawn } from 'child_process';
@@ -13,7 +13,6 @@ import { examineAndUpdateMkvFlags } from './mkv-flags';
 import { sendStatus } from './app';
 import { createStreaming, killStreamingProcesses } from './streaming';
 import { abs, max, min } from '@tubular/math';
-import { AsyncDatabase } from 'promised-sqlite3';
 
 export const router = Router();
 export let adminProcessing = false;
@@ -93,16 +92,12 @@ export async function walkVideoDirectory(
 
   (options as VideoWalkOptionsPlus).streamingDirectory = terminateDir(getValue('streamingDirectory'));
   (options as VideoWalkOptionsPlus).videoDirectory = terminateDir(getValue('videoDirectory'));
-  (options as VideoWalkOptionsPlus).db = await AsyncDatabase.open(process.env.VS_DB_PATH || 'db.sqlite');
+  (options as VideoWalkOptionsPlus).db = getDb();
 
   if (options.checkStreaming === true)
     options.checkStreaming = getValue('videoDirectory') + '\t' + getValue('streamingDirectory');
 
-  const stats = await walkVideoDirectoryAux(dir, 0, options, callback);
-
-  await (options as VideoWalkOptionsPlus).db.close();
-
-  return stats;
+  return await walkVideoDirectoryAux(dir, 0, options, callback);
 }
 
 async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoWalkOptionsPlus,

@@ -16,6 +16,10 @@ const defaults: Record<string, string> = {
 const settings: Record<string, string> = {};
 export const users: User[] = [];
 
+export function getDb(): AsyncDatabase {
+  return db;
+}
+
 export async function openSettings(): Promise<void> {
   db = await AsyncDatabase.open(process.env.VS_DB_PATH || 'db.sqlite');
 
@@ -32,6 +36,15 @@ export async function openSettings(): Promise<void> {
       "key" TEXT NOT NULL UNIQUE,
       "value" TEXT,
       PRIMARY KEY("key")
+    )`);
+
+  await db.exec(
+   `CREATE TABLE IF NOT EXISTS "watched" (
+      "user" TEXT NOT NULL,
+      "video" TEXT NOT NULL,
+      "offset" NUMERIC NOT NULL,
+      "watched" INTEGER NOT NULL,
+      PRIMARY KEY("user", "video")
     )`);
 
   await db.each('SELECT * FROM settings', undefined, (row: any) =>

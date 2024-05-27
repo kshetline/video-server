@@ -4,6 +4,8 @@ import { encodeForUri, toNumber } from '@tubular/util';
 import { max, min } from '@tubular/math';
 import { AuthService } from '../auth.service';
 import { StatusInterceptor } from '../status.service';
+import { HttpClient } from '@angular/common/http';
+import { checksum53 } from '../../../server/src/shared-utils';
 
 @Component({
   selector: 'app-dash-player',
@@ -13,15 +15,18 @@ import { StatusInterceptor } from '../status.service';
 export class DashPlayerComponent implements OnDestroy, OnInit {
   private aspectRatio = -1;
   private mouseTimer: any;
-  private player: MediaPlayerClass;
+  private playerElem: HTMLVideoElement;
   private _src: string;
+  private timeChangeTimer: any;
 
   currentResolution = '';
   narrow = false;
+  player: MediaPlayerClass;
   showHeader = false;
+  videoUri = '';
   videoUrl = '';
 
-  constructor(private authService: AuthService) {}
+  constructor(private http: HttpClient, private authService: AuthService) {}
 
   @HostListener('window:mousemove') onMouseMove(): void {
     if (this.mouseTimer)
@@ -66,8 +71,10 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
     if (this._src !== value) {
       this._src = value;
       this.currentResolution = '';
+      this.videoUri = '';
       this.videoUrl = '';
       this.aspectRatio = -1;
+      this.playerElem = undefined;
 
       if (this.player) {
         this.player.destroy();
@@ -91,6 +98,7 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
         else
           this.videoUrl = url;
 
+        this.videoUri = value.replace(/^\//, '');
         this.findPlayer(playerId);
       }
     }
@@ -108,10 +116,16 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
     localStorage.setItem('vs_player_volume', (evt.target as HTMLVideoElement).volume.toString());
   };
 
-  private findPlayer(id: string, tries = 0): void {
-    const playerElem = document.querySelector(id) as HTMLVideoElement;
+  closeVideo(): void {
+    this.registerTimeChange(true);
+    this.onClose.emit();
+    this.playerElem = undefined;
+  }
 
-    if (!playerElem) {
+  private findPlayer(id: string, tries = 0): void {
+    this.playerElem = document.querySelector(id) as HTMLVideoElement;
+
+    if (!this.playerElem) {
       if (tries < 120)
         setTimeout(() => this.findPlayer(id, tries + 1), 50);
 
@@ -121,16 +135,19 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
     const lastVolume = localStorage.getItem('vs_player_volume');
 
     if (lastVolume)
-      playerElem.volume = max(toNumber(lastVolume), 0.05);
+      this.playerElem.volume = max(toNumber(lastVolume), 0.05);
 
-    playerElem.addEventListener('loadedmetadata', () => {
-      this.aspectRatio = playerElem.videoWidth / playerElem.videoHeight;
+    this.playerElem.addEventListener('loadedmetadata', () => {
+      this.aspectRatio = this.playerElem.videoWidth / this.playerElem.videoHeight;
       this.onResize();
     });
-    playerElem.addEventListener('ended', () => this.onMouseMove());
-    playerElem.addEventListener('pause', () => this.onMouseMove());
-    playerElem.addEventListener('progress', () => {
-      const resolution = `${playerElem.videoWidth}x${playerElem.videoHeight}`;
+    this.playerElem.addEventListener('ended', () => { this.registerTimeChange(true); this.onMouseMove(); });
+    this.playerElem.addEventListener('pause', () => { this.registerTimeChange(true); this.onMouseMove(); });
+    this.playerElem.addEventListener('seeked', () => { this.registerTimeChange(); this.onMouseMove(); });
+    this.playerElem.addEventListener('progress', () => {
+      this.registerTimeChange();
+
+      const resolution = `${this.playerElem.videoWidth}x${this.playerElem.videoHeight}`;
 
       if (this.authService.getSession().name === 'admin' && this.currentResolution !== resolution)
         this.onMouseMove();
@@ -138,12 +155,42 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
       this.currentResolution = resolution;
       StatusInterceptor.alive();
     });
-    playerElem.addEventListener('volumechange', this.volumeChange);
+    this.playerElem.addEventListener('volumechange', this.volumeChange);
     setTimeout(() => {
       if (this.player)
         this.player.play();
       else
-        playerElem.play().catch(err => console.error(err));
+        this.playerElem.play().catch(err => console.error(err));
     }, 1000);
+  }
+
+  private sendTimeChange(): void {
+    if (this.videoUri || this.playerElem)
+      this.http.put('/api/stream/progress',
+        {
+          cs: checksum53(this.videoUri.normalize()),
+          time: this.player ? this.player.time() : this.playerElem.currentTime,
+          duration: this.player ? this.player.duration() : this.playerElem.duration
+        })
+        .subscribe();
+  }
+
+  private registerTimeChange(force = false): void {
+    if (!this.player && !this.playerElem)
+      // eslint-disable-next-line no-useless-return
+      return;
+    else if (force) {
+      if (this.timeChangeTimer) {
+        clearTimeout(this.timeChangeTimer);
+        this.timeChangeTimer = undefined;
+      }
+
+      this.sendTimeChange();
+    }
+    else if (!this.timeChangeTimer)
+      this.timeChangeTimer = setTimeout(() => {
+        this.timeChangeTimer = undefined;
+        this.sendTimeChange();
+      }, 5000);
   }
 }

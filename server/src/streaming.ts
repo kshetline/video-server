@@ -191,7 +191,7 @@ async function checkAndFixBadDuration(path: string, progress: Progress | VideoPr
     else
       aacProgress('#', 0, progress as Progress);
 
-    const tmp = path.slice(0, -4) + 'tmp.webm';
+    const tmp = path.replace(/^(.*)(\.[^.]+)$/, '$1.tmp$2');
 
     await rename(path, tmp);
 
@@ -206,9 +206,6 @@ async function checkAndFixBadDuration(path: string, progress: Progress | VideoPr
   }
 }
 
-// export async function createStreaming(path: string, audios: AudioTrack[], video: VideoTrack,
-//                                subtitles: SubtitlesTrack[], isMovie: boolean, isExtra: boolean,
-//                                duration: number, videoBase: string, streamBase: string): Promise<boolean> {
 export async function createStreaming(path: string, options: VideoWalkOptionsPlus,
                                       info: VideoWalkInfo): Promise<boolean> {
   currentProcesses = [];

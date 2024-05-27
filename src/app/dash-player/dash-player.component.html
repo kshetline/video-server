@@ -1,6 +1,6 @@
 <div class="info-line" [style.opacity]="showHeader ? 1 : 0">
   <div class="resolution">{{currentResolution}}</div>
-  <p-button icon="pi pi-times" styleClass="p-button-rounded" (click)="onClose.emit()"></p-button>
+  <p-button icon="pi pi-times" styleClass="p-button-rounded" (click)="closeVideo()"></p-button>
 </div>
 <video id="dash-player" controls [class.narrow]="narrow" [style.display]="videoUrl ? 'none' : 'block'"
    [style.cursor]="showHeader ? 'default' : 'none'"></video>

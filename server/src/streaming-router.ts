@@ -26,3 +26,8 @@ router.get('/*', async (req, res) => {
   else
     res.sendStatus(404);
 });
+
+router.put('/progress', async (req, res) => {
+  console.log(req.body);
+  res.sendStatus(200);
+});

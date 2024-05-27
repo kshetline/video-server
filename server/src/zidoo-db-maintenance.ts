@@ -1,6 +1,6 @@
 import * as paths from 'path';
-import { AsyncDatabase } from 'promised-sqlite3';
 import { existsAsync } from './vs-util';
+import { getDb } from './settings';
 
 export async function doZidooDbMaintenance(): Promise<void> {
   const dbPath = process.env.VS_ZIDOO_DB;
@@ -8,7 +8,7 @@ export async function doZidooDbMaintenance(): Promise<void> {
   if (!dbPath || !await existsAsync(dbPath))
     return;
 
-  const db = await AsyncDatabase.open(dbPath);
+  const db = getDb();
   const rows: any[] = [];
   const missing: number[] = [];
 
@@ -29,6 +29,5 @@ export async function doZidooDbMaintenance(): Promise<void> {
     await db.run('DELETE FROM VIDEO_INFO WHERE _id = ?', id);
   }
 
-  await db.close();
   console.log('DB clean-up done');
 }
