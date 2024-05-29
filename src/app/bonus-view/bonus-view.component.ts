@@ -7,6 +7,7 @@ import { checksum53, isMovie, isTvShow } from '../../../server/src/shared-utils'
 import { StatusInterceptor } from '../status.service';
 import { MenuItem } from 'primeng/api';
 import { AuthService } from '../auth.service';
+import { ItemStreamPair } from '../dash-player/dash-player.component';
 
 @Component({
   selector: 'app-bonus-view',
@@ -14,7 +15,7 @@ import { AuthService } from '../auth.service';
   styleUrls: ['./bonus-view.component.scss']
 })
 export class BonusViewComponent implements OnInit {
-  private _playSrc = '';
+  private _playSrc: ItemStreamPair = undefined;
   private _source: LibraryItem;
 
   extras: string[] = [];
@@ -24,8 +25,8 @@ export class BonusViewComponent implements OnInit {
 
   constructor(private httpClient: HttpClient, private auth: AuthService) {}
 
-  @Input() get playSrc(): string { return this._playSrc; }
-  set playSrc(value: string) {
+  @Input() get playSrc(): ItemStreamPair { return this._playSrc; }
+  set playSrc(value: ItemStreamPair) {
     if (this._playSrc !== value) {
       this._playSrc = value;
       this.playing.emit(!!value);
@@ -38,7 +39,7 @@ export class BonusViewComponent implements OnInit {
       StatusInterceptor.alive();
       this._source = value;
       this.extras = [];
-      this.playSrc = '';
+      this.playSrc = undefined;
       this.playerMenus = [];
 
       if (value) {
@@ -102,7 +103,7 @@ export class BonusViewComponent implements OnInit {
   }
 
   play(uri: string): void {
-    this.playSrc = this.streamUris.get(uri);
+    this.playSrc = { item: null, stream: this.streamUris.get(uri) };
   }
 
   getPlayerMenu(index: number, uri: string): MenuItem[] {
@@ -124,6 +125,6 @@ export class BonusViewComponent implements OnInit {
   }
 
   closePlayer(): void {
-    this.playSrc = '';
+    this.playSrc = undefined;
   }
 }

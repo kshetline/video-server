@@ -79,6 +79,7 @@ export interface LibraryItem {
   isSD?: boolean;
   isTV?: boolean;
   isTvMovie?: boolean;
+  lastPlayTime?: number;
   logo?: string;
   mobileUri?: string;
   originalName?: string;
@@ -103,6 +104,7 @@ export interface LibraryItem {
   videoinfo?: VideoInfo;
   voteAverage?: number;
   watched?: boolean;
+  watchedByUser?: boolean;
   year?: number;
 }
 
@@ -358,7 +360,8 @@ export interface VideoWalkOptionsPlus extends VideoWalkOptions {
 }
 
 export interface PlaybackProgress {
-  cs: string;
-  duration: number;
-  time: number;
+  hash: string;
+  duration?: number;
+  offset: number;
+  watched?: boolean;
 }

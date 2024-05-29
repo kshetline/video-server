@@ -19,6 +19,8 @@
   </div>
   <div class="show-info-wrapper">
     <div class="show-info">
+      <div class="show-watched"><i class="pi" [class.pi-eye]="video.watchedByUser"
+                                   [class.pi-eye-slash]="!video.watchedByUser"></i></div>
       <div class="show-title">{{getSeasonTitle(show)}}</div>
       <div class="info-line">
         <app-rating *ngIf="getVoteAverage()" [value]="getVoteAverage()" [topValue]="10"></app-rating>
@@ -40,7 +42,7 @@
         <span *ngFor="let label of videoLabels; index as i"
               [ngStyle]="i === videoIndex ? { 'background-color': 'rgba(255, 255, 255, 0.75)',
                 'color': 'black', 'box-shadow': '#69F 0 0 3px 3px' } : null"
-              [style.opacity]="videoChoices[videoCategory][i].watched ? '0.6' : '1'"
+              [style.opacity]="videoChoices[videoCategory][i].watchedByUser ? '0.6' : '1'"
               (click)="selectVideo(i)"
         >{{label}}</span>
       </div>
@@ -79,7 +81,7 @@
           <button *ngIf="!localAccess()" pButton type="button" label="Play" icon="pi pi-play" class="p-button-sm"
                   [disabled]="!this.streamUri" (click)="play()"></button>
           <p-splitButton *ngIf="localAccess()" label="Play" icon="pi pi-play" class="p-button-sm"
-                  [model]="players" [class.dim]="!this.streamUri" (onClick)="play()"></p-splitButton>
+                  [model]="players" [class.dim]="!streamUri" (onClick)="play()"></p-splitButton>
           <button #btn pButton type="button" label="Download" icon="pi pi-download"
                   [disabled]="!video?.uri" class="p-button-sm" (click)="startDownload(btn)"></button>
           <a [href]="downloadLink()"><div>{{startOfPath()}}</div><div>{{endOfPath()}}</div></a>

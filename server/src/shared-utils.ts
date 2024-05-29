@@ -122,3 +122,7 @@ export function characterToProgress(ch: string): number {
 export function ts(): string {
   return new Date().toISOString().slice(0, -5).replace('T', ' ');
 }
+
+export function hashUrl(uri: string): string {
+  return checksum53(uri.replace(/^\//, '').normalize());
+}

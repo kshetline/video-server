@@ -5,8 +5,13 @@ import { max, min } from '@tubular/math';
 import { AuthService } from '../auth.service';
 import { StatusInterceptor } from '../status.service';
 import { HttpClient } from '@angular/common/http';
-import { checksum53 } from '../../../server/src/shared-utils';
-import { PlaybackProgress } from '../../../server/src/shared-types';
+import { hashUrl } from '../../../server/src/shared-utils';
+import { LibraryItem, PlaybackProgress } from '../../../server/src/shared-types';
+
+export interface ItemStreamPair {
+  item: LibraryItem;
+  stream: string;
+}
 
 @Component({
   selector: 'app-dash-player',
@@ -17,7 +22,7 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
   private aspectRatio = -1;
   private mouseTimer: any;
   private playerElem: HTMLVideoElement;
-  private _src: string;
+  private _src: ItemStreamPair;
   private timeChangeTimer: any;
 
   currentResolution = '';
@@ -67,8 +72,8 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
 
   @Output() onClose = new EventEmitter<void>();
 
-  @Input() get src(): string { return this._src; }
-  set src(value: string) {
+  @Input() get src(): ItemStreamPair { return this._src; }
+  set src(value: ItemStreamPair) {
     if (this._src !== value) {
       this._src = value;
       this.currentResolution = '';
@@ -85,9 +90,11 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
       if (!value)
         this.onClose.emit();
       else {
+        const stream = value.stream;
+
         this.showHeader = true;
 
-        const url = '/api/stream' + (value.startsWith('/') ? '' : '/') + value.split('/').map(s => encodeForUri(s)).join('/');
+        const url = '/api/stream' + (stream.startsWith('/') ? '' : '/') + stream.split('/').map(s => encodeForUri(s)).join('/');
         let playerId = '#direct-player';
 
         if (url.endsWith('.mpd')) {
@@ -99,7 +106,7 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
         else
           this.videoUrl = url;
 
-        this.videoUri = value.replace(/^\//, '');
+        this.videoUri = stream.replace(/^\//, '');
         this.findPlayer(playerId);
       }
     }
@@ -166,13 +173,13 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
   }
 
   private sendTimeChange(): void {
-    if (this.videoUri || this.playerElem)
+    if (this.videoUri)
       this.http.put('/api/stream/progress',
         {
-          cs: checksum53(this.videoUri.normalize()),
-          time: this.player ? this.player.time() : this.playerElem.currentTime,
+          hash: hashUrl(this.videoUri),
+          offset: this.player ? this.player.time() : this.playerElem.currentTime,
           duration: this.player ? this.player.duration() : this.playerElem.duration
-        } as PlaybackProgress)
+        } as PlaybackProgress, { responseType: 'text' })
         .subscribe();
   }
 

@@ -1,13 +1,14 @@
 import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
-import { LibraryItem } from '../../../server/src/shared-types';
+import { LibraryItem, PlaybackProgress } from '../../../server/src/shared-types';
 import { areImagesSimilar, canPlayVP9, getImageParam, getSeasonTitle, setCssVariable } from '../video-ui-utils';
 import { compareCaseSecondary, encodeForUri } from '@tubular/util';
 import { floor, max, round } from '@tubular/math';
 import { HttpClient } from '@angular/common/http';
-import { checksum53, isFile, isMovie, isTvSeason } from '../../../server/src/shared-utils';
+import { checksum53, hashUrl, isFile, isMovie, isTvSeason } from '../../../server/src/shared-utils';
 import { StatusInterceptor } from '../status.service';
 import { AuthService } from '../auth.service';
 import { MenuItem, MessageService } from 'primeng/api';
+import { ItemStreamPair } from '../dash-player/dash-player.component';
 
 const FADER_TRANSITION_DURATION = '0.75s';
 
@@ -32,7 +33,7 @@ export class ShowViewComponent implements OnInit {
   private backgroundChangeInProgress = false;
   private checkedForStream = new Set<number>();
   private pendingBackgroundIndex = -1;
-  private _playSrc = '';
+  private _playSrc: ItemStreamPair = undefined;
   private _show: LibraryItem;
   private thumbnailMode = false;
 
@@ -236,11 +237,12 @@ export class ShowViewComponent implements OnInit {
       this.video = this.videoChoices[0][this.videoIndex];
       this.selection = this.video.parent ?? this.video;
       this.selectVideo(this.videoIndex);
+      this.getPlaybackInfo(choices);
     }
   }
 
-  @Input() get playSrc(): string { return this._playSrc; }
-  set playSrc(value: string) {
+  @Input() get playSrc(): ItemStreamPair { return this._playSrc; }
+  set playSrc(value: ItemStreamPair) {
     if (this._playSrc !== value) {
       this._playSrc = value;
       this.playing.emit(!!value);
@@ -413,7 +415,7 @@ export class ShowViewComponent implements OnInit {
     if (!this.streamUri)
       this.messageService.add({ severity: 'warn', summary: 'Can\'t play in browser', detail: 'Streaming not available.' });
     else
-      this.playSrc = this.streamUri;
+      this.playSrc = { item: this.video, stream: this.streamUri };
   }
 
   playOnMediaPlayer(player: number): void {
@@ -421,7 +423,7 @@ export class ShowViewComponent implements OnInit {
   }
 
   closePlayer(): void {
-    this.playSrc = '';
+    this.playSrc = undefined;
   }
 
   getProfileUrl(person: Person): string {
@@ -506,5 +508,21 @@ export class ShowViewComponent implements OnInit {
       if (text && text !== 'DD')
         b.push(text);
     }
+  }
+
+  private getPlaybackInfo(choices: LibraryItem[]): void {
+    const videos = choices.map(c => hashUrl(c.streamUri)).join();
+
+    this.httpClient.get(`/api/stream/progress?videos=${encodeForUri(videos)}`).subscribe((response: PlaybackProgress[]) => {
+      for (const item of choices) {
+        const hash = hashUrl(item.streamUri);
+        const match = response.find(row => row.hash === hash);
+
+        if (match) {
+          item.lastPlayTime = match.offset;
+          item.watchedByUser = match.watched;
+        }
+      }
+    });
   }
 }
