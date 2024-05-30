@@ -361,7 +361,7 @@ export interface VideoWalkOptionsPlus extends VideoWalkOptions {
 
 export interface PlaybackProgress {
   hash: string;
-  duration?: number;
+  duration: number;
   offset: number;
   watched?: boolean;
 }

@@ -26,6 +26,7 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
   private timeChangeTimer: any;
 
   currentResolution = '';
+  lastPlayTime = 0;
   narrow = false;
   player: MediaPlayerClass;
   showHeader = false;
@@ -108,6 +109,11 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
 
         this.videoUri = stream.replace(/^\//, '');
         this.findPlayer(playerId);
+
+        let lpt: number;
+
+        if ((lpt = value.item.lastPlayTime) > 60 && lpt < value.item.duration / 1000 - 5)
+          this.lastPlayTime = lpt;
       }
     }
   }
@@ -123,6 +129,19 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
   private volumeChange = (evt: Event): void => {
     localStorage.setItem('vs_player_volume', (evt.target as HTMLVideoElement).volume.toString());
   };
+
+  dontContinue(): void {
+    this.lastPlayTime = 0;
+  }
+
+  yesContinue(): void {
+    if (this.player)
+      this.player.seek(this.lastPlayTime - 3);
+    else if (this.playerElem)
+      this.playerElem.currentTime = this.lastPlayTime - 3;
+
+    this.lastPlayTime = 0;
+  }
 
   closeVideo(): void {
     this.registerTimeChange(true);
@@ -173,12 +192,15 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
   }
 
   private sendTimeChange(): void {
+    if (this.src.item)
+      this.src.item.lastPlayTime = this.player.time();
+
     if (this.videoUri)
       this.http.put('/api/stream/progress',
         {
           hash: hashUrl(this.videoUri),
-          offset: this.player ? this.player.time() : this.playerElem.currentTime,
-          duration: this.player ? this.player.duration() : this.playerElem.duration
+          duration: this.player ? this.player.duration() : this.playerElem.duration,
+          offset: this.player ? this.player.time() : this.playerElem.currentTime
         } as PlaybackProgress, { responseType: 'text' })
         .subscribe();
   }

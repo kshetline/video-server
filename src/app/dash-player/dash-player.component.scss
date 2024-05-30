@@ -6,6 +6,20 @@
   justify-content: center;
 }
 
+.continue-prompt {
+  align-items: center;
+  align-self: center;
+  background: white;
+  color: black;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1em;
+  padding: 0.5em;
+  position: absolute;
+  top: 0;
+  z-index: 302;
+}
+
 .info-line {
   align-items: center;
   display: flex;

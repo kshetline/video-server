@@ -12,8 +12,9 @@ router.put('/progress', async (req, res) => {
     const db = getDb();
     const wasWatched = await watched(progress.offset, progress.duration, progress.hash, username(req));
 
-    db.run('INSERT OR REPLACE INTO watched (user, video, offset, watched) \
-      VALUES (?, ?, ?, ?)', username(req), progress.hash, progress.offset, wasWatched ? 1 : 0).finally();
+    db.run('INSERT OR REPLACE INTO watched (user, video, duration, offset, watched) \
+      VALUES (?, ?, ?, ?, ?)', username(req), progress.hash, progress.duration, progress.offset, wasWatched ? 1 : 0)
+      .finally();
 
     res.sendStatus(200);
   }
@@ -25,9 +26,12 @@ router.put('/progress', async (req, res) => {
 router.get('/progress', async (req, res) => {
   try {
     const db = getDb();
-    const videos = req.query.videos.toString().replace(/[^,0-9A-Z]/i, '-').split(',');
-    const response = (await db.all(`SELECT video, offset, watched FROM watched WHERE user = ? AND video IN ('${videos.join("','")}')`,
-      username(req))).map((row: any) => ({ hash: row.video, offset: row.offset, watched: !!row.watched } as PlaybackProgress));
+    const videos = req.query.videos.toString().split(',');
+    const placeholders = Array(videos.length).fill('?').join(',');
+    const response = (await db.all(
+      `SELECT video, duration, offset, watched FROM watched WHERE user = ? AND video IN (${placeholders})`,
+      username(req), ...videos)).map((row: any) =>
+      ({ hash: row.video, duration: row.duration, offset: row.offset, watched: !!row.watched } as PlaybackProgress));
 
     jsonOrJsonp(req, res, response);
   }

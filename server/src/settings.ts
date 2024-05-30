@@ -42,6 +42,7 @@ export async function openSettings(): Promise<void> {
    `CREATE TABLE IF NOT EXISTS "watched" (
       "user" TEXT NOT NULL,
       "video" TEXT NOT NULL,
+      "duration" NUMERIC NOT NULL,
       "offset" NUMERIC NOT NULL,
       "watched" INTEGER NOT NULL,
       PRIMARY KEY("user", "video")
