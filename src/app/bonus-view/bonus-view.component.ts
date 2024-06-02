@@ -1,9 +1,9 @@
 import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
-import { LibraryItem } from '../../../server/src/shared-types';
+import { LibraryItem, PlaybackProgress } from '../../../server/src/shared-types';
 import { canPlayVP9, getImageParam } from '../video-ui-utils';
 import { encodeForUri } from '@tubular/util';
 import { HttpClient } from '@angular/common/http';
-import { checksum53, isMovie, isTvShow } from '../../../server/src/shared-utils';
+import { checksum53, hashUrl, isMovie, isTvShow } from '../../../server/src/shared-utils';
 import { StatusInterceptor } from '../status.service';
 import { MenuItem } from 'primeng/api';
 import { AuthService } from '../auth.service';
@@ -41,6 +41,7 @@ export class BonusViewComponent implements OnInit {
       this.extras = [];
       this.playSrc = undefined;
       this.playerMenus = [];
+      this.streamUris.clear();
 
       if (value) {
         let src = value;
@@ -51,8 +52,12 @@ export class BonusViewComponent implements OnInit {
             src.extras.forEach(extra =>
               this.httpClient.get<string>(`/api/stream-check?uri=${encodeForUri(extra)}${canPlayVP9() ? '' : '&mobile=true'}`)
                 .subscribe(streamUri => {
-                  if (streamUri)
+                  if (streamUri) {
                     this.streamUris.set(extra, streamUri);
+
+                    if (this.streamUris.size === this.extras.length)
+                      this.getPlaybackInfo(Array.from(this.streamUris.values()));
+                  }
                 })
             );
           }
@@ -126,5 +131,22 @@ export class BonusViewComponent implements OnInit {
 
   closePlayer(): void {
     this.playSrc = undefined;
+  }
+
+  private getPlaybackInfo(choices: string[]): void {
+    const videos = choices.map(c => hashUrl(c)).join();
+
+    this.httpClient.get(`/api/stream/progress?videos=${encodeForUri(videos)}`).subscribe((response: PlaybackProgress[]) => {
+      for (const uri of choices) {
+        const hash = hashUrl(uri);
+        const match = response.find(row => row.hash === hash);
+
+        if (match) {
+          console.log(match);
+          // item.lastPlayTime = match.offset;
+          // item.watchedByUser = match.watched;
+        }
+      }
+    });
   }
 }

@@ -316,9 +316,6 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
       const extras = new Set<string>();
 
       for (let i = 0; i < item.data.length; ++i) {
-        if (i === 0)
-          item.extras = [];
-
         if (isTvShow(item))
           uri = paths.dirname(item.data[i]?.data[0]?.data[0]?.uri);
         else if (isTvSeason(item))

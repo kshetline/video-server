@@ -25,6 +25,8 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
   private _src: ItemStreamPair;
   private timeChangeTimer: any;
 
+  countdown: number;
+  countdownTimer: any;
   currentResolution = '';
   lastPlayTime = 0;
   narrow = false;
@@ -57,7 +59,15 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
   onKeyDown = (evt: KeyboardEvent): void => {
     let newQuality = -1;
 
-    if (this.player) {
+    if (this.lastPlayTime && evt.key === 'Escape') {
+      evt.preventDefault();
+      this.dontContinue();
+    }
+    else if (this.lastPlayTime && evt.key === 'Enter') {
+      evt.preventDefault();
+      this.yesContinue();
+    }
+    else if (this.player) {
       if (evt.key === ']')
         newQuality = min(this.player.getQualityFor('video') + 1, 2);
       else if (evt.key === '[')
@@ -112,8 +122,23 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
 
         let lpt: number;
 
-        if ((lpt = value.item.lastPlayTime) > 60 && lpt < value.item.duration / 1000 - 5)
+        if ((lpt = value.item.lastPlayTime) > 60 && lpt < value.item.duration / 1000 - 5) {
           this.lastPlayTime = lpt;
+
+          if (this.countdownTimer)
+            clearInterval(this.countdownTimer);
+
+          this.countdown = 15;
+          this.countdownTimer = setInterval(() => {
+            --this.countdown;
+
+            if (this.countdown <= 0) {
+              clearInterval(this.countdownTimer);
+              this.countdownTimer = undefined;
+              this.lastPlayTime = 0;
+            }
+          }, 1000);
+        }
       }
     }
   }

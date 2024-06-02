@@ -1,5 +1,5 @@
 <div class="continue-prompt" [style.display]="lastPlayTime ? 'flex' : 'none'">
-  <span>Continue from last playback point?</span>
+  <span>Continue from last playback point? ({{ countdown < 10 ? '0' : '' }}{{ countdown }})</span>
   <p-button label="No" styleClass="p-button-sm" (click)="dontContinue()"></p-button>
   <p-button label="Yes" styleClass="p-button-sm" (click)="yesContinue()"></p-button>
 </div>
