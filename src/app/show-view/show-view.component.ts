@@ -32,6 +32,7 @@ export class ShowViewComponent implements OnInit {
   private backgroundMain = '';
   private backgroundChangeInProgress = false;
   private checkedForStream = new Set<number>();
+  private choices: LibraryItem[] = [];
   private pendingBackgroundIndex = -1;
   private _playSrc: ItemStreamPair = undefined;
   private _show: LibraryItem;
@@ -80,6 +81,7 @@ export class ShowViewComponent implements OnInit {
       StatusInterceptor.alive();
       this._show = value;
       this.videoChoices = [];
+      this.choices = [];
       this.videoLabels = [];
       this.categoryLabels = [];
       this.videoCategory = 0;
@@ -109,7 +111,6 @@ export class ShowViewComponent implements OnInit {
       if (value.actors)
         value.actors.forEach(d => this.people.push({ image: d.profilePath, name: d.name, role: d.character }));
 
-      const choices: LibraryItem[] = [];
       const isTV = isTvSeason(value);
       let count2k = 0;
       let count4k = 0;
@@ -120,7 +121,7 @@ export class ShowViewComponent implements OnInit {
       let hasDuplicateEpisodes = false;
       const gatherVideos = (item: LibraryItem): void => {
         if (isFile(item)) {
-          choices.push(item);
+          this.choices.push(item);
 
           if (item.cut)
             cutSorts.set(item.cut, item.cutSort || 0);
@@ -146,7 +147,7 @@ export class ShowViewComponent implements OnInit {
 
       gatherVideos(value);
 
-      choices.sort((a, b) => {
+      this.choices.sort((a, b) => {
         if (!isTV && a.cutSort !== b.cutSort)
           return a.cutSort - b.cutSort;
 
@@ -180,12 +181,12 @@ export class ShowViewComponent implements OnInit {
         return 0;
       });
 
-      this.anyOverview = !!choices.find(vc => vc.parent.overview);
+      this.anyOverview = !!this.choices.find(vc => vc.parent.overview);
 
       let episodeIndex = 0;
       let lastEpisode = -1;
 
-      this.videoLabels = choices.map((vc, i) => {
+      this.videoLabels = this.choices.map((vc, i) => {
         if ((isTvSeason(this.show) || this.show.isTV) && episodes.size > 1) {
           if (!hasDuplicateEpisodes)
             return vc.parent.episode.toString() + (vc.cut ? '-' + vc.cut : '');
@@ -225,19 +226,19 @@ export class ShowViewComponent implements OnInit {
           this.categoryLabels = ['4K', '2K'];
 
         this.videoChoices = [
-          choices.filter((_vc, i) => i % 2 === 0),
-          choices.filter((_vc, i) => i % 2 === 1)
+          this.choices.filter((_vc, i) => i % 2 === 0),
+          this.choices.filter((_vc, i) => i % 2 === 1)
         ];
         this.videoLabels = this.videoLabels.filter((_vl, i) => i % 2 === 0);
       }
       else
-        this.videoChoices = [choices];
+        this.videoChoices = [this.choices];
 
       this.videoIndex = max(this.videoChoices[0].findIndex(vc => !vc.watched), 0);
       this.video = this.videoChoices[0][this.videoIndex];
       this.selection = this.video.parent ?? this.video;
       this.selectVideo(this.videoIndex);
-      this.getPlaybackInfo(choices);
+      this.getPlaybackInfo();
     }
   }
 
@@ -424,6 +425,19 @@ export class ShowViewComponent implements OnInit {
 
   closePlayer(): void {
     this.playSrc = undefined;
+    this.getPlaybackInfo();
+  }
+
+  toggleWatched(): void {
+    if (this.video)
+      this.httpClient.put('/api/stream/progress',
+        {
+          hash: hashUrl(this.video.streamUri),
+          duration: this.video.duration / 1000,
+          offset: 0,
+          watched: !this.video.watchedByUser
+        } as PlaybackProgress, { responseType: 'text' })
+        .subscribe(() => this.getPlaybackInfo());
   }
 
   getProfileUrl(person: Person): string {
@@ -510,11 +524,11 @@ export class ShowViewComponent implements OnInit {
     }
   }
 
-  private getPlaybackInfo(choices: LibraryItem[]): void {
-    const videos = choices.map(c => hashUrl(c.streamUri)).join();
+  private getPlaybackInfo(): void {
+    const videos = this.choices.map(c => hashUrl(c.streamUri)).join();
 
     this.httpClient.get(`/api/stream/progress?videos=${encodeForUri(videos)}`).subscribe((response: PlaybackProgress[]) => {
-      for (const item of choices) {
+      for (const item of this.choices) {
         const hash = hashUrl(item.streamUri);
         const match = response.find(row => row.hash === hash);
 

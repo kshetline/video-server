@@ -10,11 +10,11 @@ router.put('/progress', async (req, res) => {
   try {
     const progress = req.body as PlaybackProgress;
     const db = getDb();
-    const wasWatched = await watched(progress.offset, progress.duration, progress.hash, username(req));
+    const wasWatched = progress.watched != null ? progress.watched :
+      await watched(progress.offset, progress.duration, progress.hash, username(req));
 
-    db.run('INSERT OR REPLACE INTO watched (user, video, duration, offset, watched) \
-      VALUES (?, ?, ?, ?, ?)', username(req), progress.hash, progress.duration, progress.offset, wasWatched ? 1 : 0)
-      .finally();
+    await db.run('INSERT OR REPLACE INTO watched (user, video, duration, offset, watched) \
+      VALUES (?, ?, ?, ?, ?)', username(req), progress.hash, progress.duration, progress.offset, wasWatched ? 1 : 0);
 
     res.sendStatus(200);
   }

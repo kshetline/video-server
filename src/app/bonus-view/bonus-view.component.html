@@ -12,6 +12,8 @@
               class="p-button-sm" (click)="startDownload(btn)"></button>
       <a [href]="downloadLink(extra)"><div>&nbsp;</div></a>
       {{uriToTitle(extra)}}
+      <div class="show-watched"><i class="pi" [class.pi-eye]="wasWatched(extra)"
+                                   [class.pi-eye-slash]="!wasWatched(extra)" (click)="toggleWatched(extra)"></i></div>
     </div>
   </div>
 </div>

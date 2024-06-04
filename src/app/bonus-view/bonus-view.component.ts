@@ -19,7 +19,7 @@ export class BonusViewComponent implements OnInit {
   private _source: LibraryItem;
 
   extras: string[] = [];
-  itemsByUri = new Map<string, LibItem>();
+  itemsByStream = new Map<string, LibItem>();
   players: string[] = [];
   playerMenus: MenuItem[][] = [];
   streamUris = new Map<string, string>();
@@ -57,7 +57,7 @@ export class BonusViewComponent implements OnInit {
                     this.streamUris.set(extra, streamUri);
 
                     if (this.streamUris.size === this.extras.length)
-                      this.getPlaybackInfo(Array.from(this.streamUris.values()));
+                      this.getPlaybackInfo();
                   }
                 })
             );
@@ -111,7 +111,30 @@ export class BonusViewComponent implements OnInit {
   play(uri: string): void {
     const stream = this.streamUris.get(uri);
 
-    this.playSrc = { item: this.itemsByUri.get(stream), stream };
+    this.playSrc = { item: this.itemsByStream.get(stream), stream };
+  }
+
+  wasWatched(uri: string): boolean {
+    const stream = this.streamUris.get(uri);
+    const item = stream && this.itemsByStream.get(stream);
+
+    return !!item && item?.watchedByUser;
+  }
+
+  toggleWatched(uri: string): void {
+    const stream = this.streamUris.get(uri);
+    const item = stream && this.itemsByStream.get(stream);
+
+    if (stream) {
+      this.httpClient.put('/api/stream/progress',
+        {
+          hash: hashUrl(stream),
+          duration: (item?.duration || 0) / 1000,
+          offset: 0,
+          watched: !item?.watchedByUser
+        } as PlaybackProgress, { responseType: 'text' })
+        .subscribe(() => this.getPlaybackInfo());
+    }
   }
 
   getPlayerMenu(index: number, uri: string): MenuItem[] {
@@ -134,19 +157,21 @@ export class BonusViewComponent implements OnInit {
 
   closePlayer(): void {
     this.playSrc = undefined;
+    this.getPlaybackInfo();
   }
 
-  private getPlaybackInfo(choices: string[]): void {
+  private getPlaybackInfo(): void {
+    const choices = Array.from(this.streamUris.values());
     const videos = choices.map(c => hashUrl(c)).join();
 
-    this.itemsByUri.clear();
+    this.itemsByStream.clear();
     this.httpClient.get(`/api/stream/progress?videos=${encodeForUri(videos)}`).subscribe((response: PlaybackProgress[]) => {
-      for (const uri of choices) {
-        const hash = hashUrl(uri);
+      for (const stream of choices) {
+        const hash = hashUrl(stream);
         const match = response.find(row => row.hash === hash);
 
         if (match)
-          this.itemsByUri.set(uri, { duration: match.duration * 1000, lastPlayTime: match.offset, watchedByUser: match.watched });
+          this.itemsByStream.set(stream, { hash, duration: match.duration * 1000, lastPlayTime: match.offset, watchedByUser: match.watched });
       }
     });
   }

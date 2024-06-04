@@ -49,6 +49,13 @@
         pointer-events: none;
       }
     }
+
+    .show-watched {
+      cursor: pointer;
+      font-size: 2em;
+      position: relative;
+      top: -0.1em;
+    }
   }
 }
 
