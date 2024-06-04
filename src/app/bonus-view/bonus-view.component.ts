@@ -7,7 +7,7 @@ import { checksum53, hashUrl, isMovie, isTvShow } from '../../../server/src/shar
 import { StatusInterceptor } from '../status.service';
 import { MenuItem } from 'primeng/api';
 import { AuthService } from '../auth.service';
-import { ItemStreamPair } from '../dash-player/dash-player.component';
+import { ItemStreamPair, LibItem } from '../dash-player/dash-player.component';
 
 @Component({
   selector: 'app-bonus-view',
@@ -19,6 +19,7 @@ export class BonusViewComponent implements OnInit {
   private _source: LibraryItem;
 
   extras: string[] = [];
+  itemsByUri = new Map<string, LibItem>();
   players: string[] = [];
   playerMenus: MenuItem[][] = [];
   streamUris = new Map<string, string>();
@@ -108,7 +109,9 @@ export class BonusViewComponent implements OnInit {
   }
 
   play(uri: string): void {
-    this.playSrc = { item: null, stream: this.streamUris.get(uri) };
+    const stream = this.streamUris.get(uri);
+
+    this.playSrc = { item: this.itemsByUri.get(stream), stream };
   }
 
   getPlayerMenu(index: number, uri: string): MenuItem[] {
@@ -136,16 +139,14 @@ export class BonusViewComponent implements OnInit {
   private getPlaybackInfo(choices: string[]): void {
     const videos = choices.map(c => hashUrl(c)).join();
 
+    this.itemsByUri.clear();
     this.httpClient.get(`/api/stream/progress?videos=${encodeForUri(videos)}`).subscribe((response: PlaybackProgress[]) => {
       for (const uri of choices) {
         const hash = hashUrl(uri);
         const match = response.find(row => row.hash === hash);
 
-        if (match) {
-          console.log(match);
-          // item.lastPlayTime = match.offset;
-          // item.watchedByUser = match.watched;
-        }
+        if (match)
+          this.itemsByUri.set(uri, { duration: match.duration * 1000, lastPlayTime: match.offset, watchedByUser: match.watched });
       }
     });
   }

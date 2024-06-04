@@ -4,7 +4,7 @@ import { areImagesSimilar, canPlayVP9, getImageParam, getSeasonTitle, setCssVari
 import { compareCaseSecondary, encodeForUri } from '@tubular/util';
 import { floor, max, round } from '@tubular/math';
 import { HttpClient } from '@angular/common/http';
-import { checksum53, hashUrl, isFile, isMovie, isTvSeason } from '../../../server/src/shared-utils';
+import { checksum53, hashUrl, isFile, isMovie, isTvSeason, nie } from '../../../server/src/shared-utils';
 import { StatusInterceptor } from '../status.service';
 import { AuthService } from '../auth.service';
 import { MenuItem, MessageService } from 'primeng/api';
@@ -294,8 +294,8 @@ export class ShowViewComponent implements OnInit {
   }
 
   hasBonusMaterial(): boolean {
-    return (this.video?.extras || this.video?.parent?.extras || this.show?.extras ||
-            this.show?.parent?.extras || []).length > 0;
+    return (nie(this.video?.extras) || nie(this.video?.parent?.extras) || nie(this.show?.extras) ||
+            nie(this.show?.parent?.extras) || []).length > 0;
   }
 
   hasYear(): boolean {

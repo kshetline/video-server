@@ -8,8 +8,14 @@ import { HttpClient } from '@angular/common/http';
 import { hashUrl } from '../../../server/src/shared-utils';
 import { LibraryItem, PlaybackProgress } from '../../../server/src/shared-types';
 
+export interface LibItem {
+  duration: number;
+  lastPlayTime: number;
+  watchedByUser: boolean;
+}
+
 export interface ItemStreamPair {
-  item: LibraryItem;
+  item: LibItem | LibraryItem;
   stream: string;
 }
 
@@ -217,8 +223,8 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
   }
 
   private sendTimeChange(): void {
-    if (this.src.item)
-      this.src.item.lastPlayTime = this.player.time();
+    if (this.src.item && (this.player || this.playerElem))
+      this.src.item.lastPlayTime = this.player ? this.player.time() : this.playerElem.currentTime;
 
     if (this.videoUri)
       this.http.put('/api/stream/progress',

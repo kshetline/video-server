@@ -1,5 +1,5 @@
 import { LibraryItem, VType } from './shared-types';
-import { isObject } from '@tubular/util';
+import { isArray, isObject } from '@tubular/util';
 
 export function isAnyCollection(x: LibraryItem | number): boolean {
   if (isObject(x))
@@ -125,4 +125,11 @@ export function ts(): string {
 
 export function hashUrl(uri: string): string {
   return checksum53(uri.replace(/^\//, '').normalize());
+}
+
+export function nie<T>(array: T[]): T[] | null {
+  if (array && isArray(array) && array.length > 0)
+    return array;
+  else
+    return null;
 }
