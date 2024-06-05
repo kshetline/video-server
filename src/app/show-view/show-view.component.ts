@@ -61,7 +61,7 @@ export class ShowViewComponent implements OnInit {
 
   constructor(
     private httpClient: HttpClient,
-    private auth: AuthService,
+    public auth: AuthService,
     private messageService: MessageService
   ) {}
 
@@ -525,12 +525,12 @@ export class ShowViewComponent implements OnInit {
   }
 
   private getPlaybackInfo(): void {
-    const videos = this.choices.map(c => hashUrl(c.streamUri)).join();
+    const videos = this.choices.filter(c => c.streamUri).map(c => hashUrl(c.streamUri)).join();
 
     this.httpClient.get(`/api/stream/progress?videos=${encodeForUri(videos)}`).subscribe((response: PlaybackProgress[]) => {
       for (const item of this.choices) {
-        const hash = hashUrl(item.streamUri);
-        const match = response.find(row => row.hash === hash);
+        const hash = item.streamUri && hashUrl(item.streamUri);
+        const match = hash && response.find(row => row.hash === hash);
 
         if (match) {
           item.lastPlayTime = match.offset;

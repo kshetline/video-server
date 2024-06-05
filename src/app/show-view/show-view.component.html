@@ -19,8 +19,10 @@
   </div>
   <div class="show-info-wrapper">
     <div class="show-info">
-      <div class="show-watched"><i class="pi" [class.pi-eye]="video.watchedByUser"
+      <div *ngIf="video.streamUri" class="show-watched"><i class="pi" [class.pi-eye]="video.watchedByUser"
                                    [class.pi-eye-slash]="!video.watchedByUser" (click)="toggleWatched()"></i></div>
+      <div *ngIf="auth.isAdmin()" class="show-watched-admin"><i class="pi" [class.pi-eye]="video.watched"
+                                   [class.pi-eye-slash]="!video.watched"></i></div>
       <div class="show-title">{{getSeasonTitle(show)}}</div>
       <div class="info-line">
         <app-rating *ngIf="getVoteAverage()" [value]="getVoteAverage()" [topValue]="10"></app-rating>

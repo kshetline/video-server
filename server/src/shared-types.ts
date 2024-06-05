@@ -364,4 +364,5 @@ export interface PlaybackProgress {
   duration: number;
   offset: number;
   watched?: boolean;
+  last_watched?: number;
 }

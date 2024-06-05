@@ -45,6 +45,7 @@ export async function openSettings(): Promise<void> {
       "duration" NUMERIC NOT NULL,
       "offset" NUMERIC NOT NULL,
       "watched" INTEGER NOT NULL,
+      "last_watched" NUMERIC,
       PRIMARY KEY("user", "video")
     )`);
 

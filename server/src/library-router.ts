@@ -1,14 +1,14 @@
 import { Router } from 'express';
-import { LibraryItem, LibraryStatus, MediaInfo, MediaInfoTrack, ShowInfo, Track, VideoLibrary, VType } from './shared-types';
+import { LibraryItem, LibraryStatus, MediaInfo, MediaInfoTrack, PlaybackProgress, ShowInfo, Track, VideoLibrary, VType } from './shared-types';
 import { clone, forEach, isNumber, toBoolean, toInt, toNumber } from '@tubular/util';
 import { abs, floor, min } from '@tubular/math';
 import { requestJson } from 'by-request';
 import paths from 'path';
 import { readdir, readFile, writeFile } from 'fs/promises';
-import { cacheDir, existsAsync, isAdmin, isDemo, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat, unref } from './vs-util';
+import { cacheDir, existsAsync, isAdmin, isDemo, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat, unref, username } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
 import {
-  comparator, isAnyCollection, isCollection, isFile, isMovie, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, toStreamPath
+  comparator, hashUrl, isAnyCollection, isCollection, isFile, isMovie, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, toStreamPath
 } from './shared-utils';
 import { sendStatus } from './app';
 import { setStopPending, stopPending } from './admin-router';
@@ -866,6 +866,26 @@ function filterLibrary(items: LibraryItem[], role: string): void {
   }
 }
 
+async function updateWatchInfo(items: LibraryItem[], user: string): Promise<void> {
+  for (const item of items) {
+    if (item.streamUri) {
+      try {
+        const db = getDb();
+        const row = await db.get('SELECT * FROM watched WHERE user = ? AND video = ?', user, hashUrl(item.streamUri)) as PlaybackProgress;
+
+        if (row) {
+          item.lastPlayTime = row.offset;
+          item.watchedByUser = row.watched;
+        }
+      }
+      catch {}
+    }
+
+    if (item.data)
+      await updateWatchInfo(item.data, user);
+  }
+}
+
 const sparseKeys = new Set([
   'aliasPosterPath', 'data', 'id', 'isAlias', 'isLink', 'name', 'originalName', 'releaseDate',
   'title', 'type', 'voteAverage', 'watched', 'year'
@@ -904,6 +924,10 @@ router.get('/', async (req, res) => {
   }
   else if (req.query.id)
     response = response.array.find(i => i.id === toNumber(req.query.id)) || null;
+
+  if (response)
+    await updateWatchInfo((response as VideoLibrary).array ?
+      (response as VideoLibrary).array : [response as LibraryItem], username(req));
 
   jsonOrJsonp(req, res, response);
 });

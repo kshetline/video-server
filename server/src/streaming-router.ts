@@ -13,8 +13,9 @@ router.put('/progress', async (req, res) => {
     const wasWatched = progress.watched != null ? progress.watched :
       await watched(progress.offset, progress.duration, progress.hash, username(req));
 
-    await db.run('INSERT OR REPLACE INTO watched (user, video, duration, offset, watched) \
-      VALUES (?, ?, ?, ?, ?)', username(req), progress.hash, progress.duration, progress.offset, wasWatched ? 1 : 0);
+    await db.run('INSERT OR REPLACE INTO watched (user, video, duration, offset, watched, last_watched) \
+      VALUES (?, ?, ?, ?, ?, ?)',
+      username(req), progress.hash, progress.duration, progress.offset, wasWatched ? 1 : 0, Date.now());
 
     res.sendStatus(200);
   }
@@ -31,7 +32,8 @@ router.get('/progress', async (req, res) => {
     const response = (await db.all(
       `SELECT video, duration, offset, watched FROM watched WHERE user = ? AND video IN (${placeholders})`,
       username(req), ...videos)).map((row: any) =>
-      ({ hash: row.video, duration: row.duration, offset: row.offset, watched: !!row.watched } as PlaybackProgress));
+      ({ hash: row.video, duration: row.duration, offset: row.offset,
+         watched: !!row.watched, last_watched: row.last_watched } as PlaybackProgress));
 
     jsonOrJsonp(req, res, response);
   }

@@ -114,6 +114,10 @@ export class BonusViewComponent implements OnInit {
     this.playSrc = { item: this.itemsByStream.get(stream), stream };
   }
 
+  hasStreaming(uri: string): boolean {
+    return !!this.streamUris.get(uri);
+  }
+
   wasWatched(uri: string): boolean {
     const stream = this.streamUris.get(uri);
     const item = stream && this.itemsByStream.get(stream);
