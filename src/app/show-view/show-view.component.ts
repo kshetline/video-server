@@ -428,18 +428,6 @@ export class ShowViewComponent implements OnInit {
     this.getPlaybackInfo();
   }
 
-  toggleWatched(): void {
-    if (this.video)
-      this.httpClient.put('/api/stream/progress',
-        {
-          hash: hashUrl(this.video.streamUri),
-          duration: this.video.duration / 1000,
-          offset: 0,
-          watched: !this.video.watchedByUser
-        } as PlaybackProgress, { responseType: 'text' })
-        .subscribe(() => this.getPlaybackInfo());
-  }
-
   getProfileUrl(person: Person): string {
     return `/api/img/profile?uri=${encodeForUri(person.image)}&w=200&h=300`;
   }
@@ -524,7 +512,7 @@ export class ShowViewComponent implements OnInit {
     }
   }
 
-  private getPlaybackInfo(): void {
+  getPlaybackInfo(): void {
     const videos = this.choices.filter(c => c.streamUri).map(c => hashUrl(c.streamUri)).join();
 
     this.httpClient.get(`/api/stream/progress?videos=${encodeForUri(videos)}`).subscribe((response: PlaybackProgress[]) => {

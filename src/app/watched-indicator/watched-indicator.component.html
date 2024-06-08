@@ -1,0 +1,2 @@
+<div *ngIf="showShow()" [style.color]="asAdmin ? '#0A0' : 'white'"><i class="pi" [class.pi-eye]="wasWatched()"
+     [class.pi-eye-slash]="!wasWatched()" (click)="toggleWatched()"></i></div>

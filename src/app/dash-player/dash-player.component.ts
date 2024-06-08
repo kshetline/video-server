@@ -12,6 +12,8 @@ export interface LibItem {
   duration: number;
   hash: string;
   lastPlayTime: number;
+  streamUri: string;
+  watched?: boolean;
   watchedByUser: boolean;
 }
 

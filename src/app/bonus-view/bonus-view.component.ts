@@ -114,31 +114,10 @@ export class BonusViewComponent implements OnInit {
     this.playSrc = { item: this.itemsByStream.get(stream), stream };
   }
 
-  hasStreaming(uri: string): boolean {
-    return !!this.streamUris.get(uri);
-  }
-
-  wasWatched(uri: string): boolean {
+  getVideo(uri: string): LibItem {
     const stream = this.streamUris.get(uri);
-    const item = stream && this.itemsByStream.get(stream);
 
-    return !!item && item?.watchedByUser;
-  }
-
-  toggleWatched(uri: string): void {
-    const stream = this.streamUris.get(uri);
-    const item = stream && this.itemsByStream.get(stream);
-
-    if (stream) {
-      this.httpClient.put('/api/stream/progress',
-        {
-          hash: hashUrl(stream),
-          duration: (item?.duration || 0) / 1000,
-          offset: 0,
-          watched: !item?.watchedByUser
-        } as PlaybackProgress, { responseType: 'text' })
-        .subscribe(() => this.getPlaybackInfo());
-    }
+    return stream && this.itemsByStream.get(stream);
   }
 
   getPlayerMenu(index: number, uri: string): MenuItem[] {
@@ -164,7 +143,7 @@ export class BonusViewComponent implements OnInit {
     this.getPlaybackInfo();
   }
 
-  private getPlaybackInfo(): void {
+  getPlaybackInfo(): void {
     const choices = Array.from(this.streamUris.values());
     const videos = choices.map(c => hashUrl(c)).join();
 
@@ -175,7 +154,10 @@ export class BonusViewComponent implements OnInit {
         const match = response.find(row => row.hash === hash);
 
         if (match)
-          this.itemsByStream.set(stream, { hash, duration: match.duration * 1000, lastPlayTime: match.offset, watchedByUser: match.watched });
+          this.itemsByStream.set(stream,
+            { hash, duration: match.duration * 1000, lastPlayTime: match.offset, streamUri: stream, watchedByUser: match.watched });
+        else
+          this.itemsByStream.set(stream, { hash, duration: 0, lastPlayTime: 0, streamUri: stream, watchedByUser: false });
       }
     });
   }

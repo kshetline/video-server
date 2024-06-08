@@ -28,6 +28,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { ShowViewComponent } from './show-view/show-view.component';
 import { StatusInterceptor } from './status.service';
 import { AdminViewComponent } from './admin-view/admin-view.component';
+import { WatchedIndicatorComponent } from './watched-indicator/watched-indicator.component';
 
 @NgModule({
   declarations: [
@@ -39,7 +40,8 @@ import { AdminViewComponent } from './admin-view/admin-view.component';
     LoginComponent,
     PosterViewComponent,
     RatingComponent,
-    ShowViewComponent
+    ShowViewComponent,
+    WatchedIndicatorComponent
   ],
   imports: [
     BrowserAnimationsModule,

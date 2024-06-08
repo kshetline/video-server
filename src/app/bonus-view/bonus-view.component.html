@@ -12,8 +12,7 @@
               class="p-button-sm" (click)="startDownload(btn)"></button>
       <a [href]="downloadLink(extra)"><div>&nbsp;</div></a>
       {{uriToTitle(extra)}}
-      <div *ngIf="hasStreaming(extra)" class="show-watched"><i class="pi" [class.pi-eye]="wasWatched(extra)"
-                                   [class.pi-eye-slash]="!wasWatched(extra)" (click)="toggleWatched(extra)"></i></div>
+      <app-watched-indicator [video]="getVideo(extra)" class="show-watched" (onUpdate)="getPlaybackInfo()"></app-watched-indicator>
     </div>
   </div>
 </div>
