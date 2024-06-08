@@ -49,7 +49,7 @@ import {
   setWebSocketServer, timeStamp, unref, webSocketSend
 } from './vs-util';
 import { Resolver } from 'node:dns';
-import { cachedLibrary, initLibrary, pendingLibrary, router as libraryRouter } from './library-router';
+import { cachedLibrary, findVideo, initLibrary, pendingLibrary, router as libraryRouter } from './library-router';
 import { router as imageRouter } from './image-router';
 import { router as streamingRouter } from './streaming-router';
 import { adminProcessing, currentFile, router as adminRouter, statsInProgress, stopPending, updateProgress } from './admin-router';
@@ -442,24 +442,6 @@ function getApp(): Express {
     else
       res.sendStatus(404);
   });
-
-  function findVideo(id: number, item?: LibraryItem): LibraryItem {
-    if (!item)
-      item = { id: -1, data: cachedLibrary.array } as LibraryItem;
-
-    if (isFile(item) && item.id === id)
-      return item;
-    else if (item.data) {
-      for (const child of item.data) {
-        const match = findVideo(id, child);
-
-        if (match)
-          return match;
-      }
-    }
-
-    return null;
-  }
 
   function findUriByAggregationId(agId: number, item?: LibraryItem): string {
     if (!item)

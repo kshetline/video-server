@@ -4,6 +4,7 @@ import { AuthService } from '../auth.service';
 import { HttpClient } from '@angular/common/http';
 import { hashUrl } from '../../../server/src/shared-utils';
 import { LibItem } from '../dash-player/dash-player.component';
+import { updateItem } from '../app.component';
 
 @Component({
   selector: 'app-watched-indicator',
@@ -35,14 +36,24 @@ export class WatchedIndicatorComponent {
   }
 
   toggleWatched(): void {
-    if (this.video)
-      this.httpClient.put('/api/stream/progress',
-        {
-          hash: hashUrl(this.video.streamUri),
-          duration: this.video.duration / 1000,
-          offset: 0,
-          watched: !this.video.watchedByUser
-        } as PlaybackProgress, { responseType: 'text' })
-        .subscribe(() => this.onUpdate.emit());
+    if (this.video) {
+      if (!this.asAdmin) {
+        this.httpClient.put('/api/stream/progress',
+          {
+            hash: hashUrl(this.video.streamUri),
+            duration: this.video.duration / 1000,
+            offset: 0,
+            watched: !this.video.watchedByUser
+          } as PlaybackProgress, { responseType: 'text' })
+          .subscribe(() => this.onUpdate.emit());
+      }
+      else if (this.video.id) {
+        this.httpClient.put(`/api/library/set-watched?id=${this.video.id}&watched=${this.video.watched ? 0 : 1}`, null).subscribe(() => {
+          this.onUpdate.emit();
+          this.video.watched = !this.video.watched;
+          updateItem(this.video as LibraryItem);
+        });
+      }
+    }
   }
 }

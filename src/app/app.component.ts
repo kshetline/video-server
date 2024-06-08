@@ -44,6 +44,8 @@ export class AppComponent implements AfterViewInit, OnInit {
     private confirmationService: ConfirmationService,
     private messageService: MessageService
   ) {
+    This = this;
+
     StatusInterceptor.getHttpStatusUpdates(status => {
       if ([401, 403, 440].indexOf(status) >= 0) {
         this.messageService.clear();
@@ -177,41 +179,45 @@ export class AppComponent implements AfterViewInit, OnInit {
     });
   }
 
-  itemClicked(item: LibraryItem): void {
-    const setItem = (newItem: LibraryItem): void => {
-      if (isAnyCollection(newItem) || isTvShow(newItem))
-        this.currentCollection = newItem;
-      else if (isMovie(newItem) || isTvSeason(newItem))
-        this.currentShow = newItem;
-    };
+  private setItem(newItem: LibraryItem): void {
+    if (isAnyCollection(newItem) || isTvShow(newItem))
+      this.currentCollection = newItem;
+    else if (isMovie(newItem) || isTvSeason(newItem))
+      this.currentShow = newItem;
+  }
 
+  itemClicked(item: LibraryItem): void {
     if (item.parentId == null) {
       this.clickTimer = setTimeout(() => {
         this.clickDelayed = true;
         this.clickTimer = undefined;
       }, 500);
 
-      this.httpClient.get<LibraryItem>('/api/library?id=' + item.id).subscribe(fullItem => {
-        this.clickDelayed = false;
-
-        if (this.clickTimer) {
-          clearTimeout(this.clickTimer);
-          this.clickTimer = undefined;
-        }
-
-        const index = fullItem ? this.library.array.findIndex(i => i.id === item.id) : -1;
-
-        if (index >= 0) {
-          this.library.array[index] = fullItem;
-          addBackLinks(fullItem.data, fullItem);
-          setItem(fullItem);
-        }
-        else
-          console.error('Did not find id', item.id);
-      });
+      this.updateItem(item);
     }
     else
-      setItem(item);
+      this.setItem(item);
+  }
+
+  updateItem(item: LibraryItem): void {
+    this.httpClient.get<LibraryItem>('/api/library?id=' + item.id).subscribe(fullItem => {
+      this.clickDelayed = false;
+
+      if (this.clickTimer) {
+        clearTimeout(this.clickTimer);
+        this.clickTimer = undefined;
+      }
+
+      const index = fullItem ? this.library.array.findIndex(i => i.id === item.id) : -1;
+
+      if (index >= 0) {
+        this.library.array[index] = fullItem;
+        addBackLinks(fullItem.data, fullItem);
+        this.setItem(fullItem);
+      }
+      else
+        console.error('Did not find id', item.id);
+    });
   }
 
   private pollLibrary(): void {
@@ -408,4 +414,11 @@ export class AppComponent implements AfterViewInit, OnInit {
 
     return observable;
   }
+}
+
+let This: AppComponent;
+
+export function updateItem(item: LibraryItem): void {
+  if (This)
+    This.updateItem(item);
 }

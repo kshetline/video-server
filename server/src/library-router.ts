@@ -743,6 +743,24 @@ async function addMappings(): Promise<void> {
   pendingLibrary.array.push(...aliasedItems);
 }
 
+export function findVideo(id: number, item?: LibraryItem): LibraryItem {
+  if (!item)
+    item = { id: -1, data: cachedLibrary.array } as LibraryItem;
+
+  if (isFile(item) && item.id === id)
+    return item;
+  else if (item.data) {
+    for (const child of item.data) {
+      const match = findVideo(id, child);
+
+      if (match)
+        return match;
+    }
+  }
+
+  return null;
+}
+
 export async function updateLibrary(quick = false): Promise<void> {
   if (pendingUpdate) {
     clearTimeout(pendingUpdate);
@@ -907,6 +925,32 @@ function makeSparse(items: LibraryItem[], depth = 0): void {
       makeSparse(item.data, depth + 1);
   }
 }
+
+router.put('/set-watched', async (req, res) => {
+  const id = toInt(req.query.id);
+  const watched = req.query.watched;
+
+  try {
+    const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/markAsWatched?aggregationId=${id}&watched=${watched}`;
+    const response = await requestJson(url);
+
+    if (response.status === 200 && response.msg === 'success') {
+      const item = findVideo(id);
+
+      if (item)
+        item.watched = !!watched;
+
+      jsonOrJsonp(req, res, response);
+    }
+    else {
+      res.status(response.status === 200 ? 400 : response.status);
+      res.send(response.msg);
+    }
+  }
+  catch {
+    res.sendStatus(500);
+  }
+});
 
 router.get('/', async (req, res) => {
   noCache(res);

@@ -11,6 +11,7 @@ import { LibraryItem, PlaybackProgress } from '../../../server/src/shared-types'
 export interface LibItem {
   duration: number;
   hash: string;
+  id?: number;
   lastPlayTime: number;
   streamUri: string;
   watched?: boolean;
