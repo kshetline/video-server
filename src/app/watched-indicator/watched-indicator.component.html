@@ -1,2 +1,4 @@
-<div *ngIf="showShow()" [style.color]="asAdmin ? '#0A0' : 'white'"><i class="pi" [class.pi-eye]="wasWatched()"
-     [class.pi-eye-slash]="!wasWatched()" (click)="toggleWatched()"></i></div>
+<div *ngIf="showIndicator()" [style.color]="asAdmin ? '#0A0' : 'white'" [style.opacity]="doFade() ? '0.33' : '1'">
+  <i class="pi" [class.pi-eye]="watched" [class.pi-eye-slash]="!watched" (click)="toggleWatched()"></i>
+  <div class="divider" [style.background-color]="mixed ? 'rgba(51, 51, 51, 0.67)' : 'transparent'"></div>
+</div>

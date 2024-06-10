@@ -37,7 +37,9 @@
         <fa-icon *ngIf="item.id !== floor(item.id) && !item.isLink" [icon]="faFolderOpen" class="fa-xl stroke-path"></fa-icon>
       </div>
       <div class="rating-wrapper">
-        <app-rating *ngIf="item.voteAverage" [value]="item.voteAverage" [topValue]="10"></app-rating>
+        <app-watched-indicator [video]="item" class="show-watched" [asAdmin]="true" fade="unwatched"></app-watched-indicator>
+        <app-rating [style.opacity]="item.voteAverage ? '1' : '0'" [value]="item.voteAverage" [topValue]="10"></app-rating>
+        <app-watched-indicator [video]="item" class="show-watched" fade="unwatched"></app-watched-indicator>
       </div>
       <div class="title" [style.font-style]="item.isAlias ? 'italic' : 'plain'">{{titleAdjust(item.name)}}</div>
 

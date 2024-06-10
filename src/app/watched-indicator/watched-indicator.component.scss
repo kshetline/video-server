@@ -1,4 +1,13 @@
-div {
+:host > div {
   cursor: pointer;
   font-size: 2em;
+}
+
+.divider {
+  height: 100%;
+  left: 50%;
+  pointer-events: none;
+  position: absolute;
+  top: 0.25em;
+  width: 50%;
 }

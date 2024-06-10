@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { LibraryItem, ServerStatus, VideoLibrary, VideoStats } from '../../server/src/shared-types';
-import { addBackLinks, broadcastMessage, getZIndex, incrementImageIndex } from './video-ui-utils';
+import { addBackLinks, broadcastMessage, getZIndex, incrementImageIndex, webSocketMessagesEmitter } from './video-ui-utils';
 import { isEqual, isValidJson, processMillis } from '@tubular/util';
 import { floor } from '@tubular/math';
 import { AuthService } from './auth.service';
@@ -77,6 +77,14 @@ export class AppComponent implements AfterViewInit, OnInit {
 
   ngOnInit(): void {
     fetch('/assets/tiny_clear.png').finally();
+
+    webSocketMessagesEmitter().subscribe(msg => {
+      switch (msg.type) {
+        case 'idUpdate':
+          this.updateItem(msg.data, false);
+          break;
+      }
+    });
 
     window.addEventListener('click', evt => {
       if (evt.altKey) {
@@ -193,14 +201,14 @@ export class AppComponent implements AfterViewInit, OnInit {
         this.clickTimer = undefined;
       }, 500);
 
-      this.updateItem(item);
+      this.updateItem(item.id);
     }
     else
       this.setItem(item);
   }
 
-  updateItem(item: LibraryItem): void {
-    this.httpClient.get<LibraryItem>('/api/library?id=' + item.id).subscribe(fullItem => {
+  updateItem(id: number, setCurrent = true): void {
+    this.httpClient.get<LibraryItem>('/api/library?id=' + id).subscribe(fullItem => {
       this.clickDelayed = false;
 
       if (this.clickTimer) {
@@ -208,16 +216,50 @@ export class AppComponent implements AfterViewInit, OnInit {
         this.clickTimer = undefined;
       }
 
-      const index = fullItem ? this.library.array.findIndex(i => i.id === item.id) : -1;
+      const index = fullItem ? this.library.array.findIndex(i => i.id === id) : -1;
 
       if (index >= 0) {
         this.library.array[index] = fullItem;
         addBackLinks(fullItem.data, fullItem);
-        this.setItem(fullItem);
+
+        if (setCurrent)
+          this.setItem(fullItem);
+
+        if (this.currentShow?.id) {
+          const match = this.findId(this.currentShow.id);
+
+          if (match)
+            this.currentShow = match;
+        }
+
+        if (this.currentCollection?.id) {
+          const match = this.findId(this.currentCollection.id);
+
+          if (match)
+            this.currentCollection = match;
+        }
       }
       else
-        console.error('Did not find id', item.id);
+        console.error('Did not find id', id);
     });
+  }
+
+  findId(id: number, item?: LibraryItem): LibraryItem {
+    if (!item)
+      item = { data: this.library.array } as LibraryItem;
+
+    if (item.id === id)
+      return item;
+    else if (item.data) {
+      for (const child of item.data) {
+        const match = this.findId(id, child);
+
+        if (match)
+          return match;
+      }
+    }
+
+    return null;
   }
 
   private pollLibrary(): void {
@@ -418,7 +460,7 @@ export class AppComponent implements AfterViewInit, OnInit {
 
 let This: AppComponent;
 
-export function updateItem(item: LibraryItem): void {
+export function updateItem(id: number): void {
   if (This)
-    This.updateItem(item);
+    This.updateItem(id, false);
 }

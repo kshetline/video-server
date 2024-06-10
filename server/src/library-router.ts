@@ -5,7 +5,7 @@ import { abs, floor, min } from '@tubular/math';
 import { requestJson } from 'by-request';
 import paths from 'path';
 import { readdir, readFile, writeFile } from 'fs/promises';
-import { cacheDir, existsAsync, isAdmin, isDemo, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat, unref, username } from './vs-util';
+import { cacheDir, existsAsync, isAdmin, isDemo, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat, unref, username, webSocketSend } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
 import {
   comparator, hashUrl, isAnyCollection, isCollection, isFile, isMovie, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, toStreamPath
@@ -184,10 +184,7 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
     if (item.videoinfo) {
       item.duration = item.videoinfo.duration;
       item.uri = item.videoinfo.uri;
-
-      if (item.videoinfo.lastWatchTime >= 0 && item.videoinfo.playPoint / item.videoinfo.duration > 0.5)
-        item.watched = true;
-
+      item.watched = (item.videoinfo.lastWatchTime >= 0 && item.videoinfo.playPoint / item.videoinfo.duration > 0.5);
       delete item.videoinfo;
     }
 
@@ -743,15 +740,12 @@ async function addMappings(): Promise<void> {
   pendingLibrary.array.push(...aliasedItems);
 }
 
-export function findVideo(id: number, item?: LibraryItem): LibraryItem {
-  if (!item)
-    item = { id: -1, data: cachedLibrary.array } as LibraryItem;
-
-  if (isFile(item) && item.id === id)
+function findVideoAux(asFile: boolean, id: number, item: LibraryItem): LibraryItem {
+  if ((!asFile || isFile(item)) && item.id === id)
     return item;
   else if (item.data) {
     for (const child of item.data) {
-      const match = findVideo(id, child);
+      const match = findVideoAux(asFile, id, child);
 
       if (match)
         return match;
@@ -759,6 +753,14 @@ export function findVideo(id: number, item?: LibraryItem): LibraryItem {
   }
 
   return null;
+}
+
+export function findVideo(id: number): LibraryItem {
+  return findVideoAux(true, id, { id: -1, data: cachedLibrary.array } as LibraryItem);
+}
+
+export function findId(id: number): LibraryItem {
+  return findVideoAux(false, id, { id: -1, data: cachedLibrary.array } as LibraryItem);
 }
 
 export async function updateLibrary(quick = false): Promise<void> {
@@ -926,20 +928,34 @@ function makeSparse(items: LibraryItem[], depth = 0): void {
   }
 }
 
+function setWatched(item: LibraryItem, state: boolean): void {
+  if (!item)
+    return;
+
+  if (item.watched != null) {
+    item.watched = state;
+
+    if (state)
+      item.lastPlayTime = -1;
+  }
+
+  if (item.data)
+    item.data.forEach(i => setWatched(i, state));
+}
+
 router.put('/set-watched', async (req, res) => {
   const id = toInt(req.query.id);
-  const watched = req.query.watched;
+  const watched = toInt(req.query.watched);
 
   try {
     const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/markAsWatched?aggregationId=${id}&watched=${watched}`;
     const response = await requestJson(url);
 
     if (response.status === 200 && response.msg === 'success') {
-      const item = findVideo(id);
+      const item = findId(id);
 
-      if (item)
-        item.watched = !!watched;
-
+      setWatched(item, !!watched);
+      webSocketSend({ type: 'idUpdate', data: item.id });
       jsonOrJsonp(req, res, response);
     }
     else {

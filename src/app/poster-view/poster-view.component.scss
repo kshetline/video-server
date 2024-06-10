@@ -104,11 +104,20 @@
   }
 
   .rating-wrapper {
+    display: flex;
+    gap: 0.25em;
     height: 19px;
   }
 
   img {
     border-radius: 0.33em;
+  }
+
+  .show-watched {
+    height: 19px;
+    position: relative;
+    top: -0.75em;
+    z-index: 3;
   }
 }
 
