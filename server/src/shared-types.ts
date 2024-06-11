@@ -85,6 +85,7 @@ export interface LibraryItem {
   originalName?: string;
   overview?: string;
   parent?: LibraryItem;
+  position?: number;
   posterPath?: string;
   ratingTomatoes?: string;
   releaseDate?: string;
@@ -360,9 +361,10 @@ export interface VideoWalkOptionsPlus extends VideoWalkOptions {
 }
 
 export interface PlaybackProgress {
-  hash: string;
   duration: number;
+  hash: string;
+  id?: number;
+  last_watched?: number;
   offset: number;
   watched?: boolean;
-  last_watched?: number;
 }

@@ -936,7 +936,7 @@ function setWatched(item: LibraryItem, state: boolean): void {
     item.watched = state;
 
     if (state)
-      item.lastPlayTime = -1;
+      item.position = -1;
   }
 
   if (item.data)
@@ -952,10 +952,22 @@ router.put('/set-watched', async (req, res) => {
     const response = await requestJson(url);
 
     if (response.status === 200 && response.msg === 'success') {
-      const item = findId(id);
+      let item = findId(id);
 
-      setWatched(item, !!watched);
-      webSocketSend({ type: 'idUpdate', data: item.id });
+      if (item) {
+        while (item.parentId > 0) {
+          const parent = findId(item.parentId);
+
+          if (parent)
+            item = parent;
+          else
+            break;
+        }
+
+        setWatched(item, !!watched);
+        webSocketSend({ type: 'idUpdate', data: item.id });
+      }
+
       jsonOrJsonp(req, res, response);
     }
     else {

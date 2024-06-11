@@ -1,10 +1,26 @@
 import { Router } from 'express';
 import paths from 'path';
-import { existsAsync, isDemo, jsonOrJsonp, username, watched } from './vs-util';
-import { PlaybackProgress } from './shared-types';
+import { existsAsync, isDemo, jsonOrJsonp, username, watched, webSocketSend } from './vs-util';
+import { LibraryItem, PlaybackProgress } from './shared-types';
 import { getDb } from './settings';
+import { findId } from './library-router';
 
 export const router = Router();
+
+function setWatched(item: LibraryItem, state: boolean): void {
+  if (!item)
+    return;
+
+  if (item.streamUri) {
+    item.watchedByUser = state;
+
+    if (state)
+      item.lastPlayTime = -1;
+  }
+
+  if (item.data)
+    item.data.forEach(i => setWatched(i, state));
+}
 
 router.put('/progress', async (req, res) => {
   try {
@@ -16,6 +32,28 @@ router.put('/progress', async (req, res) => {
     await db.run('INSERT OR REPLACE INTO watched (user, video, duration, offset, watched, last_watched) \
       VALUES (?, ?, ?, ?, ?, ?)',
       username(req), progress.hash, progress.duration, progress.offset, wasWatched ? 1 : 0, Date.now());
+
+    if (progress.id) {
+      let id = progress.id;
+      let match = findId(id);
+
+      if (match) {
+        while (match.parentId > 0) {
+          const parent = findId(match.parentId);
+
+          if (parent) {
+            match = parent;
+            id = parent.id;
+          }
+          else
+            break;
+        }
+
+        setWatched(match, wasWatched);
+      }
+
+      webSocketSend({ type: 'idUpdate', data: id });
+    }
 
     res.sendStatus(200);
   }

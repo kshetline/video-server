@@ -17,6 +17,7 @@ interface WatchCounts {
   styleUrls: ['./watched-indicator.component.scss']
 })
 export class WatchedIndicatorComponent implements OnInit {
+  private _asAdmin = false;
   private duration = 0;
   private stream: string;
   private _video: LibraryItem | LibItem;
@@ -47,7 +48,14 @@ export class WatchedIndicatorComponent implements OnInit {
     }
   }
 
-  @Input() asAdmin = false;
+  @Input() get asAdmin(): boolean { return this._asAdmin; }
+  set asAdmin(value: boolean) {
+    if (this._asAdmin !== value) {
+      this._asAdmin = value;
+      this.examineWatchedStates(this.video);
+    }
+  }
+
   @Input() fade: 'watched' | 'unwatched' | '' | null = null;
 
   @Output() onUpdate = new EventEmitter<void>();
@@ -68,15 +76,17 @@ export class WatchedIndicatorComponent implements OnInit {
             hash: hashUrl(this.stream),
             duration: this.duration,
             offset: 0,
-            watched: !this.watched
+            watched: !this.watched,
+            id: this.video.id
           } as PlaybackProgress, { responseType: 'text' })
           .subscribe(() => {
             this.onUpdate.emit();
             this.watched = !this.watched;
+            this.video.watchedByUser = this.watched;
           });
       }
       else if (this.asAdmin && this.video.id) {
-        this.httpClient.put(`/api/library/set-watched?id=${this.video.id}&watched=${this.video.watched ? 0 : 1}`, null).subscribe(() => {
+        this.httpClient.put(`/api/library/set-watched?id=${this.video.id}&watched=${this.watched ? 0 : 1}`, null).subscribe(() => {
           this.onUpdate.emit();
           this.watched = !this.watched;
           this.video.watched = !this.video.watched;
@@ -105,10 +115,10 @@ export class WatchedIndicatorComponent implements OnInit {
       const watched = this.asAdmin ? item.watched : item.watchedByUser;
 
       counts.watched += watched ? 1 : 0;
-      counts.unwatched += watched ? 0 : 1;
+      counts.unwatched += watched || watched == null ? 0 : 1;
     }
 
-    if ((item as LibraryItem).data)
+    if ((item as LibraryItem).data?.length > 1)
       (item as LibraryItem).data.forEach(i => this.examineWatchedStates(i, counts));
 
     if (atTop) {
