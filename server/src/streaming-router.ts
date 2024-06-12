@@ -3,7 +3,7 @@ import paths from 'path';
 import { existsAsync, isDemo, jsonOrJsonp, username, watched, webSocketSend } from './vs-util';
 import { LibraryItem, PlaybackProgress } from './shared-types';
 import { getDb } from './settings';
-import { findId } from './library-router';
+import { findId, updateCache } from './library-router';
 
 export const router = Router();
 
@@ -35,14 +35,16 @@ router.put('/progress', async (req, res) => {
 
     if (progress.id) {
       let id = progress.id;
-      let match = findId(id);
+      const match = findId(id);
 
       if (match) {
-        while (match.parentId > 0) {
-          const parent = findId(match.parentId);
+        let item = match;
+
+        while (item.parentId > 0) {
+          const parent = findId(item.parentId);
 
           if (parent) {
-            match = parent;
+            item = parent;
             id = parent.id;
           }
           else
@@ -50,6 +52,7 @@ router.put('/progress', async (req, res) => {
         }
 
         setWatched(match, wasWatched);
+        updateCache(match.id).finally();
       }
 
       webSocketSend({ type: 'idUpdate', data: id });

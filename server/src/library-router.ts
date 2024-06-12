@@ -943,6 +943,55 @@ function setWatched(item: LibraryItem, state: boolean): void {
     item.data.forEach(i => setWatched(i, state));
 }
 
+export async function updateCache(id: number): Promise<void> {
+  const source = findId(id);
+
+  if (!source || !await existsAsync(libraryFile))
+    return;
+
+  const lib = JSON.parse((await readFile(libraryFile)).toString('utf8')) as VideoLibrary;
+
+  if (!lib.array)
+    return;
+
+  function findTargetId(id: number, item?: LibraryItem): LibraryItem {
+    if (item?.id === id)
+      return item;
+    else if (!item || item.data) {
+      for (const child of item?.data || lib.array) {
+        const match = findTargetId(id, child);
+
+        if (match)
+          return match;
+      }
+    }
+
+    return null;
+  }
+
+  const target = findTargetId(id);
+
+  if (!target)
+    return;
+
+  function syncValues(src: LibraryItem, tar: LibraryItem): void {
+    const fields = ['watched', 'watchedByUser', 'position', 'lastPlayTime'];
+
+    for (const field of fields) {
+      if ((src as any)[field] != null)
+        (tar as any)[field] = (src as any)[field];
+    }
+
+    if (src.data && src.data.length === tar.data?.length) {
+      for (let i = 0; i < src.data.length; ++i)
+        syncValues(src.data[i], tar.data[i]);
+    }
+  }
+
+  syncValues(source, target);
+  await writeFile(libraryFile, JSON.stringify(lib), 'utf8');
+}
+
 router.put('/set-watched', async (req, res) => {
   const id = toInt(req.query.id);
   const watched = toInt(req.query.watched);
@@ -952,20 +1001,23 @@ router.put('/set-watched', async (req, res) => {
     const response = await requestJson(url);
 
     if (response.status === 200 && response.msg === 'success') {
-      let item = findId(id);
+      const item = findId(id);
 
       if (item) {
-        while (item.parentId > 0) {
-          const parent = findId(item.parentId);
+        let updateItem = item;
+
+        while (updateItem.parentId > 0) {
+          const parent = findId(updateItem.parentId);
 
           if (parent)
-            item = parent;
+            updateItem = parent;
           else
             break;
         }
 
         setWatched(item, !!watched);
-        webSocketSend({ type: 'idUpdate', data: item.id });
+        webSocketSend({ type: 'idUpdate', data: updateItem.id });
+        updateCache(id).finally();
       }
 
       jsonOrJsonp(req, res, response);

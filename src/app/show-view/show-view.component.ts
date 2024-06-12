@@ -78,6 +78,11 @@ export class ShowViewComponent implements OnInit {
   @Input() get show(): LibraryItem { return this._show; }
   set show(value: LibraryItem) {
     if (this._show !== value) {
+      let keepIndex = -1;
+
+      if (this._show && value && this._show.id === value.id && this._show.data?.length > 1 && this._show.data.length === value.data?.length)
+        keepIndex = this.videoIndex;
+
       StatusInterceptor.alive();
       this._show = value;
       this.videoChoices = [];
@@ -234,7 +239,7 @@ export class ShowViewComponent implements OnInit {
       else
         this.videoChoices = [this.choices];
 
-      this.videoIndex = max(this.videoChoices[0].findIndex(vc => !vc.watched), 0);
+      this.videoIndex = keepIndex >= 0 ? keepIndex : max(this.videoChoices[0].findIndex(vc => !vc.watchedByUser), 0);
       this.video = this.videoChoices[0][this.videoIndex];
       this.selection = this.video.parent ?? this.video;
       this.selectVideo(this.videoIndex);
