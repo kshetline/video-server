@@ -1,4 +1,4 @@
-import { LibraryItem, VType } from './shared-types';
+import { LibraryItem, VideoLibrary, VType } from './shared-types';
 import { isArray, isObject } from '@tubular/util';
 
 export function isAnyCollection(x: LibraryItem | number): boolean {
@@ -6,6 +6,13 @@ export function isAnyCollection(x: LibraryItem | number): boolean {
     x = x?.type;
 
   return x === VType.COLLECTION || x === VType.TV_COLLECTION;
+}
+
+export function isContainer(x: LibraryItem | number): boolean {
+  if (isObject(x))
+    x = x?.type;
+
+  return x === VType.COLLECTION || x === VType.TV_COLLECTION || x === VType.TV_SEASON;
 }
 
 export function isCollection(x: LibraryItem | number): boolean {
@@ -132,4 +139,38 @@ export function nie<T>(array: T[]): T[] | null {
     return array;
   else
     return null;
+}
+
+export function findAliases(id: number, itemOrLib?: LibraryItem | VideoLibrary, matches: LibraryItem[] = []): LibraryItem[] {
+  const item: LibraryItem = (itemOrLib as any).array ? null : itemOrLib as LibraryItem;
+
+  if (item?.id === id && item?.isAlias)
+    matches.push(item);
+
+  const data = item ? item.data : (itemOrLib as VideoLibrary)?.array;
+
+  if (data) {
+    for (const child of data) {
+      const match = findAliases(id, child, matches);
+
+      if (match)
+        return match;
+    }
+  }
+
+  return matches;
+}
+
+export function syncValues(src: LibraryItem, tar: LibraryItem): void {
+  const fields = ['watched', 'watchedByUser', 'position', 'lastPlayTime'];
+
+  for (const field of fields) {
+    if ((src as any)[field] != null)
+      (tar as any)[field] = (src as any)[field];
+  }
+
+  if (src.data && src.data.length === tar.data?.length) {
+    for (let i = 0; i < src.data.length; ++i)
+      syncValues(src.data[i], tar.data[i]);
+  }
 }

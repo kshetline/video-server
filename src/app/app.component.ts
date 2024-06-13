@@ -6,7 +6,7 @@ import { isEqual, isValidJson, processMillis } from '@tubular/util';
 import { floor } from '@tubular/math';
 import { AuthService } from './auth.service';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { checksum53, isAnyCollection, isMovie, isTvSeason, isTvShow, ts } from '../../server/src/shared-utils';
+import { checksum53, findAliases as _findAliases, isAnyCollection, isMovie, isTvSeason, isTvShow, syncValues, ts } from '../../server/src/shared-utils';
 import { StatusInterceptor } from './status.service';
 import { Observable } from 'rxjs';
 import { shareReplay } from 'rxjs/internal/operators/shareReplay';
@@ -208,7 +208,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   }
 
   updateItem(id: number, setCurrent = true): void {
-    this.httpClient.get<LibraryItem>('/api/library?id=' + id).subscribe(fullItem => {
+    this.httpClient.get<LibraryItem>('/api/library?id=' + id).subscribe(source => {
       this.clickDelayed = false;
 
       if (this.clickTimer) {
@@ -216,14 +216,35 @@ export class AppComponent implements AfterViewInit, OnInit {
         this.clickTimer = undefined;
       }
 
-      const index = fullItem ? this.library.array.findIndex(i => i.id === id) : -1;
+      if (!source)
+        return;
 
-      if (index >= 0) {
-        this.library.array[index] = fullItem;
-        addBackLinks(fullItem.data, fullItem);
+      const target = this.findId(id);
+
+      if (target) {
+        if (target.parent) {
+          const index = target.parent.data?.findIndex(i => i.id === id);
+
+          if (index >= 0) {
+            target.parent.data[index] = source;
+            source.parent = target.parent;
+          }
+        }
+        else {
+          const index = this.library.array.findIndex(i => i.id === id);
+
+          if (index >= 0)
+            this.library.array[index] = source;
+        }
+
+        addBackLinks(source.data, source);
+
+        const aliases = this.findAliases(id);
+
+        aliases.forEach(a => syncValues(a, source));
 
         if (setCurrent)
-          this.setItem(fullItem);
+          this.setItem(source);
 
         if (this.currentShow?.id) {
           const match = this.findId(this.currentShow.id);
@@ -260,6 +281,10 @@ export class AppComponent implements AfterViewInit, OnInit {
     }
 
     return null;
+  }
+
+  findAliases(id: number): LibraryItem[] {
+    return _findAliases(id, this.library);
   }
 
   private pollLibrary(): void {

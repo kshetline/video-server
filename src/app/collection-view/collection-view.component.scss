@@ -69,7 +69,17 @@
       }
 
       .rating-wrapper {
+        display: flex;
+        gap: 0.25em;
         height: 19px;
+        position: relative;
+      }
+
+      .show-watched {
+        height: 19px;
+        position: relative;
+        top: -0.75em;
+        z-index: 103;
       }
 
       img {

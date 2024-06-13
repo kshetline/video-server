@@ -10,7 +10,9 @@
       <div class="loading">Loading...</div>
       <img [ngSrc]="getPosterUrl(item)" width=150 height=225 alt="{{item.name}}" priority>
       <div class="rating-wrapper">
+        <app-watched-indicator [video]="item" class="show-watched" [asAdmin]="true" fade="unwatched"></app-watched-indicator>
         <app-rating *ngIf="item.voteAverage" [value]="item.voteAverage" [topValue]="10"></app-rating>
+        <app-watched-indicator [video]="item" class="show-watched" fade="unwatched"></app-watched-indicator>
       </div>
       <div class="year">{{item.year || (item.data ?? [])[0]?.year || '\u00A0'}}</div>
       <div class="title" [style.font-style]="collection.isAlias ? 'italic' : 'plain'">{{item.name}}</div>

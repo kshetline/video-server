@@ -5,10 +5,14 @@ import { abs, floor, min } from '@tubular/math';
 import { requestJson } from 'by-request';
 import paths from 'path';
 import { readdir, readFile, writeFile } from 'fs/promises';
-import { cacheDir, existsAsync, isAdmin, isDemo, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat, unref, username, webSocketSend } from './vs-util';
+import {
+  cacheDir, existsAsync, isAdmin, isDemo, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat,
+  unref, username, webSocketSend
+} from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
 import {
-  comparator, hashUrl, isAnyCollection, isCollection, isFile, isMovie, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, toStreamPath
+  comparator, findAliases as _findAliases, hashUrl, isAnyCollection, isCollection, isContainer, isFile, isMovie,
+  isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, syncValues, toStreamPath
 } from './shared-utils';
 import { sendStatus } from './app';
 import { setStopPending, stopPending } from './admin-router';
@@ -763,6 +767,10 @@ export function findId(id: number): LibraryItem {
   return findVideoAux(false, id, { id: -1, data: cachedLibrary.array } as LibraryItem);
 }
 
+function findAliases(id: number, lib?: VideoLibrary): LibraryItem[] {
+  return _findAliases(id, lib || cachedLibrary);
+}
+
 export async function updateLibrary(quick = false): Promise<void> {
   if (pendingUpdate) {
     clearTimeout(pendingUpdate);
@@ -974,61 +982,78 @@ export async function updateCache(id: number): Promise<void> {
   if (!target)
     return;
 
-  function syncValues(src: LibraryItem, tar: LibraryItem): void {
-    const fields = ['watched', 'watchedByUser', 'position', 'lastPlayTime'];
-
-    for (const field of fields) {
-      if ((src as any)[field] != null)
-        (tar as any)[field] = (src as any)[field];
-    }
-
-    if (src.data && src.data.length === tar.data?.length) {
-      for (let i = 0; i < src.data.length; ++i)
-        syncValues(src.data[i], tar.data[i]);
-    }
-  }
-
   syncValues(source, target);
+
+  const aliases = findAliases(id, lib);
+
+  aliases.forEach(a => syncValues(source, a));
   await writeFile(libraryFile, JSON.stringify(lib), 'utf8');
 }
 
-router.put('/set-watched', async (req, res) => {
-  const id = toInt(req.query.id);
-  const watched = toInt(req.query.watched);
-
+async function setWatchedApi(id: number, watched: number): Promise<any> {
   try {
     const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/markAsWatched?aggregationId=${id}&watched=${watched}`;
     const response = await requestJson(url);
 
-    if (response.status === 200 && response.msg === 'success') {
-      const item = findId(id);
-
-      if (item) {
-        let updateItem = item;
-
-        while (updateItem.parentId > 0) {
-          const parent = findId(updateItem.parentId);
-
-          if (parent)
-            updateItem = parent;
-          else
-            break;
-        }
-
-        setWatched(item, !!watched);
-        webSocketSend({ type: 'idUpdate', data: updateItem.id });
-        updateCache(id).finally();
-      }
-
-      jsonOrJsonp(req, res, response);
-    }
-    else {
-      res.status(response.status === 200 ? 400 : response.status);
-      res.send(response.msg);
-    }
+    if (response.status === 200 && response.msg === 'success')
+      return null;
+    else
+      return response;
   }
   catch {
+    return { status: 500 };
+  }
+}
+
+async function setWatchedMultiple(item: LibraryItem, watched: number): Promise<any> {
+  if (!item?.data)
+    return null;
+
+  for (const child of item.data) {
+    const response = isContainer(child) ? await setWatchedMultiple(child, watched) : await setWatchedApi(child.id, watched);
+
+    if (response)
+      return response;
+  }
+
+  return null;
+}
+
+router.put('/set-watched', async (req, res) => {
+  const id = toInt(req.query.id);
+  const item = findId(id);
+  const watched = toInt(req.query.watched);
+  const response = isContainer(item) ? await setWatchedMultiple(item, watched) : await setWatchedApi(id, watched);
+
+  if (!response) {
+    if (item) {
+      let updateItem = item;
+
+      while (updateItem.parentId > 0) {
+        const parent = findId(updateItem.parentId);
+
+        if (parent)
+          updateItem = parent;
+        else
+          break;
+      }
+
+      setWatched(item, !!watched);
+
+      const aliases = findAliases(id);
+
+      aliases.forEach(a => setWatched(a, !!watched));
+      webSocketSend({ type: 'idUpdate', data: updateItem.id });
+      updateCache(id).finally();
+    }
+
+    jsonOrJsonp(req, res, response);
+  }
+  else if (response.status === 500 && !response.msg)
     res.sendStatus(500);
+  else {
+    res.status(response.status === 200 ? 400 : response.status);
+    res.send(response.msg);
   }
 });
 
@@ -1047,7 +1072,7 @@ router.get('/', async (req, res) => {
     makeSparse(response.array);
   }
   else if (req.query.id)
-    response = response.array.find(i => i.id === toNumber(req.query.id)) || null;
+    response = findId(toNumber(req.query.id));
 
   if (response)
     await updateWatchInfo((response as VideoLibrary).array ?

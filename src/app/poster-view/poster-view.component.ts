@@ -67,8 +67,8 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   readonly isCollection = isCollection;
   readonly titleAdjust = titleAdjust;
 
-  private _library: VideoLibrary;
   private _filter = 'All';
+  private _library: VideoLibrary;
   private loadingTimers = new Map<Element, any>();
   private resizeDebounceSub: Subscription;
   private resizeSub: Subscription;
