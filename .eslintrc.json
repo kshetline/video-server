@@ -6,7 +6,8 @@
   },
   "extends": [
     "standard",
-    "plugin:@typescript-eslint/eslint-recommended"
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:n/recommended"
   ],
   "globals": {
     "Atomics": "readonly",
@@ -67,6 +68,7 @@
     "import/first": "off",
     "key-spacing": "off",
     "multiline-ternary": "off",
+    "n/no-missing-import": "off",
     "node/no-callback-literal": "off",
     "no-case-declarations": "off",
     "no-control-regex": "off",

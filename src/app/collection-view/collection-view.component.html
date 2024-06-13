@@ -9,8 +9,8 @@
     <div *ngFor="let item of items" class="library-item">
       <div class="loading">Loading...</div>
       <img [ngSrc]="getPosterUrl(item)" width=150 height=225 alt="{{item.name}}" priority>
-      <div class="rating-wrapper">
-        <app-watched-indicator [video]="item" class="show-watched" [asAdmin]="true" fade="unwatched"></app-watched-indicator>
+      <div class="rating-wrapper" [style.display]="subCollection ? 'none' : 'flex'">
+        <app-watched-indicator [video]="item" class="show-watched" [asAdmin]="true" fade="unwatched" [title]="item.name"></app-watched-indicator>
         <app-rating *ngIf="item.voteAverage" [value]="item.voteAverage" [topValue]="10"></app-rating>
         <app-watched-indicator [video]="item" class="show-watched" fade="unwatched"></app-watched-indicator>
       </div>
