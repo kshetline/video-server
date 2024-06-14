@@ -95,7 +95,7 @@ export class WatchedIndicatorComponent implements OnInit {
     }
   }
 
-  private examineWatchedStates(item: LibraryItem | LibItem, counts?: WatchCounts, dataLength?: number): void {
+  private examineWatchedStates(item: LibraryItem | LibItem, counts?: WatchCounts): void {
     let atTop = false;
     const aItem = item as LibraryItem;
 
@@ -112,18 +112,20 @@ export class WatchedIndicatorComponent implements OnInit {
       this.duration = item.duration / 1000;
     }
 
+    let watched = false;
+
     if (item.duration != null && ((this.asAdmin && !isAnyCollection(aItem)) || item.streamUri)) {
-      let watched = this.asAdmin ? item.watched : item.watchedByUser;
+      watched = this.asAdmin ? item.watched : item.watchedByUser;
 
       if (atTop && this.asAdmin && !watched && aItem.parent?.watched && aItem.parent?.data?.length === 1)
         watched = true;
 
       counts.watched += watched ? 1 : 0;
-      counts.unwatched += watched || dataLength === 1 ? 0 : 1;
+      counts.unwatched += watched ? 0 : 1;
     }
 
-    if (aItem.data)
-      aItem.data.forEach(i => this.examineWatchedStates(i, counts, aItem.data.length));
+    if (aItem.data && (!watched || aItem.data.length > 1))
+      aItem.data.forEach(i => this.examineWatchedStates(i, counts));
 
     if (atTop) {
       this.watched = (counts.watched > 0);

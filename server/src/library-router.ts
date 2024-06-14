@@ -167,7 +167,8 @@ function getCodec(track: MediaInfoTrack): string {
 }
 
 const FIELDS_TO_KEEP = new Set(['id', 'parentId', 'collectionId', 'aggregationId', 'type', 'voteAverage', 'name', 'is3d',
-  'is4k', 'isHdr', 'isFHD', 'is2k', 'isHD', 'year', 'duration', 'watched', 'data', 'duration', 'uri', 'season', 'episode']);
+  'is4k', 'isHdr', 'isFHD', 'is2k', 'isHD', 'year', 'duration', 'watched', 'data', 'duration', 'uri', 'season', 'episode',
+  'position']);
 
 function filter(item: LibraryItem): void {
   if (item) {
@@ -188,7 +189,6 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
     if (item.videoinfo) {
       item.duration = item.videoinfo.duration;
       item.uri = item.videoinfo.uri;
-      item.watched = (item.videoinfo.lastWatchTime >= 0 && item.videoinfo.playPoint / item.videoinfo.duration > 0.5);
       delete item.videoinfo;
     }
 
@@ -362,8 +362,13 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
 
     if (isFile(item)) {
       const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getVideoInfo?id=${item.aggregationId}`;
-      const data: { mediaJson: string } = await requestJson(url);
+      const data: { mediaJson: string, lastWatchTime: number } = await requestJson(url);
       const mediaInfo: MediaInfo = JSON.parse(data.mediaJson || 'null');
+
+      item.position = data.lastWatchTime;
+
+      if (item.watched == null && item.duration != null)
+        item.watched = (item.position >= 0 && item.position / item.duration > 0.9);
 
       if (mediaInfo?.media?.track) {
         for (const track of mediaInfo.media.track) {

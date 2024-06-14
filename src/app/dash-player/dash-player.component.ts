@@ -9,6 +9,7 @@ import { hashUrl } from '../../../server/src/shared-utils';
 import { LibraryItem, PlaybackProgress } from '../../../server/src/shared-types';
 
 export interface LibItem {
+  aggregationId?: number;
   duration: number;
   hash: string;
   id?: number;
