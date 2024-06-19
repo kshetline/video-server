@@ -175,10 +175,6 @@ export function syncValues(src: LibraryItem, tar: LibraryItem): void {
   }
 }
 
-export function isOrDescendsFromId(item: LibraryItem, id: number): boolean {
-  return (item && (item.id === id || (item.parent && isOrDescendsFromId(item.parent, id))));
-}
-
 export function itemPath(item: LibraryItem): number[] {
   return !item ? [] : [...itemPath(item.parent), item.id];
 }

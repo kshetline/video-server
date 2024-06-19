@@ -1,5 +1,4 @@
 <div *ngIf="showIndicator()" [style.color]="asAdmin ? '#0A0' : 'white'" [style.opacity]="doFade() ? '0.33' : '1'">
-  <i class="pi" [class.pi-eye]="watched" [class.pi-eye-slash]="!watched" (click)="toggleWatched()"
-     [title]="'id: ' + video.id + ',' + video.aggregationId + ',' + (video.watched ? 1 : 0)"></i>
+  <i class="pi" [class.pi-eye]="watched" [class.pi-eye-slash]="!watched" (click)="toggleWatched()"></i>
   <div class="divider" [style.background-color]="mixed ? 'rgba(51, 51, 51, 0.67)' : 'transparent'"></div>
 </div>

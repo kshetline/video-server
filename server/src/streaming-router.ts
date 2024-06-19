@@ -13,9 +13,7 @@ function setWatched(item: LibraryItem, state: boolean): void {
 
   if (item.streamUri) {
     item.watchedByUser = state;
-
-    if (state)
-      item.lastPlayTime = -1;
+    item.lastPlayTime = state ? 1.8E12 : -1;
   }
 
   if (item.data)
@@ -38,21 +36,8 @@ router.put('/progress', async (req, res) => {
       const match = findId(id);
 
       if (match) {
-        let item = match;
-
-        while (item.parentId > 0) {
-          const parent = findId(item.parentId);
-
-          if (parent) {
-            item = parent;
-            id = parent.id;
-          }
-          else
-            break;
-        }
-
         setWatched(match, wasWatched);
-        updateCache(match.id).finally();
+        updateCache(id).finally();
       }
 
       webSocketSend({ type: 'idUpdate', data: id });
