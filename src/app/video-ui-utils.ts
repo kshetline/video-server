@@ -58,16 +58,6 @@ export function incrementImageIndex(): number {
   return ++imageIndex;
 }
 
-export function addBackLinks(children: LibraryItem[], parent?:LibraryItem): void {
-  for (const child of children || []) {
-    if (parent)
-      child.parent = parent;
-
-    if (child.data)
-      addBackLinks(child.data, child);
-  }
-}
-
 export function getTitle(item: LibraryItem, baseItem?: LibraryItem): string {
   if (!item)
     return '';

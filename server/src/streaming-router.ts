@@ -4,6 +4,7 @@ import { existsAsync, isDemo, jsonOrJsonp, username, watched, webSocketSend } fr
 import { LibraryItem, PlaybackProgress } from './shared-types';
 import { getDb } from './settings';
 import { findId, updateCache } from './library-router';
+import { isFile } from './shared-utils';
 
 export const router = Router();
 
@@ -14,6 +15,15 @@ function setWatched(item: LibraryItem, state: boolean): void {
   if (item.streamUri) {
     item.watchedByUser = state;
     item.lastPlayTime = state ? 1.8E12 : -1;
+  }
+
+  if (item.parent?.data) {
+    item.parent.data.forEach(sibling => {
+      if (sibling !== item && sibling.streamUri === item.streamUri) {
+        sibling.watchedByUser = state;
+        sibling.lastPlayTime = state ? 1.8E12 : -1;
+      }
+    });
   }
 
   if (item.data)
@@ -41,6 +51,10 @@ router.put('/progress', async (req, res) => {
       }
 
       webSocketSend({ type: 'idUpdate', data: id });
+
+      if (match.streamUri && isFile(match) && match.parent?.data &&
+          match.parent.data.reduce((sum, sibling) => sum + (sibling.streamUri === match.streamUri ? 1 : 0), 0) > 1)
+        webSocketSend({ type: 'idUpdate', data: match.parent.id });
     }
 
     res.sendStatus(200);

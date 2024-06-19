@@ -1,12 +1,15 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { LibraryItem, ServerStatus, VideoLibrary, VideoStats } from '../../server/src/shared-types';
-import { addBackLinks, broadcastMessage, getZIndex, incrementImageIndex, webSocketMessagesEmitter } from './video-ui-utils';
+import { broadcastMessage, getZIndex, incrementImageIndex, webSocketMessagesEmitter } from './video-ui-utils';
 import { isEqual, isValidJson, processMillis } from '@tubular/util';
 import { floor } from '@tubular/math';
 import { AuthService } from './auth.service';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { checksum53, findAliases as _findAliases, isAnyCollection, isMovie, isTvSeason, isTvShow, itemPath, syncValues, ts } from '../../server/src/shared-utils';
+import {
+  addBackLinks, checksum53, findAliases as _findAliases, isAnyCollection, isMovie, isTvSeason, isTvShow,
+  itemPath, syncValues, ts
+} from '../../server/src/shared-utils';
 import { StatusInterceptor } from './status.service';
 import { Observable } from 'rxjs';
 import { shareReplay } from 'rxjs/internal/operators/shareReplay';
@@ -512,11 +515,6 @@ export class AppComponent implements AfterViewInit, OnInit {
 }
 
 let This: AppComponent;
-
-export function updateItem(id: number): void {
-  if (This)
-    This.updateItem(id, false);
-}
 
 export function updatedItem(item: LibraryItem): LibraryItem {
   if (This)

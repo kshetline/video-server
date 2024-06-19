@@ -8,13 +8,6 @@ export function isAnyCollection(x: LibraryItem | number): boolean {
   return x === VType.COLLECTION || x === VType.TV_COLLECTION;
 }
 
-export function isContainer(x: LibraryItem | number): boolean {
-  if (isObject(x))
-    x = x?.type;
-
-  return x === VType.COLLECTION || x === VType.TV_COLLECTION || x === VType.TV_SHOW || x === VType.TV_SEASON;
-}
-
 export function isCollection(x: LibraryItem | number): boolean {
   return (isObject(x) ? x?.type : x) === VType.COLLECTION;
 }
@@ -177,4 +170,39 @@ export function syncValues(src: LibraryItem, tar: LibraryItem): void {
 
 export function itemPath(item: LibraryItem): number[] {
   return !item ? [] : [...itemPath(item.parent), item.id];
+}
+
+export function addBackLinks(children: LibraryItem[], parent?: LibraryItem): void {
+  if (!children)
+    return;
+
+  for (const child of children || []) {
+    if (parent)
+      child.parent = parent;
+
+    if (child.data)
+      addBackLinks(child.data, child);
+  }
+}
+
+export function removeBackLinks(childrenOrLibOrItem: VideoLibrary | LibraryItem | LibraryItem[]): void {
+  let children: LibraryItem[] = [];
+
+  if (!childrenOrLibOrItem)
+    return;
+  else if ((childrenOrLibOrItem as VideoLibrary).array)
+    children = (childrenOrLibOrItem as VideoLibrary).array;
+  else if (!isArray(childrenOrLibOrItem)) {
+    removeBackLinks([childrenOrLibOrItem as LibraryItem]);
+    return;
+  }
+  else
+    children = childrenOrLibOrItem as LibraryItem[];
+
+  for (const child of children) {
+    delete child.parent;
+
+    if (child.data)
+      removeBackLinks(child.data);
+  }
 }

@@ -11,8 +11,9 @@ import {
 } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
 import {
-  comparator, findAliases as _findAliases, hashUrl, isAnyCollection, isCollection, isContainer, isFile, isMovie,
-  isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, syncValues, toStreamPath
+  addBackLinks,
+  comparator, findAliases as _findAliases, hashUrl, isAnyCollection, isCollection, isFile, isMovie,
+  isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, removeBackLinks, syncValues, toStreamPath
 } from './shared-utils';
 import { sendStatus } from './app';
 import { setStopPending, stopPending } from './admin-router';
@@ -179,7 +180,7 @@ function filter(item: LibraryItem): void {
         delete (item as any)[key];
     }
 
-    if (isContainer(item))
+    if (!isFile(item))
       delete item.watched;
   }
 }
@@ -841,6 +842,7 @@ export async function updateLibrary(quick = false): Promise<void> {
     sendStatus();
 
     await writeFile(libraryFile, JSON.stringify(cachedLibrary), 'utf8');
+    addBackLinks(cachedLibrary.array);
   }
   catch (e) {
     console.log('Mappings update failed:', e);
@@ -872,6 +874,7 @@ export function initLibrary(): void {
 
   if (stats) {
     cachedLibrary = JSON.parse(readFileSync(libraryFile).toString('utf8'));
+    addBackLinks(cachedLibrary.array)
     mapDurations();
   }
 
@@ -951,7 +954,7 @@ function setWatched(item: LibraryItem, state: boolean): void {
   if (!item)
     return;
 
-  if (item.watched != null || !isContainer(item)) {
+  if (item.watched != null || isFile(item)) {
     item.watched = state;
     item.position = state ? 1.8E12 : -1;
   }
@@ -1019,7 +1022,7 @@ async function setWatchedMultiple(item: LibraryItem, watched: number): Promise<a
     return null;
 
   for (const child of item.data) {
-    const response = isContainer(child) ? await setWatchedMultiple(child, watched) : await setWatchedApi(child.id, watched);
+    const response = isFile(child) ? await setWatchedApi(child.id, watched) : await setWatchedMultiple(child, watched);
 
     if (response)
       return response;
@@ -1032,7 +1035,7 @@ router.put('/set-watched', async (req, res) => {
   const id = toInt(req.query.id);
   const item = findId(id);
   const watched = toInt(req.query.watched);
-  const response = isContainer(item) ? await setWatchedMultiple(item, watched) : await setWatchedApi(id, watched);
+  const response = isFile(item) ? await setWatchedApi(id, watched) : await setWatchedMultiple(item, watched);
 
   if (!response) {
     if (item) {
@@ -1076,5 +1079,6 @@ router.get('/', async (req, res) => {
     await updateWatchInfo((response as VideoLibrary).array ?
       (response as VideoLibrary).array : [response as LibraryItem], username(req));
 
+  removeBackLinks(response);
   jsonOrJsonp(req, res, response);
 });

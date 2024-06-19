@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { LibraryItem, PlaybackProgress } from '../../../server/src/shared-types';
 import { AuthService } from '../auth.service';
 import { HttpClient } from '@angular/common/http';
-import { hashUrl, isAnyCollection, itemPath } from '../../../server/src/shared-utils';
+import { hashUrl, isAnyCollection, isFile, itemPath } from '../../../server/src/shared-utils';
 import { LibItem } from '../dash-player/dash-player.component';
 import { webSocketMessagesEmitter } from '../video-ui-utils';
 import { updatedItem } from '../app.component';
@@ -116,19 +116,14 @@ export class WatchedIndicatorComponent implements OnInit {
       this.duration = item.duration / 1000;
     }
 
-    let watched = false;
-
-    if (item.duration != null && ((this.asAdmin && !isAnyCollection(aItem)) || item.streamUri)) {
-      watched = this.asAdmin ? item.watched : item.watchedByUser;
-
-      if (atTop && this.asAdmin && !watched && aItem.parent?.watched && aItem.parent?.data?.length === 1)
-        watched = true;
+    if (item.duration != null && ((this.asAdmin && isFile(aItem)) || item.streamUri)) {
+      let watched = this.asAdmin ? item.watched : item.watchedByUser;
 
       counts.watched += watched ? 1 : 0;
       counts.unwatched += watched ? 0 : 1;
     }
 
-    if (aItem.data && (!watched || aItem.data.length > 1))
+    if (aItem.data)
       aItem.data.forEach(i => this.examineWatchedStates(i, counts));
 
     if (atTop) {
