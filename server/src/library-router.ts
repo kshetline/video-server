@@ -874,7 +874,7 @@ export function initLibrary(): void {
 
   if (stats) {
     cachedLibrary = JSON.parse(readFileSync(libraryFile).toString('utf8'));
-    addBackLinks(cachedLibrary.array)
+    addBackLinks(cachedLibrary.array);
     mapDurations();
   }
 

@@ -2,11 +2,11 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { LibraryItem, PlaybackProgress } from '../../../server/src/shared-types';
 import { AuthService } from '../auth.service';
 import { HttpClient } from '@angular/common/http';
-import { hashUrl, isAnyCollection, isFile, itemPath } from '../../../server/src/shared-utils';
+import { hashUrl, isFile, isMovie, itemPath } from '../../../server/src/shared-utils';
 import { LibItem } from '../dash-player/dash-player.component';
 import { webSocketMessagesEmitter } from '../video-ui-utils';
 import { updatedItem } from '../app.component';
-import { isEqual } from '@tubular/util';
+import { clone, isEqual } from '@tubular/util';
 
 interface WatchCounts {
   watched: number;
@@ -24,6 +24,7 @@ export class WatchedIndicatorComponent implements OnInit {
   private stream: string;
   private _video: LibraryItem | LibItem;
 
+  incomplete = false;
   mixed = false;
   watched = false;
 
@@ -107,6 +108,7 @@ export class WatchedIndicatorComponent implements OnInit {
       atTop = true;
       this.duration = 0;
       this.stream = null;
+      this.incomplete = false;
       this.mixed = false;
       counts = { watched: 0, unwatched: 0 };
     }
@@ -116,9 +118,11 @@ export class WatchedIndicatorComponent implements OnInit {
       this.duration = item.duration / 1000;
     }
 
-    if (item.duration != null && ((this.asAdmin && isFile(aItem)) || item.streamUri)) {
-      let watched = this.asAdmin ? item.watched : item.watchedByUser;
+    const priorCounts = clone(counts);
+    let watched = false;
 
+    if (item.duration != null && ((this.asAdmin && isFile(aItem)) || item.streamUri)) {
+      watched = this.asAdmin ? item.watched : item.watchedByUser;
       counts.watched += watched ? 1 : 0;
       counts.unwatched += watched ? 0 : 1;
     }
@@ -128,7 +132,12 @@ export class WatchedIndicatorComponent implements OnInit {
 
     if (atTop) {
       this.watched = (counts.watched > 0);
-      this.mixed = (counts.watched > 0 && counts.unwatched > 0);
+      this.incomplete = (counts.watched > 0 && counts.unwatched > 0);
+      this.mixed = this.incomplete && !isMovie(aItem);
+    }
+    else if (counts.watched > priorCounts.watched && isMovie(aItem)) {
+      counts.watched = priorCounts.watched + aItem.data.length;
+      counts.unwatched = priorCounts.unwatched;
     }
   }
 }
