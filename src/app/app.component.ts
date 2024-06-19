@@ -6,7 +6,7 @@ import { isEqual, isValidJson, processMillis } from '@tubular/util';
 import { floor } from '@tubular/math';
 import { AuthService } from './auth.service';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { checksum53, findAliases as _findAliases, isAnyCollection, isMovie, isTvSeason, isTvShow, syncValues, ts } from '../../server/src/shared-utils';
+import { checksum53, findAliases as _findAliases, isAnyCollection, isMovie, isTvSeason, isTvShow, itemPath, syncValues, ts } from '../../server/src/shared-utils';
 import { StatusInterceptor } from './status.service';
 import { Observable } from 'rxjs';
 import { shareReplay } from 'rxjs/internal/operators/shareReplay';
@@ -237,11 +237,17 @@ export class AppComponent implements AfterViewInit, OnInit {
             this.library.array[index] = source;
         }
 
+        setTimeout(() => broadcastMessage('idUpdate2', itemPath(target)));
         addBackLinks(source.data, source);
 
         const aliases = this.findAliases(id);
 
-        aliases.forEach(a => syncValues(a, source));
+        aliases.forEach(a => {
+          if (a !== source) {
+            syncValues(source, a);
+            setTimeout(() => broadcastMessage('idUpdate2', itemPath(a)));
+          }
+        });
 
         if (setCurrent)
           this.setItem(source);
@@ -265,20 +271,42 @@ export class AppComponent implements AfterViewInit, OnInit {
     });
   }
 
-  findId(id: number, item?: LibraryItem): LibraryItem {
+  updatedItem(item: LibraryItem): LibraryItem {
+    const path = itemPath(item);
+    let newItem: LibraryItem;
+    let array = this.library?.array;
+
+    while (array && path.length > 0) {
+      const id = path.splice(0, 1)[0];
+
+      newItem = array.find(a => a.id === id);
+
+      if (!newItem)
+        break;
+
+      array = newItem.data;
+    }
+
+    return newItem;
+  }
+
+  findId(id: number, item?: LibraryItem, canBeAlias?: boolean): LibraryItem {
     if (!item)
       item = { data: this.library.array } as LibraryItem;
 
-    if (item.id === id)
+    if (item.id === id && (canBeAlias || !item.isAlias))
       return item;
     else if (item.data) {
       for (const child of item.data) {
-        const match = this.findId(id, child);
+        const match = this.findId(id, child, !!canBeAlias);
 
         if (match)
           return match;
       }
     }
+
+    if (canBeAlias == null)
+      return this.findId(id, null, true);
 
     return null;
   }
@@ -488,4 +516,11 @@ let This: AppComponent;
 export function updateItem(id: number): void {
   if (This)
     This.updateItem(id, false);
+}
+
+export function updatedItem(item: LibraryItem): LibraryItem {
+  if (This)
+    return This.updatedItem(item);
+  else
+    return null;
 }

@@ -54,7 +54,9 @@ export class CollectionViewComponent {
   }
 
   onClick(item: LibraryItem): void {
-    if (isCollection(item) || isTvShow(item))
+    if (this.subCollection)
+      return;
+    else if (isCollection(item) || isTvShow(item))
       this.subCollection = item;
     else
       this.showSelected.emit(item);

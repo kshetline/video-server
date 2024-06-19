@@ -12,7 +12,7 @@ export function isContainer(x: LibraryItem | number): boolean {
   if (isObject(x))
     x = x?.type;
 
-  return x === VType.COLLECTION || x === VType.TV_COLLECTION || x === VType.TV_SEASON;
+  return x === VType.COLLECTION || x === VType.TV_COLLECTION || x === VType.TV_SHOW || x === VType.TV_SEASON;
 }
 
 export function isCollection(x: LibraryItem | number): boolean {
@@ -173,4 +173,12 @@ export function syncValues(src: LibraryItem, tar: LibraryItem): void {
     for (let i = 0; i < src.data.length; ++i)
       syncValues(src.data[i], tar.data[i]);
   }
+}
+
+export function isOrDescendsFromId(item: LibraryItem, id: number): boolean {
+  return (item && (item.id === id || (item.parent && isOrDescendsFromId(item.parent, id))));
+}
+
+export function itemPath(item: LibraryItem): number[] {
+  return !item ? [] : [...itemPath(item.parent), item.id];
 }

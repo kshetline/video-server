@@ -2,9 +2,11 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { LibraryItem, PlaybackProgress } from '../../../server/src/shared-types';
 import { AuthService } from '../auth.service';
 import { HttpClient } from '@angular/common/http';
-import { hashUrl, isAnyCollection } from '../../../server/src/shared-utils';
+import { hashUrl, isAnyCollection, itemPath } from '../../../server/src/shared-utils';
 import { LibItem } from '../dash-player/dash-player.component';
 import { webSocketMessagesEmitter } from '../video-ui-utils';
+import { updatedItem } from '../app.component';
+import { isEqual } from '@tubular/util';
 
 interface WatchCounts {
   watched: number;
@@ -30,9 +32,13 @@ export class WatchedIndicatorComponent implements OnInit {
   ngOnInit(): void {
     webSocketMessagesEmitter().subscribe(msg => {
       switch (msg.type) {
-        case 'idUpdate':
-          if (this.video)
+        case 'idUpdate2':
+          const path = itemPath(this.video as LibraryItem);
+
+          if (isEqual((msg.data as number[]).slice(0, path.length), path)) {
+            this.video = updatedItem(this.video as LibraryItem);
             this.examineWatchedStates(this.video);
+          }
           break;
       }
     });
@@ -82,14 +88,12 @@ export class WatchedIndicatorComponent implements OnInit {
           .subscribe(() => {
             this.onUpdate.emit();
             this.watched = !this.watched;
-            this.video.watchedByUser = this.watched;
           });
       }
       else if (this.asAdmin && this.video.id) {
         this.httpClient.put(`/api/library/set-watched?id=${this.video.id}&watched=${this.watched ? 0 : 1}`, null).subscribe(() => {
           this.onUpdate.emit();
           this.watched = !this.watched;
-          this.video.watched = !this.video.watched;
         });
       }
     }

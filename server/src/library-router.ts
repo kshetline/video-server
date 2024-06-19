@@ -178,6 +178,9 @@ function filter(item: LibraryItem): void {
       if (!FIELDS_TO_KEEP.has(key))
         delete (item as any)[key];
     }
+
+    if (isContainer(item))
+      delete item.watched;
   }
 }
 
@@ -367,7 +370,7 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
 
       item.position = data.lastWatchTime;
 
-      if (item.watched == null && item.duration != null)
+      if (item.duration != null)
         item.watched = (item.position >= 0 && item.position / item.duration > 0.9);
 
       if (mediaInfo?.media?.track) {
@@ -749,17 +752,20 @@ async function addMappings(): Promise<void> {
   pendingLibrary.array.push(...aliasedItems);
 }
 
-function findVideoAux(asFile: boolean, id: number, item: LibraryItem): LibraryItem {
-  if ((!asFile || isFile(item)) && item.id === id)
+function findVideoAux(asFile: boolean, id: number, item: LibraryItem, canBeAlias?: boolean): LibraryItem {
+  if ((!asFile || isFile(item)) && item.id === id && !item.isAlias)
     return item;
   else if (item.data) {
     for (const child of item.data) {
-      const match = findVideoAux(asFile, id, child);
+      const match = findVideoAux(asFile, id, child, !!canBeAlias);
 
       if (match)
         return match;
     }
   }
+
+  if (canBeAlias == null)
+    return findVideoAux(asFile, id, item, true);
 
   return null;
 }
@@ -945,11 +951,9 @@ function setWatched(item: LibraryItem, state: boolean): void {
   if (!item)
     return;
 
-  if (item.watched != null) {
+  if (item.watched != null || !isContainer(item)) {
     item.watched = state;
-
-    if (state)
-      item.position = -1;
+    item.position = state ? 1.8E12 : -1;
   }
 
   if (item.data)
@@ -1032,23 +1036,12 @@ router.put('/set-watched', async (req, res) => {
 
   if (!response) {
     if (item) {
-      let updateItem = item;
-
-      while (updateItem.parentId > 0) {
-        const parent = findId(updateItem.parentId);
-
-        if (parent)
-          updateItem = parent;
-        else
-          break;
-      }
-
       setWatched(item, !!watched);
 
       const aliases = findAliases(id);
 
       aliases.forEach(a => setWatched(a, !!watched));
-      webSocketSend({ type: 'idUpdate', data: updateItem.id });
+      webSocketSend({ type: 'idUpdate', data: item.id });
       updateCache(id).finally();
     }
 
