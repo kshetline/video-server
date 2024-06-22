@@ -14,14 +14,14 @@ function setWatched(item: LibraryItem, state: boolean): void {
 
   if (item.streamUri) {
     item.watchedByUser = state;
-    item.lastPlayTime = state ? 1.8E12 : -1;
+    item.lastPlayTime = state ? Date.now() : -1;
   }
 
   if (item.parent?.data) {
     item.parent.data.forEach(sibling => {
       if (sibling !== item && sibling.streamUri === item.streamUri) {
         sibling.watchedByUser = state;
-        sibling.lastPlayTime = state ? 1.8E12 : -1;
+        sibling.lastPlayTime = state ? Date.now() : -1;
       }
     });
   }

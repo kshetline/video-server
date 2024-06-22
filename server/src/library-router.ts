@@ -366,13 +366,11 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
 
     if (isFile(item)) {
       const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getVideoInfo?id=${item.aggregationId}`;
-      const data: { mediaJson: string, lastWatchTime: number } = await requestJson(url);
+      const data: { mediaJson: string, lastWatchTime: number, playPoint: number } = await requestJson(url);
       const mediaInfo: MediaInfo = JSON.parse(data.mediaJson || 'null');
 
-      item.position = data.lastWatchTime;
-
-      if (item.duration != null)
-        item.watched = (item.position >= 0 && item.position / item.duration > 0.9);
+      item.lastWatchTime = data.lastWatchTime;
+      item.position = data.playPoint;
 
       if (mediaInfo?.media?.track) {
         for (const track of mediaInfo.media.track) {
@@ -479,10 +477,11 @@ async function getDirectories(dir: string, bonusDirs: Set<string>, map: Map<stri
   return count;
 }
 
-const MOVIE_DETAILS = new Set(['backdropPath', 'certification', 'homepage', 'logo', 'overview', 'posterPath',
-  'ratingTomatoes', 'releaseDate', 'tagLine']);
+const MOVIE_DETAILS = new Set(['addedTime', 'backdropPath', 'certification', 'homepage', 'logo', 'lastWatchTime',
+  'overview', 'posterPath', 'ratingTomatoes', 'releaseDate', 'tagLine', 'watched']);
 const SEASON_DETAILS = new Set(['episodeCount', 'overview', 'posterPath', 'seasonNumber']);
-const EPISODE_DETAILS = new Set(['airDate', 'episodeCount', 'overview', 'posterPath', 'seasonNumber', 'watched']);
+const EPISODE_DETAILS = new Set(['addedTime', 'airDate', 'episodeCount', 'lastWatchTime', 'overview', 'position',
+  'posterPath', 'seasonNumber', 'watched']);
 
 async function getShowInfo(items: LibraryItem[]): Promise<void> {
   for (const item of items || []) {
@@ -513,16 +512,18 @@ async function getShowInfo(items: LibraryItem[]): Promise<void> {
           item.tvType = showInfo.tv.type;
       }
 
-      if (isMovie(item)) {
-        if (topInfo) {
+      let tv = false;
+
+      if (topInfo) {
+        if (isMovie(item)) {
           forEach(topInfo, (key, value) => {
             if (MOVIE_DETAILS.has(key) && value)
               (item as any)[key] = value;
           });
         }
-      }
-      else {
-        if (topInfo) {
+        else if (isTvShow(item)) {
+          tv = true;
+
           forEach(topInfo, (key, value) => {
             if (key === 'seasonNumber' && isNumber(value))
               item.season = value;
@@ -531,18 +532,24 @@ async function getShowInfo(items: LibraryItem[]): Promise<void> {
           });
         }
 
-        const episodeInfo = showInfo.aggregation?.aggregations;
+        const videoInfo = showInfo.aggregation?.aggregations;
 
-        if (episodeInfo?.length > 0 && item.data?.length > 0) {
-          for (const info of episodeInfo) {
+        if (videoInfo?.length > 0 && item.data?.length > 0) {
+          for (const info of videoInfo) {
             const inner = info.aggregation;
-            const match = inner?.episodeNumber != null && item.data.find(d => d.episode === inner.episodeNumber);
+            const match = (tv && inner?.episodeNumber != null && item.data.find(d => d.episode === inner.episodeNumber)) ||
+                          (!tv && inner?.name && item.data.find(d => d.name === inner.name));
 
             if (match) {
-              forEach(inner, (key, value) => {
-                if (EPISODE_DETAILS.has(key) && value != null && value !== '')
+              Object.assign(info, inner);
+
+              forEach(info, (key, value) => {
+                if ((tv ? EPISODE_DETAILS : MOVIE_DETAILS).has(key) && value != null && value !== '')
                   (match as any)[key] = value;
               });
+
+              if (inner.playPoint != null)
+                match.position = inner.playPoint;
             }
           }
         }
@@ -956,7 +963,7 @@ function setWatched(item: LibraryItem, state: boolean): void {
 
   if (item.watched != null || isFile(item)) {
     item.watched = state;
-    item.position = state ? 1.8E12 : -1;
+    item.position = state ? Date.now() : -1;
   }
 
   if (item.data)

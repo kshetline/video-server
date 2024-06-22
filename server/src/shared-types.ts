@@ -47,6 +47,7 @@ export interface LibraryItem {
     name: string;
     profilePath: string;
   }[];
+  addedTime?: number;
   airDate?: string;
   aliasPosterPath?: string;
   aspectRatio?: string;
@@ -79,7 +80,8 @@ export interface LibraryItem {
   isSD?: boolean;
   isTV?: boolean;
   isTvMovie?: boolean;
-  lastPlayTime?: number;
+  lastPlayTime?: number; // TODO: Rename for streaming playback
+  lastWatchTime?: number;
   logo?: string;
   mobileUri?: string;
   originalName?: string;
@@ -154,7 +156,10 @@ export interface MediaInfo {
 
 export interface ShowInfo {
   aggregation: {
+    duration: number;
     name: string;
+    position: number;
+    watched: boolean;
     aggregation: {
       airDate: string;
       backdropPath: string;
@@ -175,11 +180,16 @@ export interface ShowInfo {
     aggregations: [{
       id: number;
       name: string;
+      position: number;
+      watched: boolean;
       aggregation: {
+        addedTime: number;
         airDate: string;
         episodeNumber: number;
+        lastWatchTime: number;
         name: string;
         overview: string;
+        playPoint: number;
         seasonNumber: number;
         stillPath: string;
         voteAverage: number;
