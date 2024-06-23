@@ -2,16 +2,11 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { LibraryItem, PlaybackProgress } from '../../../server/src/shared-types';
 import { AuthService } from '../auth.service';
 import { HttpClient } from '@angular/common/http';
-import { hashUrl, isFile, isMovie, itemPath } from '../../../server/src/shared-utils';
+import { getWatchInfo, hashUrl, itemPath } from '../../../server/src/shared-utils';
 import { LibItem } from '../dash-player/dash-player.component';
 import { webSocketMessagesEmitter } from '../video-ui-utils';
 import { updatedItem } from '../app.component';
-import { clone, isEqual } from '@tubular/util';
-
-interface WatchCounts {
-  watched: number;
-  unwatched: number;
-}
+import { isEqual } from '@tubular/util';
 
 @Component({
   selector: 'app-watched-indicator',
@@ -100,44 +95,13 @@ export class WatchedIndicatorComponent implements OnInit {
     }
   }
 
-  private examineWatchedStates(item: LibraryItem | LibItem, counts?: WatchCounts): void {
-    let atTop = false;
-    const aItem = item as LibraryItem;
+  private examineWatchedStates(item: LibraryItem | LibItem): void {
+    const wi = getWatchInfo(this.asAdmin, item as LibraryItem);
 
-    if (!counts) {
-      atTop = true;
-      this.duration = 0;
-      this.stream = null;
-      this.incomplete = false;
-      this.mixed = false;
-      counts = { watched: 0, unwatched: 0 };
-    }
-
-    if (!this.asAdmin && item.streamUri && !this.stream) {
-      this.stream = item.streamUri;
-      this.duration = item.duration / 1000;
-    }
-
-    const priorCounts = clone(counts);
-    let watched = false;
-
-    if (item.duration != null && ((this.asAdmin && isFile(aItem)) || item.streamUri)) {
-      watched = this.asAdmin ? item.watched : item.watchedByUser;
-      counts.watched += watched ? 1 : 0;
-      counts.unwatched += watched ? 0 : 1;
-    }
-
-    if (aItem.data)
-      aItem.data.forEach(i => this.examineWatchedStates(i, counts));
-
-    if (atTop) {
-      this.watched = (counts.watched > 0);
-      this.incomplete = (counts.watched > 0 && counts.unwatched > 0);
-      this.mixed = this.incomplete && !isMovie(aItem);
-    }
-    else if (counts.watched > priorCounts.watched && isMovie(aItem)) {
-      counts.watched = priorCounts.watched + aItem.data.length;
-      counts.unwatched = priorCounts.unwatched;
-    }
+    this.duration = wi.duration;
+    this.incomplete = wi.incomplete;
+    this.mixed = wi.mixed;
+    this.stream = wi.stream;
+    this.watched = wi.watched;
   }
 }

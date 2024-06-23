@@ -1,5 +1,5 @@
 import { LibraryItem, VideoLibrary, VType } from './shared-types';
-import { isArray, isObject } from '@tubular/util';
+import { clone, isArray, isObject } from '@tubular/util';
 
 export function isAnyCollection(x: LibraryItem | number): boolean {
   if (isObject(x))
@@ -205,4 +205,63 @@ export function removeBackLinks(childrenOrLibOrItem: VideoLibrary | LibraryItem 
     if (child.data)
       removeBackLinks(child.data);
   }
+}
+
+export interface WatchInfo {
+  counts?: {
+    watched: number;
+    unwatched: number;
+  },
+  duration: number;
+  incomplete: boolean;
+  mixed: boolean;
+  position: number;
+  stream?: string;
+  watched: boolean;
+}
+
+export function getWatchInfo(asAdmin: boolean, item: LibraryItem, wi?: WatchInfo): WatchInfo {
+  let atTop = false;
+
+  if (!wi) {
+    atTop = true;
+    wi = {
+      counts: { watched: 0, unwatched: 0},
+      duration: 0,
+      incomplete: false,
+      mixed: false,
+      position: 0,
+      watched: false
+    };
+  }
+
+  if (!asAdmin && item.streamUri && !wi.stream) {
+    wi.stream = item.streamUri;
+    wi.duration = item.duration / 1000;
+  }
+
+  const priorCounts = clone(wi.counts);
+  let watched = false;
+
+  if (item.duration != null && ((asAdmin && isFile(item)) || item.streamUri)) {
+    watched = asAdmin ? item.watched : item.watchedByUser;
+    wi.counts.watched += watched ? 1 : 0;
+    wi.counts.unwatched += watched ? 0 : 1;
+  }
+
+  if (item.data)
+    item.data.forEach(i => getWatchInfo(asAdmin, i, wi));
+
+  if (atTop) {
+    wi.watched = (wi.counts.watched > 0);
+    wi.incomplete = (wi.counts.watched > 0 && wi.counts.unwatched > 0);
+    wi.mixed = wi.incomplete && !isMovie(item);
+    delete wi.counts;
+  }
+  else if (wi.counts.watched > priorCounts.watched && isMovie(item)) {
+    wi.counts.watched = priorCounts.watched + item.data.length;
+    wi.counts.unwatched = priorCounts.unwatched;
+  }
+
+  return wi;
 }
