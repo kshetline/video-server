@@ -80,7 +80,7 @@ export interface LibraryItem {
   isSD?: boolean;
   isTV?: boolean;
   isTvMovie?: boolean;
-  lastPlayTime?: number; // TODO: Rename for streaming playback
+  lastUserWatchTime?: number;
   lastWatchTime?: number;
   logo?: string;
   mobileUri?: string;
@@ -88,6 +88,7 @@ export interface LibraryItem {
   overview?: string;
   parent?: LibraryItem;
   position?: number;
+  positionUser?: number;
   posterPath?: string;
   ratingTomatoes?: string;
   releaseDate?: string;
@@ -176,6 +177,7 @@ export interface ShowInfo {
       tagLine: string;
       tvName: string;
       voteAverage: number;
+      watched?: boolean;
     },
     aggregations: [{
       id: number;

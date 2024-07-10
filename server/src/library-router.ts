@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { LibraryItem, LibraryStatus, MediaInfo, MediaInfoTrack, PlaybackProgress, ShowInfo, Track, VideoLibrary, VType } from './shared-types';
-import { clone, forEach, isNumber, toBoolean, toInt, toNumber } from '@tubular/util';
+import { clone, forEach, isNumber, isObject, toBoolean, toInt, toNumber } from '@tubular/util';
 import { abs, floor, min } from '@tubular/math';
 import { requestJson } from 'by-request';
 import paths from 'path';
@@ -482,17 +482,29 @@ const MOVIE_DETAILS = new Set(['addedTime', 'backdropPath', 'certification', 'ho
 const SEASON_DETAILS = new Set(['episodeCount', 'overview', 'posterPath', 'seasonNumber']);
 const EPISODE_DETAILS = new Set(['addedTime', 'airDate', 'episodeCount', 'lastWatchTime', 'overview', 'position',
   'posterPath', 'seasonNumber', 'watched']);
+const FILE_DETAILS = new Set(['addedTime', 'lastWatchTime', 'overview', 'position',
+  'posterPath', 'seasonNumber', 'watched']);
 
-async function getShowInfo(items: LibraryItem[]): Promise<void> {
+async function getShowInfo(items: LibraryItem[], showInfos?: ShowInfo): Promise<void> {
   for (const item of items || []) {
     if (isNumber((item as any).seasonNumber)) {
       item.season = (item as any).seasonNumber;
       delete (item as any).seasonNumber;
     }
 
-    if (isMovie(item) || isTvShow(item) || isTvSeason(item) || isTvCollection(item)) {
-      const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getDetail?id=${item.id}`;
-      const showInfo: ShowInfo = await requestJson(url);
+    if (isMovie(item) || isTvShow(item) || isTvSeason(item) || isTvCollection(item) || isTvEpisode(item) || isFile(item)) {
+      let showInfo: ShowInfo;
+
+      if (!showInfos) {
+        const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getDetail?id=${item.id}`;
+
+        showInfo = await requestJson(url);
+      }
+      else {
+        showInfo = showInfos;
+      }
+
+      const videoInfo = showInfo.aggregation?.aggregations;
       const topInfo = showInfo.aggregation?.aggregation;
 
       if (showInfo.tv) {
@@ -513,6 +525,8 @@ async function getShowInfo(items: LibraryItem[]): Promise<void> {
       }
 
       let tv = false;
+      let file = false;
+      let season = false;
 
       if (topInfo) {
         if (isMovie(item)) {
@@ -531,25 +545,37 @@ async function getShowInfo(items: LibraryItem[]): Promise<void> {
               (item as any)[key] = value;
           });
         }
+        else if (isFile(item)) {
+          file = true;
 
-        const videoInfo = showInfo.aggregation?.aggregations;
+          if (topInfo.watched != null)
+            item.watched = topInfo.watched;
+        }
+        else if (isTvSeason(item))
+          season = true;
 
-        if (videoInfo?.length > 0 && item.data?.length > 0) {
+        if (videoInfo?.length > 0 && (file || item.data?.length > 0)) {
           for (const info of videoInfo) {
             const inner = info.aggregation;
-            const match = (tv && inner?.episodeNumber != null && item.data.find(d => d.episode === inner.episodeNumber)) ||
+            const match = (file && item) ||
+                          (tv && inner?.episodeNumber != null && item.data.find(d => d.episode === inner.episodeNumber)) ||
                           (!tv && inner?.name && item.data.find(d => d.name === inner.name));
 
             if (match) {
               Object.assign(info, inner);
 
               forEach(info, (key, value) => {
-                if ((tv ? EPISODE_DETAILS : MOVIE_DETAILS).has(key) && value != null && value !== '')
+                if ((tv ? EPISODE_DETAILS :
+                     file ? FILE_DETAILS :
+                       season ? SEASON_DETAILS : MOVIE_DETAILS).has(key) && value != null && value !== '')
                   (match as any)[key] = value;
               });
 
               if (inner.playPoint != null)
                 match.position = inner.playPoint;
+
+              if (isTvEpisode(match))
+                await getShowInfo(match.data, { aggregation: info } as unknown as ShowInfo);
             }
           }
         }
@@ -564,8 +590,8 @@ async function getShowInfo(items: LibraryItem[]): Promise<void> {
       if (showInfo.genres)
         item.genres = showInfo.genres.map(g => g.name);
 
-      if (isTvCollection(item) || isTvShow(item))
-        await getShowInfo(item.data);
+      if (isTvCollection(item) || isTvShow(item) || isTvSeason(item))
+        await getShowInfo(item.data, showInfo?.aggregation as unknown as ShowInfo);
     }
     else
       await getShowInfo(item.data);
@@ -923,7 +949,9 @@ async function updateWatchInfo(items: LibraryItem[], user: string): Promise<void
         const row = await db.get('SELECT * FROM watched WHERE user = ? AND video = ?', user, hashUrl(item.streamUri)) as PlaybackProgress;
 
         if (row) {
-          item.lastPlayTime = row.offset;
+          item.duration = item.duration || row.duration;
+          item.lastUserWatchTime = row.last_watched;
+          item.positionUser = row.offset;
           item.watchedByUser = row.watched;
         }
       }
@@ -963,7 +991,8 @@ function setWatched(item: LibraryItem, state: boolean): void {
 
   if (item.watched != null || isFile(item)) {
     item.watched = state;
-    item.position = state ? Date.now() : -1;
+    item.lastWatchTime = state ? Date.now() : -1;
+    item.position = state ? 0 : -1;
   }
 
   if (item.data)
@@ -1009,13 +1038,17 @@ export async function updateCache(id: number): Promise<void> {
   await writeFile(libraryFile, JSON.stringify(lib), 'utf8');
 }
 
-async function setWatchedApi(id: number, watched: number): Promise<any> {
+async function setWatchedApi(item: LibraryItem, watched: number): Promise<any> {
   try {
-    const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/markAsWatched?aggregationId=${id}&watched=${watched}`;
+    // Despite the parameter name 'aggregationId', this take plain-old 'id' instead.
+    const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/markAsWatched?aggregationId=${item.id}&watched=${watched}`;
     const response = await requestJson(url);
 
-    if (response.status === 200 && response.msg === 'success')
+    if (response.status === 200 && response.msg === 'success') {
+      item.watched = !!watched;
+
       return null;
+    }
     else
       return response;
   }
@@ -1029,7 +1062,7 @@ async function setWatchedMultiple(item: LibraryItem, watched: number): Promise<a
     return null;
 
   for (const child of item.data) {
-    const response = isFile(child) ? await setWatchedApi(child.id, watched) : await setWatchedMultiple(child, watched);
+    const response = isFile(child) ? await setWatchedApi(child, watched) : await setWatchedMultiple(child, watched);
 
     if (response)
       return response;
@@ -1042,7 +1075,7 @@ router.put('/set-watched', async (req, res) => {
   const id = toInt(req.query.id);
   const item = findId(id);
   const watched = toInt(req.query.watched);
-  const response = isFile(item) ? await setWatchedApi(id, watched) : await setWatchedMultiple(item, watched);
+  const response = isFile(item) ? await setWatchedApi(item, watched) : await setWatchedMultiple(item, watched);
 
   if (!response) {
     if (item) {
@@ -1087,5 +1120,21 @@ router.get('/', async (req, res) => {
       (response as VideoLibrary).array : [response as LibraryItem], username(req));
 
   removeBackLinks(response);
+
+  if (toBoolean(req.query.test)) {
+    const keep = new Set(['watched', 'name', 'title', 'type', 'id', 'aggregationId', 'position', 'playPoint']);
+    const skip = new Set(['audio', 'video', 'subtitle', 'actors', 'directors', 'genres']);
+    function strip(obj: any): void {
+      const keys = Object.keys(obj);
+      for (const key of keys) {
+        if (isObject(obj[key]) && !skip.has(key))
+          strip(obj[key])
+        else if (!keep.has(key))
+          delete obj[key];
+      }
+    }
+    strip(response);
+  }
+
   jsonOrJsonp(req, res, response);
 });

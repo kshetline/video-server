@@ -1,6 +1,6 @@
 import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
 import { LibraryItem, PlaybackProgress } from '../../../server/src/shared-types';
-import { areImagesSimilar, canPlayVP9, getImageParam, getSeasonTitle, setCssVariable } from '../video-ui-utils';
+import { areImagesSimilar, canPlayVP9, getImageParam, getSeasonTitle, setCssVariable, webSocketMessagesEmitter } from '../video-ui-utils';
 import { compareCaseSecondary, encodeForUri } from '@tubular/util';
 import { floor, max, round } from '@tubular/math';
 import { HttpClient } from '@angular/common/http';
@@ -9,6 +9,7 @@ import { StatusInterceptor } from '../status.service';
 import { AuthService } from '../auth.service';
 import { MenuItem, MessageService } from 'primeng/api';
 import { ItemStreamPair } from '../dash-player/dash-player.component';
+import { updatedItem } from '../app.component';
 
 const FADER_TRANSITION_DURATION = '0.75s';
 
@@ -72,6 +73,15 @@ export class ShowViewComponent implements OnInit {
         label: `Play: ${name}`,
         command: () => this.playOnMediaPlayer(i)
       }));
+    });
+
+    webSocketMessagesEmitter().subscribe(msg => {
+      switch (msg.type) {
+        case 'idUpdate2':
+          this.choices = this.choices.map(c => updatedItem(c));
+          this.videoChoices = this.videoChoices.map(vc => vc.map(c => updatedItem(c)));
+          break;
+      }
     });
   }
 
@@ -526,7 +536,9 @@ export class ShowViewComponent implements OnInit {
         const match = hash && response.find(row => row.hash === hash);
 
         if (match) {
-          item.lastPlayTime = match.offset;
+          item.duration = item.duration || match.duration;
+          item.lastUserWatchTime = match.last_watched;
+          item.positionUser = match.offset;
           item.watchedByUser = match.watched;
         }
       }

@@ -155,7 +155,7 @@ export function findAliases(id: number, itemOrLib?: LibraryItem | VideoLibrary, 
 }
 
 export function syncValues(src: LibraryItem, tar: LibraryItem): void {
-  const fields = ['watched', 'watchedByUser', 'position', 'lastPlayTime'];
+  const fields = ['watched', 'watchedByUser', 'position', 'lastUserWatchTime'];
 
   for (const field of fields) {
     if ((src as any)[field] != null)
@@ -220,13 +220,13 @@ export interface WatchInfo {
   watched: boolean;
 }
 
-export function getWatchInfo(asAdmin: boolean, item: LibraryItem, wi?: WatchInfo): WatchInfo {
+export function getWatchInfo(asAdmin: boolean, item: LibraryItem, wi?: WatchInfo, unique = true): WatchInfo {
   let atTop = false;
 
   if (!wi) {
     atTop = true;
     wi = {
-      counts: { watched: 0, unwatched: 0},
+      counts: { watched: 0, unwatched: 0 },
       duration: 0,
       incomplete: false,
       mixed: false,
@@ -245,21 +245,37 @@ export function getWatchInfo(asAdmin: boolean, item: LibraryItem, wi?: WatchInfo
 
   if (item.duration != null && ((asAdmin && isFile(item)) || item.streamUri)) {
     watched = asAdmin ? item.watched : item.watchedByUser;
-    wi.counts.watched += watched ? 1 : 0;
+    wi.counts.watched += watched && unique ? 1 : 0;
     wi.counts.unwatched += watched ? 0 : 1;
   }
 
-  if (item.data)
-    item.data.forEach(i => getWatchInfo(asAdmin, i, wi));
+  let videoCount = 1;
+
+  if (item.data) {
+    const uniqueVideos = new Set<string>();
+
+    videoCount = item.data.length;
+    item.data.forEach(i => {
+      const path = i.streamUri || i.uri?.replace('/2K/', '/');
+
+      getWatchInfo(asAdmin, i, wi, !path || !uniqueVideos.has(path));
+
+      if (path)
+        uniqueVideos.add(path);
+    });
+
+    if (uniqueVideos.size > 0 && uniqueVideos.size < videoCount)
+      videoCount = uniqueVideos.size;
+  }
 
   if (atTop) {
     wi.watched = (wi.counts.watched > 0);
-    wi.incomplete = (wi.counts.watched > 0 && wi.counts.unwatched > 0);
+    wi.incomplete = (wi.counts.watched > 0 && wi.counts.watched < videoCount && wi.counts.unwatched > 0);
     wi.mixed = wi.incomplete && !isMovie(item);
     delete wi.counts;
   }
   else if (wi.counts.watched > priorCounts.watched && isMovie(item)) {
-    wi.counts.watched = priorCounts.watched + item.data.length;
+    wi.counts.watched = priorCounts.watched + videoCount;
     wi.counts.unwatched = priorCounts.unwatched;
   }
 
