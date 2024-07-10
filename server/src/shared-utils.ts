@@ -252,16 +252,21 @@ export function getWatchInfo(asAdmin: boolean, item: LibraryItem, wi?: WatchInfo
   let videoCount = 1;
 
   if (item.data) {
-    const uniqueVideos = new Set<string>();
+    const uniqueVideos = new Map<string, number>();
 
     videoCount = item.data.length;
     item.data.forEach(i => {
       const path = i.streamUri || i.uri?.replace('/2K/', '/');
+      const newPath = path && !uniqueVideos.has(path);
+      const lastCount = wi.counts.watched;
 
-      getWatchInfo(asAdmin, i, wi, !path || !uniqueVideos.has(path));
+      if (newPath)
+        uniqueVideos.set(path, 0);
+
+      getWatchInfo(asAdmin, i, wi, !path || newPath || uniqueVideos.get(path) === 0);
 
       if (path)
-        uniqueVideos.add(path);
+        uniqueVideos.set(path, wi.counts.watched > lastCount ? 1 : 0)
     });
 
     if (uniqueVideos.size > 0 && uniqueVideos.size < videoCount)
