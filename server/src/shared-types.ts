@@ -155,6 +155,29 @@ export interface MediaInfo {
   };
 }
 
+interface ShowAggregation {
+  id: number;
+  name: string;
+  position: number;
+  type: number;
+  watched: boolean;
+  aggregation: {
+    addedTime: number;
+    airDate: string;
+    episodeNumber: number;
+    id: number;
+    lastWatchTime: number;
+    name: string;
+    overview: string;
+    playPoint: number;
+    seasonNumber: number;
+    stillPath: string;
+    voteAverage: number;
+    uri: string;
+  };
+  aggregations: ShowAggregation[];
+}
+
 export interface ShowInfo {
   aggregation: {
     duration: number;
@@ -179,25 +202,7 @@ export interface ShowInfo {
       voteAverage: number;
       watched?: boolean;
     },
-    aggregations: [{
-      id: number;
-      name: string;
-      position: number;
-      watched: boolean;
-      aggregation: {
-        addedTime: number;
-        airDate: string;
-        episodeNumber: number;
-        lastWatchTime: number;
-        name: string;
-        overview: string;
-        playPoint: number;
-        seasonNumber: number;
-        stillPath: string;
-        voteAverage: number;
-        uri: string;
-      }
-    }];
+    aggregations: ShowAggregation[];
   },
   directors: [{
     name: string;
@@ -379,4 +384,15 @@ export interface PlaybackProgress {
   last_watched?: number;
   offset: number;
   watched?: boolean;
+}
+
+export interface PlayStatus {
+  status: number;
+  msg?: string;
+  video?: {
+    currentPosition: number;
+    duration: number;
+    path: string;
+    title: string;
+  }
 }

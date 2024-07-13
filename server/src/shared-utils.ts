@@ -266,7 +266,7 @@ export function getWatchInfo(asAdmin: boolean, item: LibraryItem, wi?: WatchInfo
       getWatchInfo(asAdmin, i, wi, !path || newPath || uniqueVideos.get(path) === 0);
 
       if (path)
-        uniqueVideos.set(path, wi.counts.watched > lastCount ? 1 : 0)
+        uniqueVideos.set(path, wi.counts.watched > lastCount ? 1 : 0);
     });
 
     if (uniqueVideos.size > 0 && uniqueVideos.size < videoCount)

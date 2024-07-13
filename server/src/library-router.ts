@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { LibraryItem, LibraryStatus, MediaInfo, MediaInfoTrack, PlaybackProgress, ShowInfo, Track, VideoLibrary, VType } from './shared-types';
-import { clone, forEach, isNumber, isObject, toBoolean, toInt, toNumber } from '@tubular/util';
+import { LibraryItem, LibraryStatus, MediaInfo, MediaInfoTrack, PlaybackProgress, PlayStatus, ShowInfo, Track, VideoLibrary, VType } from './shared-types';
+import { clone, forEach, isNumber, isObject, processMillis, toBoolean, toInt, toNumber } from '@tubular/util';
 import { abs, floor, min } from '@tubular/math';
 import { requestJson } from 'by-request';
 import paths from 'path';
@@ -37,9 +37,17 @@ const libraryFile = paths.join(cacheDir, 'library.json');
 const vSource = process.env.VS_VIDEO_SOURCE;
 const sSource = process.env.VS_STREAMING_SOURCE;
 
+let lastFullWatchStateCheck = -1;
+let watchCheckRunning = false;
+const FULL_WATCH_CHECK_INTERVAL = 3600000;
+
 export let cachedLibrary = { status: LibraryStatus.NOT_STARTED, progress: -1 } as VideoLibrary;
 export let pendingLibrary: VideoLibrary;
 export let mappedDurations = new Map<string, number>();
+export let playerAvailable = true;
+export let currentVideo: string;
+export let currentVideoId = -1;
+export let currentVideoPath: string;
 
 let pendingUpdate: any;
 let nextId: number;
@@ -557,17 +565,17 @@ async function getShowInfo(items: LibraryItem[], showInfos?: ShowInfo): Promise<
         if (videoInfo?.length > 0 && (file || item.data?.length > 0)) {
           for (const info of videoInfo) {
             const inner = info.aggregation;
-            const match = (file && item) ||
+            const match = (file && item?.id === info.id && item) ||
                           (tv && inner?.episodeNumber != null && item.data.find(d => d.episode === inner.episodeNumber)) ||
-                          (!tv && inner?.name && item.data.find(d => d.name === inner.name));
+                          (!file && !tv && inner?.name && item.data.find(d => d.name === inner.name));
 
             if (match) {
               Object.assign(info, inner);
 
-              forEach(info, (key, value) => {
+              forEach(info as any, (key, value) => {
                 if ((tv ? EPISODE_DETAILS :
-                     file ? FILE_DETAILS :
-                       season ? SEASON_DETAILS : MOVIE_DETAILS).has(key) && value != null && value !== '')
+                  file ? FILE_DETAILS :
+                    season ? SEASON_DETAILS : MOVIE_DETAILS).has(key) && value != null && value !== '')
                   (match as any)[key] = value;
               });
 
@@ -902,16 +910,172 @@ function mapDurations(): void {
   mapDurationsAux(cachedLibrary?.array || []);
 }
 
-export function initLibrary(): void {
-  const stats = existsSync(libraryFile) && lstatSync(libraryFile);
+function updateItemWatchedState(item: LibraryItem, state: boolean): void {
+  if (item) {
+    setWatched(item, state);
 
-  if (stats) {
-    cachedLibrary = JSON.parse(readFileSync(libraryFile).toString('utf8'));
-    addBackLinks(cachedLibrary.array);
-    mapDurations();
+    const aliases = findAliases(item.id);
+
+    aliases.forEach(a => setWatched(a, state));
+    webSocketSend({ type: 'idUpdate', data: item.id });
+    updateCache(item.id).finally();
+  }
+}
+
+function collectIds(items?: LibraryItem[], idSet?: Set<number>): number[] {
+  let atTop = false;
+
+  if (!items || !idSet) {
+    items = cachedLibrary?.array || [];
+    idSet = new Set();
+    atTop = true;
   }
 
-  const age = +Date.now() - +stats.mtime;
+  for (const child of items) {
+    if (child.id > 0 && (isMovie(child) || isTvSeason(child)))
+      idSet.add(child.id);
+
+    if (child.data)
+      collectIds(child.data, idSet);
+  }
+
+  if (atTop)
+    return Array.from(idSet).sort((a, b) => a - b);
+  else
+    return null;
+}
+
+function findByUri(uri: string, canBeAlias = false, items?: LibraryItem[]): LibraryItem {
+  if (!items)
+    items = cachedLibrary?.array || [];
+
+  for (const child of items) {
+    if ((canBeAlias || !child.isAlias) && child.uri === uri)
+      return child;
+    else if (child.data) {
+      const match = findByUri(uri, canBeAlias, child.data);
+
+      if (match)
+        return match;
+    }
+  }
+
+  return null;
+}
+
+async function watchCheck(id: number): Promise<void> {
+  let item = findId(id);
+
+  while (item.parent && !isMovie(item) && !isTvSeason(item)) {
+    item = item.parent;
+    id = item.id;
+  }
+
+  try {
+    const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getDetail?id=${id}`;
+    const response: ShowInfo = await requestJson(url);
+    const statuses: { id: number, watched: boolean }[] = [];
+
+    if (response.aggregation?.aggregations) {
+      for (const agg of response.aggregation.aggregations) {
+        if (agg.type === VType.TV_EPISODE && agg.aggregations) {
+          for (const vAgg of agg.aggregations)
+            statuses.push({ id: vAgg.id, watched: !!vAgg.watched });
+        }
+        else
+          statuses.push({ id: agg.id, watched: !!agg.watched });
+      }
+    }
+
+    for (const status of statuses) {
+      const vItem = findId(status.id);
+
+      if (vItem?.watched !== status.watched)
+        updateItemWatchedState(vItem, status.watched);
+    }
+  }
+  catch {}
+}
+
+function monitorPlayer(): void {
+  unref(setInterval(async () => {
+    try {
+      const url = process.env.VS_ZIDOO_CONNECT + 'ZidooVideoPlay/getPlayStatus';
+      const response: PlayStatus = await requestJson(url);
+
+      playerAvailable = true;
+
+      if (response.status === 200 && response.video?.path) {
+        currentVideo = response.video.title || response.video.path;
+        currentVideoPath = response.video.path.replace(/^[^#]*#[^/]*/, '').normalize();
+
+        const item = findByUri(currentVideoPath);
+
+        if (item?.id > 0) {
+          currentVideoId = item.id;
+          await watchCheck(item.id);
+        }
+        else
+          currentVideoId = -1;
+      }
+      else {
+        currentVideo = undefined;
+        currentVideoPath = undefined;
+        currentVideoId = -1;
+      }
+    }
+    catch {
+      playerAvailable = false;
+      currentVideo = undefined;
+      currentVideoId = -1;
+      currentVideoPath = undefined;
+    }
+
+    const now = processMillis();
+
+    if (pendingLibrary)
+      lastFullWatchStateCheck = now;
+    else if (!watchCheckRunning &&
+             (lastFullWatchStateCheck == null || lastFullWatchStateCheck < 0 ||
+              lastFullWatchStateCheck + FULL_WATCH_CHECK_INTERVAL < now)) {
+      lastFullWatchStateCheck = now;
+
+      const ids = collectIds();
+      let index = 0;
+      async function watchCheckLoop(): Promise<void> {
+        await watchCheck(ids[index++]);
+
+        if (index < ids.length && !pendingLibrary)
+          unref(setTimeout(watchCheckLoop, 500));
+        else {
+          watchCheckRunning = false;
+          lastFullWatchStateCheck = now;
+        }
+      }
+
+      if (ids.length > 0) {
+        watchCheckRunning = true;
+        watchCheckLoop().finally();
+      }
+    }
+  }, 10000));
+}
+
+export function initLibrary(): void {
+  let stats = existsSync(libraryFile) && lstatSync(libraryFile);
+
+  if (stats) {
+    try {
+      cachedLibrary = JSON.parse(readFileSync(libraryFile).toString('utf8'));
+      addBackLinks(cachedLibrary.array);
+      mapDurations();
+    }
+    catch {
+      stats = undefined;
+    }
+  }
+
+  const age = stats ? +Date.now() - +stats.mtime : 0;
 
   if (!stats || age > DAY)
     updateLibrary().finally();
@@ -920,6 +1084,8 @@ export function initLibrary(): void {
       pendingUpdate = undefined;
       updateLibrary().finally();
     }, DAY - age));
+
+  monitorPlayer();
 }
 
 function filterLibrary(items: LibraryItem[], role: string): void {
@@ -1005,7 +1171,14 @@ export async function updateCache(id: number): Promise<void> {
   if (!source || !await existsAsync(libraryFile))
     return;
 
-  const lib = JSON.parse((await readFile(libraryFile)).toString('utf8')) as VideoLibrary;
+  let lib: VideoLibrary;
+
+  try {
+    lib = JSON.parse((await readFile(libraryFile)).toString('utf8')) as VideoLibrary;
+  }
+  catch {
+    return;
+  }
 
   if (!lib.array)
     return;
@@ -1078,16 +1251,7 @@ router.put('/set-watched', async (req, res) => {
   const response = isFile(item) ? await setWatchedApi(item, watched) : await setWatchedMultiple(item, watched);
 
   if (!response) {
-    if (item) {
-      setWatched(item, !!watched);
-
-      const aliases = findAliases(id);
-
-      aliases.forEach(a => setWatched(a, !!watched));
-      webSocketSend({ type: 'idUpdate', data: item.id });
-      updateCache(id).finally();
-    }
-
+    updateItemWatchedState(item, !!watched);
     jsonOrJsonp(req, res, response);
   }
   else if (response.status === 500 && !response.msg)
@@ -1128,7 +1292,7 @@ router.get('/', async (req, res) => {
       const keys = Object.keys(obj);
       for (const key of keys) {
         if (isObject(obj[key]) && !skip.has(key))
-          strip(obj[key])
+          strip(obj[key]);
         else if (!keep.has(key))
           delete obj[key];
       }
