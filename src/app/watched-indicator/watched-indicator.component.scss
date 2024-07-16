@@ -19,3 +19,15 @@
   position: absolute;
   right: -0.1em;
 }
+
+.drop {
+  filter: drop-shadow(1px 1px 1px black)
+}
+
+.wait {
+  color: #0AF;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0.7em;
+}
