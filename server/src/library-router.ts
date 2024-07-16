@@ -1109,7 +1109,7 @@ function filterLibrary(items: LibraryItem[], role: string): void {
 
 async function updateWatchInfo(items: LibraryItem[], user: string): Promise<void> {
   for (const item of items) {
-    if (item.streamUri) {
+    if (isFile(item) && item.streamUri) {
       try {
         const db = getDb();
         const row = await db.get('SELECT * FROM watched WHERE user = ? AND video = ?', user, hashUrl(item.streamUri)) as PlaybackProgress;
@@ -1119,6 +1119,11 @@ async function updateWatchInfo(items: LibraryItem[], user: string): Promise<void
           item.lastUserWatchTime = row.last_watched;
           item.positionUser = row.offset;
           item.watchedByUser = row.watched;
+        }
+        else {
+          item.lastUserWatchTime = -1;
+          item.positionUser = 0;
+          item.watchedByUser = false;
         }
       }
       catch {}
@@ -1165,29 +1170,32 @@ function setWatched(item: LibraryItem, state: boolean): void {
     item.data.forEach(i => setWatched(i, state));
 }
 
+let pendingLibUpdate: VideoLibrary;
+let libUpdateTimer: any;
+
 export async function updateCache(id: number): Promise<void> {
   const source = findId(id);
 
   if (!source || !await existsAsync(libraryFile))
     return;
 
-  let lib: VideoLibrary;
-
-  try {
-    lib = JSON.parse((await readFile(libraryFile)).toString('utf8')) as VideoLibrary;
+  if (!pendingLibUpdate) {
+    try {
+      pendingLibUpdate = JSON.parse((await readFile(libraryFile)).toString('utf8')) as VideoLibrary;
+    }
+    catch {
+      return;
+    }
   }
-  catch {
-    return;
-  }
 
-  if (!lib.array)
+  if (!pendingLibUpdate.array)
     return;
 
   function findTargetId(id: number, item?: LibraryItem): LibraryItem {
     if (item?.id === id)
       return item;
     else if (!item || item.data) {
-      for (const child of item?.data || lib.array) {
+      for (const child of item?.data || pendingLibUpdate.array) {
         const match = findTargetId(id, child);
 
         if (match)
@@ -1205,15 +1213,23 @@ export async function updateCache(id: number): Promise<void> {
 
   syncValues(source, target);
 
-  const aliases = findAliases(id, lib);
+  const aliases = findAliases(id, pendingLibUpdate);
 
   aliases.forEach(a => syncValues(source, a));
-  await writeFile(libraryFile, JSON.stringify(lib), 'utf8');
+
+  if (!libUpdateTimer)
+    libUpdateTimer = setTimeout(() => {
+      const tempLib = pendingLibUpdate;
+
+      pendingLibUpdate = undefined;
+      libUpdateTimer = undefined;
+      writeFile(libraryFile, JSON.stringify(tempLib), 'utf8');
+    }, 2000);
 }
 
 async function setWatchedApi(item: LibraryItem, watched: number): Promise<any> {
   try {
-    // Despite the parameter name 'aggregationId', this take plain-old 'id' instead.
+    // Despite the parameter name 'aggregationId', this API uses plain-old 'id' instead.
     const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/markAsWatched?aggregationId=${item.id}&watched=${watched}`;
     const response = await requestJson(url);
 

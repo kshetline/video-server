@@ -72,7 +72,7 @@ export class WatchedIndicatorComponent implements OnInit {
 
   toggleWatched(): void {
     if (this.video) {
-      if (!this.asAdmin && this.stream) {
+      if (!this.asAdmin) {
         this.httpClient.put('/api/stream/progress',
           {
             hash: hashUrl(this.stream),
@@ -86,7 +86,7 @@ export class WatchedIndicatorComponent implements OnInit {
             this.watched = !this.watched;
           });
       }
-      else if (this.asAdmin && this.video.id) {
+      else if (this.video.id) {
         this.httpClient.put(`/api/library/set-watched?id=${this.video.id}&watched=${this.watched ? 0 : 1}`, null).subscribe(() => {
           this.onUpdate.emit();
           this.watched = !this.watched;

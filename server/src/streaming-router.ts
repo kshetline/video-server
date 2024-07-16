@@ -3,8 +3,8 @@ import paths from 'path';
 import { existsAsync, isDemo, jsonOrJsonp, username, watched, webSocketSend } from './vs-util';
 import { LibraryItem, PlaybackProgress } from './shared-types';
 import { getDb } from './settings';
-import { findId, updateCache } from './library-router';
-import { isFile } from './shared-utils';
+import { findId } from './library-router';
+import { hashUrl, isFile } from './shared-utils';
 
 export const router = Router();
 
@@ -30,38 +30,68 @@ function setWatched(item: LibraryItem, state: boolean): void {
     item.data.forEach(i => setWatched(i, state));
 }
 
-router.put('/progress', async (req, res) => {
+async function setWatchedDb(item: LibraryItem, username: string, progress: PlaybackProgress): Promise<boolean> {
   try {
-    const progress = req.body as PlaybackProgress;
     const db = getDb();
     const wasWatched = progress.watched != null ? progress.watched :
-      await watched(progress.offset, progress.duration, progress.hash, username(req));
+      await watched(progress.offset, progress.duration, progress.hash, username);
 
-    await db.run('INSERT OR REPLACE INTO watched (user, video, duration, offset, watched, last_watched) \
-      VALUES (?, ?, ?, ?, ?, ?)',
-      username(req), progress.hash, progress.duration, progress.offset, wasWatched ? 1 : 0, Date.now());
+    if (!wasWatched && progress.offset === 0)
+      await db.run('DELETE FROM watched WHERE user = ? AND video = ?', username, progress.hash);
+    else
+      await db.run('INSERT OR REPLACE INTO watched (user, video, duration, offset, watched, last_watched) \
+        VALUES (?, ?, ?, ?, ?, ?)',
+        username, progress.hash, progress.duration, progress.offset, wasWatched ? 1 : 0, Date.now());
 
-    if (progress.id) {
-      let id = progress.id;
-      const match = findId(id);
+    setWatched(item, wasWatched);
+    webSocketSend({ type: 'idUpdate', data: item.id });
 
-      if (match) {
-        setWatched(match, wasWatched);
-        updateCache(id).finally();
-      }
+    if (item.streamUri && isFile(item) && item.parent?.data &&
+        item.parent.data.reduce((sum, sibling) => sum + (sibling.streamUri === item.streamUri ? 1 : 0), 0) > 1)
+      webSocketSend({ type: 'idUpdate', data: item.parent.id });
 
-      webSocketSend({ type: 'idUpdate', data: id });
+    return true;
+  }
+  catch {}
 
-      if (match.streamUri && isFile(match) && match.parent?.data &&
-          match.parent.data.reduce((sum, sibling) => sum + (sibling.streamUri === match.streamUri ? 1 : 0), 0) > 1)
-        webSocketSend({ type: 'idUpdate', data: match.parent.id });
+  return false;
+}
+
+async function setWatchedMultiple(item: LibraryItem, username: string, progress: PlaybackProgress): Promise<boolean> {
+  if (!item?.data)
+    return true;
+
+  let response = true;
+
+  for (const child of item.data) {
+    if (isFile(child)) {
+      progress.id = child.id;
+      progress.hash = hashUrl(child.streamUri);
+      progress.duration = child.duration / 1000;
+      progress.last_watched = progress.watched ? Date.now() : progress.last_watched;
+      progress.offset = progress.watched ? 0 : progress.offset;
+      response = await setWatchedDb(child, username, progress);
     }
+    else
+      response = await setWatchedMultiple(child, username, progress);
 
-    res.sendStatus(200);
+    if (!response)
+      return false;
   }
-  catch {
-    res.sendStatus(500);
-  }
+
+  return response;
+}
+
+router.put('/progress', async (req, res) => {
+  const progress = req.body as PlaybackProgress;
+  const item = findId(progress.id);
+  let response = false;
+
+  if (item)
+    response = isFile(item) ? await setWatchedDb(item, username(req), progress) :
+      await setWatchedMultiple(item, username(req), progress);
+
+  res.sendStatus(response ? 200 : 500);
 });
 
 router.get('/progress', async (req, res) => {

@@ -124,7 +124,7 @@ export function ts(): string {
 }
 
 export function hashUrl(uri: string): string {
-  return checksum53(uri.replace(/^\//, '').normalize());
+  return uri ? checksum53(uri.replace(/^\//, '').normalize()) : '';
 }
 
 export function nie<T>(array: T[]): T[] | null {
@@ -155,7 +155,7 @@ export function findAliases(id: number, itemOrLib?: LibraryItem | VideoLibrary, 
 }
 
 export function syncValues(src: LibraryItem, tar: LibraryItem): void {
-  const fields = ['watched', 'watchedByUser', 'position', 'lastUserWatchTime'];
+  const fields = ['watched', 'lastWatchTime', 'position'];
 
   for (const field of fields) {
     if ((src as any)[field] != null)
@@ -275,7 +275,9 @@ export function getWatchInfo(asAdmin: boolean, item: LibraryItem, wi?: WatchInfo
 
   if (atTop) {
     wi.watched = (wi.counts.watched > 0);
-    wi.incomplete = (wi.counts.watched > 0 && wi.counts.watched < videoCount && wi.counts.unwatched > 0);
+    wi.incomplete = (wi.counts.watched > 0 &&
+                     (isAnyCollection(item) || isTvShow(item) || wi.counts.watched < videoCount) &&
+                     wi.counts.unwatched > 0);
     wi.mixed = wi.incomplete && !isMovie(item);
     delete wi.counts;
   }
