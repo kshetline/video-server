@@ -123,11 +123,11 @@ export function ts(): string {
   return new Date().toISOString().slice(0, -5).replace('T', ' ');
 }
 
-export function hashUrl(uri: string): string {
+export function hashUri(uri: string): string {
   return uri ? checksum53(uri.replace(/^\//, '').normalize()) : '';
 }
 
-export function nie<T>(array: T[]): T[] | null {
+export function nfe<T>(array: T[]): T[] | null { // Null For Empty
   if (array && isArray(array) && array.length > 0)
     return array;
   else

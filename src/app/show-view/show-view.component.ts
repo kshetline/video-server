@@ -4,7 +4,7 @@ import { areImagesSimilar, canPlayVP9, getImageParam, getSeasonTitle, setCssVari
 import { compareCaseSecondary, encodeForUri } from '@tubular/util';
 import { floor, max, round } from '@tubular/math';
 import { HttpClient } from '@angular/common/http';
-import { checksum53, hashUrl, isFile, isMovie, isTvSeason, nie } from '../../../server/src/shared-utils';
+import { checksum53, hashUri, isFile, isMovie, isTvSeason, nfe } from '../../../server/src/shared-utils';
 import { StatusInterceptor } from '../status.service';
 import { AuthService } from '../auth.service';
 import { MenuItem, MessageService } from 'primeng/api';
@@ -310,8 +310,8 @@ export class ShowViewComponent implements OnInit {
   }
 
   hasBonusMaterial(): boolean {
-    return (nie(this.video?.extras) || nie(this.video?.parent?.extras) || nie(this.show?.extras) ||
-            nie(this.show?.parent?.extras) || []).length > 0;
+    return (nfe(this.video?.extras) || nfe(this.video?.parent?.extras) || nfe(this.show?.extras) ||
+            nfe(this.show?.parent?.extras) || []).length > 0;
   }
 
   hasYear(): boolean {
@@ -528,11 +528,11 @@ export class ShowViewComponent implements OnInit {
   }
 
   getPlaybackInfo(): void {
-    const videos = this.choices.filter(c => c.streamUri).map(c => hashUrl(c.streamUri)).join();
+    const videos = this.choices.filter(c => c.streamUri).map(c => hashUri(c.streamUri)).join();
 
     this.httpClient.get(`/api/stream/progress?videos=${encodeForUri(videos)}`).subscribe((response: PlaybackProgress[]) => {
       for (const item of this.choices) {
-        const hash = item.streamUri && hashUrl(item.streamUri);
+        const hash = item.streamUri && hashUri(item.streamUri);
         const match = hash && response.find(row => row.hash === hash);
 
         if (match) {

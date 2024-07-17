@@ -4,7 +4,7 @@ import { existsAsync, isDemo, jsonOrJsonp, username, watched, webSocketSend } fr
 import { LibraryItem, PlaybackProgress } from './shared-types';
 import { getDb } from './settings';
 import { findId } from './library-router';
-import { hashUrl, isFile } from './shared-utils';
+import { hashUri, isFile } from './shared-utils';
 
 export const router = Router();
 
@@ -43,12 +43,14 @@ async function setWatchedDb(item: LibraryItem, username: string, progress: Playb
         VALUES (?, ?, ?, ?, ?, ?)',
         username, progress.hash, progress.duration, progress.offset, wasWatched ? 1 : 0, Date.now());
 
-    setWatched(item, wasWatched);
-    webSocketSend({ type: 'idUpdate', data: item.id });
+    if (item) {
+      setWatched(item, wasWatched);
+      webSocketSend({ type: 'idUpdate', data: item.id });
 
-    if (item.streamUri && isFile(item) && item.parent?.data &&
-        item.parent.data.reduce((sum, sibling) => sum + (sibling.streamUri === item.streamUri ? 1 : 0), 0) > 1)
-      webSocketSend({ type: 'idUpdate', data: item.parent.id });
+      if (item.streamUri && isFile(item) && item.parent?.data &&
+          item.parent.data.reduce((sum, sibling) => sum + (sibling.streamUri === item.streamUri ? 1 : 0), 0) > 1)
+        webSocketSend({ type: 'idUpdate', data: item.parent.id });
+    }
 
     return true;
   }
@@ -66,7 +68,7 @@ async function setWatchedMultiple(item: LibraryItem, username: string, progress:
   for (const child of item.data) {
     if (isFile(child)) {
       progress.id = child.id;
-      progress.hash = hashUrl(child.streamUri);
+      progress.hash = hashUri(child.streamUri);
       progress.duration = child.duration / 1000;
       progress.last_watched = progress.watched ? Date.now() : progress.last_watched;
       progress.offset = progress.watched ? 0 : progress.offset;
@@ -84,11 +86,11 @@ async function setWatchedMultiple(item: LibraryItem, username: string, progress:
 
 router.put('/progress', async (req, res) => {
   const progress = req.body as PlaybackProgress;
-  const item = findId(progress.id);
+  const item = progress.id && findId(progress.id);
   let response = false;
 
-  if (item)
-    response = isFile(item) ? await setWatchedDb(item, username(req), progress) :
+  if (item || progress.hash)
+    response = !item || isFile(item) ? await setWatchedDb(item, username(req), progress) :
       await setWatchedMultiple(item, username(req), progress);
 
   res.sendStatus(response ? 200 : 500);

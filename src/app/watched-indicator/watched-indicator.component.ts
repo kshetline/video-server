@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { LibraryItem, PlaybackProgress } from '../../../server/src/shared-types';
 import { AuthService } from '../auth.service';
 import { HttpClient } from '@angular/common/http';
-import { getWatchInfo, hashUrl, itemPath } from '../../../server/src/shared-utils';
+import { getWatchInfo, hashUri, itemPath } from '../../../server/src/shared-utils';
 import { LibItem } from '../dash-player/dash-player.component';
 import { webSocketMessagesEmitter } from '../video-ui-utils';
 import { updatedItem } from '../app.component';
@@ -80,7 +80,7 @@ export class WatchedIndicatorComponent implements OnInit {
         this.busy = true;
         this.httpClient.put('/api/stream/progress',
           {
-            hash: hashUrl(this.stream),
+            hash: hashUri(this.stream),
             duration: this.duration,
             offset: 0,
             watched: !this.watched,

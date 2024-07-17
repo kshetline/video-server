@@ -5,7 +5,7 @@ import { max, min } from '@tubular/math';
 import { AuthService } from '../auth.service';
 import { StatusInterceptor } from '../status.service';
 import { HttpClient } from '@angular/common/http';
-import { hashUrl } from '../../../server/src/shared-utils';
+import { hashUri } from '../../../server/src/shared-utils';
 import { LibraryItem, PlaybackProgress } from '../../../server/src/shared-types';
 
 export interface LibItem {
@@ -234,7 +234,7 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
     if (this.videoUri)
       this.http.put('/api/stream/progress',
         {
-          hash: hashUrl(this.videoUri),
+          hash: hashUri(this.videoUri),
           duration: this.player ? this.player.duration() : this.playerElem.duration,
           offset: this.player ? this.player.time() : this.playerElem.currentTime
         } as PlaybackProgress, { responseType: 'text' })

@@ -3,7 +3,7 @@ import { LibraryItem, PlaybackProgress } from '../../../server/src/shared-types'
 import { canPlayVP9, getImageParam } from '../video-ui-utils';
 import { encodeForUri } from '@tubular/util';
 import { HttpClient } from '@angular/common/http';
-import { checksum53, hashUrl, isMovie, isTvShow } from '../../../server/src/shared-utils';
+import { checksum53, hashUri, isMovie, isTvShow } from '../../../server/src/shared-utils';
 import { StatusInterceptor } from '../status.service';
 import { MenuItem } from 'primeng/api';
 import { AuthService } from '../auth.service';
@@ -145,12 +145,12 @@ export class BonusViewComponent implements OnInit {
 
   getPlaybackInfo(): void {
     const choices = Array.from(this.streamUris.values());
-    const videos = choices.map(c => hashUrl(c)).join();
+    const videos = choices.map(c => hashUri(c)).join();
 
     this.itemsByStream.clear();
     this.httpClient.get(`/api/stream/progress?videos=${encodeForUri(videos)}`).subscribe((response: PlaybackProgress[]) => {
       for (const stream of choices) {
-        const hash = hashUrl(stream);
+        const hash = hashUri(stream);
         const match = response.find(row => row.hash === hash);
 
         if (match)

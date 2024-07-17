@@ -12,7 +12,7 @@ import {
 import { existsSync, lstatSync, readFileSync } from 'fs';
 import {
   addBackLinks,
-  comparator, findAliases as _findAliases, hashUrl, isAnyCollection, isCollection, isFile, isMovie,
+  comparator, findAliases as _findAliases, hashUri, isAnyCollection, isCollection, isFile, isMovie,
   isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, removeBackLinks, syncValues, toStreamPath
 } from './shared-utils';
 import { sendStatus } from './app';
@@ -1112,7 +1112,7 @@ async function updateWatchInfo(items: LibraryItem[], user: string): Promise<void
     if (isFile(item) && item.streamUri) {
       try {
         const db = getDb();
-        const row = await db.get('SELECT * FROM watched WHERE user = ? AND video = ?', user, hashUrl(item.streamUri)) as PlaybackProgress;
+        const row = await db.get('SELECT * FROM watched WHERE user = ? AND video = ?', user, hashUri(item.streamUri)) as PlaybackProgress;
 
         if (row) {
           item.duration = item.duration || row.duration;
