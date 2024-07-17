@@ -139,19 +139,49 @@ function createAndStartServer(): void {
   }
 
   if (wsPort) {
-    if (wsPort < 0 || wsPort === httpPort)
-      wsServer = new WebSocketServer({ server: httpServer });
-    else {
-      const server = useHttps ? https.createServer({
-        key: fs.readFileSync(process.env.VS_KEY),
-        cert: fs.readFileSync(process.env.VS_CERT)
-      }) :
-        http.createServer();
-      wsServer = new WebSocketServer({ server });
-      server.listen(wsPort);
+    let tries = 10;
+    let retrying = false;
+
+    function retry(err: any): void {
+      retrying = true;
+
+      if (retrying)
+        return;
+
+      if (--tries === 0)
+        throw err;
+      else {
+        console.warn('Trying again to start websocket server...');
+        setTimeout(startWebSocketServer, 500);
+      }
     }
 
-    setWebSocketServer(wsServer);
+    function startWebSocketServer(): void {
+      retrying = false;
+
+      try {
+        if (wsPort < 0 || wsPort === httpPort)
+          wsServer = new WebSocketServer({ server: httpServer });
+        else {
+          const server = useHttps ? https.createServer({
+            key: fs.readFileSync(process.env.VS_KEY),
+            cert: fs.readFileSync(process.env.VS_CERT)
+          }) :
+            http.createServer();
+          server.once('error', err => retry(err));
+          wsServer = new WebSocketServer({ server });
+          wsServer.once('error', err => retry(err));
+          server.listen(wsPort);
+        }
+      }
+      catch (err) {
+        retry(err);
+      }
+
+      setWebSocketServer(wsServer);
+    }
+
+    startWebSocketServer();
   }
 
   httpServer.listen(httpPort);

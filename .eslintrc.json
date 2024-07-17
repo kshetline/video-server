@@ -69,6 +69,7 @@
     "key-spacing": "off",
     "multiline-ternary": "off",
     "n/no-missing-import": "off",
+    "n/no-process-exit": "off",
     "n/no-unsupported-features/node-builtins": "off",
     "node/no-callback-literal": "off",
     "no-case-declarations": "off",
