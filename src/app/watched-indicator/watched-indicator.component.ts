@@ -72,6 +72,9 @@ export class WatchedIndicatorComponent implements OnInit {
   }
 
   toggleWatched(): void {
+    if (this.busy)
+      return;
+
     if (this.video) {
       if (!this.asAdmin) {
         this.busy = true;
