@@ -1,6 +1,7 @@
 :host > div {
   cursor: pointer;
   font-size: 2em;
+  user-select: none;
 }
 
 .divider {
@@ -18,6 +19,21 @@
   pointer-events: none;
   position: absolute;
   right: -0.1em;
+}
+
+.touch-indicator {
+  background-color: rgba(white, 25%);
+  border-radius: 50%;
+  height: 2em;
+  left: calc(50% - 1em);
+  pointer-events: none;
+  position: absolute;
+  top: -0.35em;
+  width: 2em;
+
+  &.active {
+    background-color: rgba(lime, 33%);
+  }
 }
 
 .drop {

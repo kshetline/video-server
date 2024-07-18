@@ -19,9 +19,11 @@ export class WatchedIndicatorComponent implements OnInit {
   private stream: string;
   private _video: LibraryItem | LibItem;
 
+  activated = false;
   busy = false;
   incomplete = false;
   mixed = false;
+  started = false;
   watched = false;
 
   constructor(private httpClient: HttpClient, private auth: AuthService) {}
@@ -71,7 +73,14 @@ export class WatchedIndicatorComponent implements OnInit {
     return (this.fade === 'watched' && this.watched) || (this.fade === 'unwatched' && !this.watched);
   }
 
+  start(): void {
+    this.started = true;
+    this.activated = false;
+  }
+
   toggleWatched(): void {
+    this.activated = true;
+
     if (this.busy)
       return;
 
@@ -100,6 +109,11 @@ export class WatchedIndicatorComponent implements OnInit {
           }, complete: () => this.busy = false });
       }
     }
+  }
+
+  end(): void {
+    this.started = false;
+    this.activated = false;
   }
 
   private examineWatchedStates(item: LibraryItem | LibItem): void {
