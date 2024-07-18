@@ -54,6 +54,20 @@ function titleAdjust(title: string): string {
   return title.replace(/\s+Season\s+\d/i, '');
 }
 
+function matchesGenre(item: LibraryItem, genre: string): boolean {
+  if (item.genres?.find(g => g === genre))
+    return true;
+  else if (!item.data)
+    return false;
+
+  for (const child of item.data) {
+    if (matchesGenre(child, genre))
+      return true;
+  }
+
+  return false;
+}
+
 @Component({
   selector: 'app-poster-view',
   templateUrl: './poster-view.component.html',
@@ -285,7 +299,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
         break;
 
       default:
-        matchFunction = (item: LibraryItem): boolean => !!item.genres?.find(g => g === this.genre);
+        matchFunction = (item: LibraryItem): boolean => matchesGenre(item, this.genre);
     }
 
     const isAMatch = (item: LibraryItem): boolean => this.matchesSearch(item) && matchFunction(item);
