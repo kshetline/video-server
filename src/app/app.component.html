@@ -1,5 +1,5 @@
 <div *ngIf="isLoggedIn()" class="poster-panel">
-  <app-poster-view [library]="library" (itemClicked)="itemClicked($event)"></app-poster-view>
+  <app-poster-view [library]="library" [genres]="genres" (itemClicked)="itemClicked($event)"></app-poster-view>
   <app-collection-view *ngIf="isLoggedIn()" [class.active]="currentCollection" [collection]=currentCollection
     (goBack)="currentCollection = null" (showSelected)="currentShow = $event"
     [currentShow]="currentShow"></app-collection-view>

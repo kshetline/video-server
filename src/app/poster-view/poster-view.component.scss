@@ -7,7 +7,6 @@
 
 .filter-panel {
   background-color: black;
-  color: white;
   height: 3.5em;
   left: 0;
   right: 0;
@@ -30,11 +29,8 @@
       padding-right: 1.85em;
     }
 
-    .filter-buttons {
-      display: grid;
-      gap: 1em;
-      grid-template-columns: repeat(5, auto);
-      justify-content: start;
+    p-treeSelect {
+      color: var(--text-color-secondary);
     }
   }
 }

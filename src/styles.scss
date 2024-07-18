@@ -61,3 +61,20 @@ fa-icon.stroke-path > svg > path {
 p-splitbutton.p-element.dim .p-splitbutton.p-component button.p-element.p-splitbutton-defaultbutton.p-button.p-component .p-button-label {
   opacity: 0.33;
 }
+
+p-treeSelect.wide > div {
+  min-width: 155px;
+}
+
+p-treeSelect .p-tree {
+  padding: 0.5rem;
+
+  .p-tree-container .p-treenode .p-treenode-content {
+    padding: 0.25rem;
+
+    .p-tree-toggler {
+      height: 1rem;
+      width: 1rem;
+    }
+  }
+}

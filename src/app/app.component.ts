@@ -2,7 +2,7 @@ import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { LibraryItem, ServerStatus, VideoLibrary, VideoStats } from '../../server/src/shared-types';
 import { broadcastMessage, getZIndex, incrementImageIndex, webSocketMessagesEmitter } from './video-ui-utils';
-import { isEqual, isValidJson, processMillis } from '@tubular/util';
+import { compareCaseSecondary, isEqual, isValidJson, processMillis } from '@tubular/util';
 import { floor } from '@tubular/math';
 import { AuthService } from './auth.service';
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -13,6 +13,11 @@ import {
 import { StatusInterceptor } from './status.service';
 import { Observable } from 'rxjs';
 import { shareReplay } from 'rxjs/internal/operators/shareReplay';
+
+const defaultGenres = [
+  'Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Family', 'Fantasy',
+  'History', 'Horror', 'Music', 'Mystery', 'Nature', 'Politics', 'Romance', 'Sci-fi', 'Suspense', 'TV Movie',
+  'Thriller', 'War', 'Western'];
 
 @Component({
   selector: 'app-root',
@@ -33,6 +38,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   clickTimer: any;
   currentCollection: LibraryItem;
   currentShow: LibraryItem;
+  genres = defaultGenres;
   library: VideoLibrary;
   logoffTime = 0;
   playing = false;
@@ -330,6 +336,22 @@ export class AppComponent implements AfterViewInit, OnInit {
         if (this.getSparseLibrary) {
           this.getSparseLibrary = false;
           setTimeout(() => this.pollLibrary());
+        }
+        else {
+          const genres = new Set<string>(defaultGenres);
+
+          function collectGenres(items: LibraryItem[]): void {
+            for (const item of items) {
+              if (item.genres)
+                item.genres.forEach(g => genres.add(g));
+
+              if (item.data)
+                collectGenres(item.data);
+            }
+          }
+          collectGenres(library.array);
+
+          this.genres = Array.from(genres).sort(compareCaseSecondary);
         }
 
         if (!isEqual(this.library, library, { keysToIgnore: ['lastUpdate', 'parent'] })) {

@@ -66,8 +66,12 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   readonly hashTitle = hashTitle;
   readonly isCollection = isCollection;
   readonly titleAdjust = titleAdjust;
+  readonly console = console;
 
-  private _filter = 'All';
+  private filter = 'All';
+  private _filterNode: any;
+  private genre: string;
+  private _genres: string[] = [];
   private _library: VideoLibrary;
   private loadingTimers = new Map<Element, any>();
   private resizeDebounceSub: Subscription;
@@ -76,6 +80,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
 
   filterChoices = ['All', 'Movies', 'TV', '4K', '3D'];
 
+  filterNodes: any[];
   letterGroups: string[] = [];
   items: LibraryItem[];
   intersectionObserver: IntersectionObserver;
@@ -83,6 +88,11 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   overview = '';
   resizing = false;
   showThumbnail: Record<string, boolean> = {};
+
+  constructor() {
+    this.updateFilterNodes();
+    this._filterNode = this.filterNodes[0];
+  }
 
   @Input() get library(): VideoLibrary { return this._library; }
   set library(value : VideoLibrary) {
@@ -94,13 +104,39 @@ export class PosterViewComponent implements OnDestroy, OnInit {
     }
   }
 
+  @Input() get genres(): string[] { return this._genres; }
+  set genres(value : string[]) {
+    if (this._genres !== value) {
+      this._genres = value;
+      this.updateFilterNodes();
+      this.refilter();
+    }
+  }
+
   @Output() itemClicked: EventEmitter<LibraryItem> = new EventEmitter();
 
-  get filter(): string { return this._filter; }
-  set filter(value: string) {
-    if (this._filter !== value) {
-      this._filter = value;
-      this.refilter();
+  get filterNode(): any { return this._filterNode; }
+  set filterNode(value: any) {
+    if (this._filterNode !== value) {
+      const lastValue = this._filterNode;
+
+      this._filterNode = value;
+      console.log(value);
+
+      if (value.key === 'g')
+        setTimeout(() => this.filterNode = lastValue);
+      else {
+        if (value.parent?.key === 'g') {
+          this.filter = null;
+          this.genre = value.label;
+        }
+        else {
+          this.filter = value.label;
+          this.genre = null;
+        }
+
+        this.refilter();
+      }
     }
   }
 
@@ -113,6 +149,8 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   }
 
   ngOnInit(): void {
+    this.updateFilterNodes();
+
     this.intersectionObserver = new IntersectionObserver(entries => {
       entries.forEach(entry => {
         const target = entry.target;
@@ -220,7 +258,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
     setTimeout(() => grid.style.scrollBehavior = 'smooth', 1000);
 
     if (!this.searchText && this.filter === 'All') {
-      this.items = this.library.array;
+      this.items = this.library?.array || [];
       return;
     }
 
@@ -245,6 +283,9 @@ export class PosterViewComponent implements OnDestroy, OnInit {
       case '3D':
         matchFunction = (item: LibraryItem): boolean => item.is3d;
         break;
+
+      default:
+        matchFunction = (item: LibraryItem): boolean => !!item.genres?.find(g => g === this.genre);
     }
 
     const isAMatch = (item: LibraryItem): boolean => this.matchesSearch(item) && matchFunction(item);
@@ -415,5 +456,12 @@ export class PosterViewComponent implements OnDestroy, OnInit {
     }
 
     this.resizing = false;
+  }
+
+  private updateFilterNodes(): void {
+    const genres = this.genres.map(g => ({ label: g }));
+
+    this.filterNodes = this.filterChoices.map(fc => ({ label: fc }));
+    this.filterNodes.push(({ key: 'g', label: 'Genres', children : genres }));
   }
 }

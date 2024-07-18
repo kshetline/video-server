@@ -1,5 +1,5 @@
 <div *ngIf="showIndicator()" [style.color]="asAdmin ? '#0A0' : 'white'" [style.opacity]="doFade() ? '0.33' : '1'">
-  <i class="pi" [class.pi-eye]="watched" [class.pi-eye-slash]="!watched" (click)="toggleWatched()"></i>
+  <i class="pi" [class.pi-eye]="watched" [class.pi-eye-slash]="!watched" (longPress)="toggleWatched()"></i>
   <div class="divider" [style.background-color]="mixed ? 'rgba(51, 51, 51, 0.67)' : 'transparent'"></div>
   <div *ngIf="incomplete && !mixed" class="incomplete">•</div>
   <i *ngIf="busy" class="pi pi-spin pi-sync wait"></i>

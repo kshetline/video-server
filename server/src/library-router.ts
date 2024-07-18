@@ -1,6 +1,11 @@
 import { Router } from 'express';
-import { LibraryItem, LibraryStatus, MediaInfo, MediaInfoTrack, PlaybackProgress, PlayStatus, ShowInfo, Track, VideoLibrary, VType } from './shared-types';
-import { clone, forEach, isNumber, isObject, processMillis, toBoolean, toInt, toNumber } from '@tubular/util';
+import {
+  LibraryItem, LibraryStatus, MediaInfo, MediaInfoTrack, PlaybackProgress, PlayStatus, ShowInfo, Track,
+  VideoLibrary, VType
+} from './shared-types';
+import {
+  clone, compareCaseSecondary, forEach, isNumber, isObject, processMillis, toBoolean, toInt, toNumber
+} from '@tubular/util';
 import { abs, floor, min } from '@tubular/math';
 import { requestJson } from 'by-request';
 import paths from 'path';
@@ -11,8 +16,7 @@ import {
 } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
 import {
-  addBackLinks,
-  comparator, findAliases as _findAliases, hashUri, isAnyCollection, isCollection, isFile, isMovie,
+  addBackLinks, comparator, findAliases as _findAliases, hashUri, isAnyCollection, isCollection, isFile, isMovie,
   isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, removeBackLinks, syncValues, toStreamPath
 } from './shared-utils';
 import { sendStatus } from './app';
@@ -595,8 +599,26 @@ async function getShowInfo(items: LibraryItem[], showInfos?: ShowInfo): Promise<
       if (showInfo.actors)
         item.actors = showInfo.actors.map(a => ({ character: a.character, name: a.name, profilePath: a.profilePath }));
 
-      if (showInfo.genres)
-        item.genres = showInfo.genres.map(g => g.name);
+      if (showInfo.genres) {
+        const genres = new Set<string>(showInfo.genres.map(g =>
+          g.name
+            .replace(/^Action & Adventure$/i, 'Action/Adventure')
+            .replace(/^Sci-Fi & Fantasy$/i, 'Sci-fi/Fantasy')
+            .replace(/^(Science Fiction|Science-Fiction)$/i, 'Sci-fi')
+            .replace(/^War & Politics$/i, 'War/Politics')
+        ));
+
+        Array.from(genres).forEach(g => {
+          const parts = g.split('/');
+
+          if (parts.length > 1) {
+            parts.forEach(p => genres.add(p));
+            genres.delete(g);
+          }
+        });
+
+        item.genres = Array.from(genres).sort(compareCaseSecondary);
+      }
 
       if (isTvCollection(item) || isTvShow(item) || isTvSeason(item))
         await getShowInfo(item.data, showInfo?.aggregation as unknown as ShowInfo);
@@ -1010,6 +1032,7 @@ function monitorPlayer(): void {
         currentVideoPath = response.video.path.replace(/^[^#]*#[^/]*/, '').normalize();
 
         const item = findByUri(currentVideoPath);
+        const lastId = currentVideoId;
 
         if (item?.id > 0) {
           currentVideoId = item.id;
@@ -1017,6 +1040,9 @@ function monitorPlayer(): void {
         }
         else
           currentVideoId = -1;
+
+        if (lastId > 0 && lastId !== currentVideoId)
+          setTimeout(() => watchCheck(lastId), 1000);
       }
       else {
         currentVideo = undefined;

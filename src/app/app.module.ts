@@ -14,6 +14,7 @@ import { CollectionViewComponent } from './collection-view/collection-view.compo
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DashPlayerComponent } from './dash-player/dash-player.component';
 import { DialogModule } from 'primeng/dialog';
+import { DropdownModule } from 'primeng/dropdown';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { InputTextModule } from 'primeng/inputtext';
 import { LoginComponent } from './login/login.component';
@@ -23,12 +24,15 @@ import { ProgressBarModule } from 'primeng/progressbar';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { RatingComponent } from './rating/rating.component';
 import { SplitButtonModule } from 'primeng/splitbutton';
+import { TreeModule } from 'primeng/tree';
+import { TreeSelectModule } from 'primeng/treeselect';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 import { ShowViewComponent } from './show-view/show-view.component';
 import { StatusInterceptor } from './status.service';
 import { AdminViewComponent } from './admin-view/admin-view.component';
 import { WatchedIndicatorComponent } from './watched-indicator/watched-indicator.component';
+import { LongPressDirective } from './long-press.directive';
 
 @NgModule({
   declarations: [
@@ -38,6 +42,7 @@ import { WatchedIndicatorComponent } from './watched-indicator/watched-indicator
     CollectionViewComponent,
     DashPlayerComponent,
     LoginComponent,
+    LongPressDirective,
     PosterViewComponent,
     RatingComponent,
     ShowViewComponent,
@@ -51,6 +56,7 @@ import { WatchedIndicatorComponent } from './watched-indicator/watched-indicator
     CheckboxModule,
     ConfirmDialogModule,
     DialogModule,
+    DropdownModule,
     FontAwesomeModule,
     FormsModule,
     HttpClientModule,
@@ -62,7 +68,9 @@ import { WatchedIndicatorComponent } from './watched-indicator/watched-indicator
     RadioButtonModule,
     SplitButtonModule,
     ToastModule,
-    TooltipModule
+    TooltipModule,
+    TreeModule,
+    TreeSelectModule
   ],
   providers: [
     { provide: HTTP_INTERCEPTORS, useClass: StatusInterceptor, multi: true }
