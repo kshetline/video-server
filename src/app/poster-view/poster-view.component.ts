@@ -1,13 +1,10 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
-import { LibraryItem, VideoLibrary } from '../../../server/src/shared-types';
-import { ceil, floor, min } from '@tubular/math';
+import { LibraryItem, VideoLibrary, WatchStatus } from '../../../server/src/shared-types';
+import { ceil, floor, min, random } from '@tubular/math';
 import { clone, encodeForUri } from '@tubular/util';
 import { faFolderOpen } from '@fortawesome/free-regular-svg-icons';
 import { faShare } from '@fortawesome/free-solid-svg-icons';
-import {
-  checksum53, hashTitle, isCollection, isFile, isMovie, isTvCollection, isTvEpisode,
-  isTvSeason, isTvShow, librarySorter
-} from '../../../server/src/shared-utils';
+import { checksum53, getWatchInfo, hashTitle, isCollection, isFile, isMovie, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter } from '../../../server/src/shared-utils';
 import { searchForm, webSocketMessagesEmitter } from '../video-ui-utils';
 import { fromEvent } from 'rxjs/internal/observable/fromEvent';
 import { debounceTime } from 'rxjs/internal/operators/debounceTime';
@@ -69,6 +66,31 @@ function matchesGenre(item: LibraryItem, genre: string): boolean {
   return false;
 }
 
+function getWatchStatus(item: LibraryItem, admin: boolean): WatchStatus {
+  if (item.watchStatus != null)
+    return item.watchStatus;
+
+  const info = getWatchInfo(admin, item);
+
+  if (info.mixed)
+    return (item.watchStatus = WatchStatus.WATCHING);
+  else if (info.watched)
+    return (item.watchStatus = WatchStatus.WATCHED);
+  else
+    return (item.watchStatus = WatchStatus.UNWATCHED);
+}
+
+function watchSorter(a: LibraryItem, b: LibraryItem, admin = false): number {
+  return getWatchStatus(a, admin) - getWatchStatus(b, admin);
+}
+
+function randomSorter(a: LibraryItem, b: LibraryItem): number {
+  const sa = a.randomSort ?? (a.randomSort = random());
+  const sb = b.randomSort ?? (b.randomSort = random());
+
+  return sa - sb;
+}
+
 const SORT_CHOICES = [
   { label: 'Alphabetical', code: 'A' },
   { label: 'Watching', code: 'W' },
@@ -99,6 +121,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   private resizeDebounceSub: Subscription;
   private resizeSub: Subscription;
   private _searchText = '';
+  private _sortMode = SORT_CHOICES[0];
 
   filterChoices = ['All', 'Movies', 'TV', '4K', '3D'];
   filterNodes: any[];
@@ -109,7 +132,6 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   overview = '';
   resizing = false;
   showThumbnail: Record<string, boolean> = {};
-  sort = SORT_CHOICES[0];
   sortChoices = clone(SORT_CHOICES);
 
   constructor(private authService: AuthService) {
@@ -160,6 +182,14 @@ export class PosterViewComponent implements OnDestroy, OnInit {
 
         this.refilter();
       }
+    }
+  }
+
+  get sortMode(): any { return this._sortMode; }
+  set sortMode(value: any) {
+    if (this._sortMode !== value) {
+      this._sortMode = value;
+      this.refilter();
     }
   }
 
@@ -290,7 +320,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
     grid.scrollTop = 0;
     setTimeout(() => grid.style.scrollBehavior = 'smooth', 1000);
 
-    if (!this.searchText && this.filter === 'All') {
+    if (!this.searchText && this.filter === 'All' && this.sortMode.code === 'A') {
       this.items = this.library?.array || [];
       return;
     }
@@ -362,7 +392,20 @@ export class PosterViewComponent implements OnDestroy, OnInit {
     };
 
     deepFilter(this.items);
-    this.items.sort(librarySorter);
+    this.items.sort((a, b) => {
+      let diff = 0;
+
+      switch (this.sortMode.code) {
+        case 'R': diff = randomSorter(a, b); break;
+        case 'W': diff = watchSorter(a, b); break;
+        case 'Z': diff = watchSorter(a, b, true); break;
+      }
+
+      if (diff !== 0)
+        return diff;
+
+      return librarySorter(a, b);
+    });
 
     const reassignParents = (items: LibraryItem[], newParent?: LibraryItem): void => {
       for (const item of items) {
@@ -500,7 +543,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
 
   private updateSortChoices(refilter = false): void {
     this.sortChoices = SORT_CHOICES.filter(sc => this.authService.isAdmin() || sc.code !== 'Z');
-    this.sort = this.sortChoices[0];
+    this.sortMode = this.sortChoices[0];
 
     if (refilter)
       this.refilter();

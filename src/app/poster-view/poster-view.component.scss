@@ -85,6 +85,11 @@
       white-space: nowrap;
     }
   }
+
+  .letter-nav.disabled div {
+    cursor: default;
+    pointer-events: none;
+  }
 }
 
 .library-item {

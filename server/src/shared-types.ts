@@ -2,6 +2,7 @@ import { AsyncDatabase } from 'promised-sqlite3';
 
 export enum VType { FILE = 0, MOVIE, COLLECTION, TV_SHOW, TV_SEASON, TV_EPISODE, TV_COLLECTION }
 export enum LibraryStatus { NOT_STARTED, INITIALIZED, BONUS_MATERIAL_LINKED, ALL_VIDEOS, MEDIA_DETAILS, DONE = 100 }
+export enum WatchStatus { WATCHING = 0, UNWATCHED, WATCHED }
 
 export interface ServerStatus {
   currentFile: string;
@@ -90,6 +91,7 @@ export interface LibraryItem {
   position?: number;
   positionUser?: number;
   posterPath?: string;
+  randomSort?: number;
   ratingTomatoes?: string;
   releaseDate?: string;
   resolution?: string;
@@ -109,6 +111,7 @@ export interface LibraryItem {
   voteAverage?: number;
   watched?: boolean;
   watchedByUser?: boolean;
+  watchStatus?: WatchStatus;
   year?: number;
 }
 

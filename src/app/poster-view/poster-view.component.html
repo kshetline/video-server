@@ -8,7 +8,7 @@
     </span>
     <div class="filter-selectors">
       <p-treeSelect class="wide" [(ngModel)]="filterNode" [options]="filterNodes"></p-treeSelect>
-      <p-dropdown [options]="sortChoices" [(ngModel)]="sort" appendTo="body"></p-dropdown>
+      <p-dropdown [options]="sortChoices" [(ngModel)]="sortMode" appendTo="body"></p-dropdown>
     </div>
   </div>
 </div>
@@ -47,7 +47,8 @@
     </div>
     <div *ngFor="let item of [].constructor(8)" class="dummy-item"></div>
   </div>
-  <div class="letter-nav" [style.opacity]="resizing ? '0' : '1'">
+  <div class="letter-nav" [class.disabled]="sortMode.code !== 'A'"
+       [style.opacity]="resizing || sortMode.code !== 'A' ? '0' : '1'">
     <div *ngFor="let group of letterGroups" (click)="jumpScroll(group)"
          [style.transform]="letterGroups.length < 27 ? 'scale(0.75, 1)' : 'none'">{{group}}</div>
   </div>
