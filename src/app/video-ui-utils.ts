@@ -201,7 +201,7 @@ export interface WSMessage {
 
 const wsEmitter = new EventEmitter<WSMessage>();
 
-export function broadcastMessage(type: string, data: any): void {
+export function broadcastMessage(type: string, data?: any): void {
   wsEmitter.emit({ type, data });
 }
 

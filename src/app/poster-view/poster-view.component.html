@@ -6,7 +6,10 @@
       <i class="pi pi-times-circle clear-icon" [style.display]="searchText ? 'block' : 'none'"
          (click)="searchText = ''"></i>
     </span>
-    <p-treeSelect class="wide" [(ngModel)]="filterNode" [options]="filterNodes"></p-treeSelect>
+    <div class="filter-selectors">
+      <p-treeSelect class="wide" [(ngModel)]="filterNode" [options]="filterNodes"></p-treeSelect>
+      <p-dropdown [options]="sortChoices" [(ngModel)]="sort" appendTo="body"></p-dropdown>
+    </div>
   </div>
 </div>
 <div class="poster-wrapper">

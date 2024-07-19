@@ -8,10 +8,11 @@ import {
   checksum53, hashTitle, isCollection, isFile, isMovie, isTvCollection, isTvEpisode,
   isTvSeason, isTvShow, librarySorter
 } from '../../../server/src/shared-utils';
-import { searchForm } from '../video-ui-utils';
+import { searchForm, webSocketMessagesEmitter } from '../video-ui-utils';
 import { fromEvent } from 'rxjs/internal/observable/fromEvent';
 import { debounceTime } from 'rxjs/internal/operators/debounceTime';
 import { Subscription } from 'rxjs/internal/Subscription';
+import { AuthService } from '../auth.service';
 
 function isAMovie(item: LibraryItem): boolean {
   return item.isTvMovie || isMovie(item) ||
@@ -68,6 +69,13 @@ function matchesGenre(item: LibraryItem, genre: string): boolean {
   return false;
 }
 
+const SORT_CHOICES = [
+  { label: 'Alphabetical', code: 'A' },
+  { label: 'Watching', code: 'W' },
+  { label: 'Random', code: 'R' },
+  { label: 'Zidoo Watching', code: 'Z' },
+];
+
 @Component({
   selector: 'app-poster-view',
   templateUrl: './poster-view.component.html',
@@ -93,7 +101,6 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   private _searchText = '';
 
   filterChoices = ['All', 'Movies', 'TV', '4K', '3D'];
-
   filterNodes: any[];
   letterGroups: string[] = [];
   items: LibraryItem[];
@@ -102,8 +109,10 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   overview = '';
   resizing = false;
   showThumbnail: Record<string, boolean> = {};
+  sort = SORT_CHOICES[0];
+  sortChoices = clone(SORT_CHOICES);
 
-  constructor() {
+  constructor(private authService: AuthService) {
     this.updateFilterNodes();
     this._filterNode = this.filterNodes[0];
   }
@@ -163,6 +172,16 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   }
 
   ngOnInit(): void {
+    if (this.authService.isLoggedIn())
+      this.updateSortChoices();
+
+    webSocketMessagesEmitter().subscribe(msg => {
+      switch (msg.type) {
+        case 'session_start':
+          this.updateSortChoices(true);
+      }
+    });
+
     this.updateFilterNodes();
 
     this.intersectionObserver = new IntersectionObserver(entries => {
@@ -477,5 +496,13 @@ export class PosterViewComponent implements OnDestroy, OnInit {
 
     this.filterNodes = this.filterChoices.map(fc => ({ label: fc }));
     this.filterNodes.push(({ key: 'g', label: 'Genres', children : genres }));
+  }
+
+  private updateSortChoices(refilter = false): void {
+    this.sortChoices = SORT_CHOICES.filter(sc => this.authService.isAdmin() || sc.code !== 'Z');
+    this.sort = this.sortChoices[0];
+
+    if (refilter)
+      this.refilter();
   }
 }

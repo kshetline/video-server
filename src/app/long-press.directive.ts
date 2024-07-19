@@ -23,7 +23,8 @@ export class LongPressDirective implements OnInit, OnDestroy {
                          fromEvent(this.el.nativeElement, 'touchstart'));
     const end$ = merge(fromEvent(this.el.nativeElement, 'mouseup'),
                        fromEvent(this.el.nativeElement, 'touchend'),
-                       fromEvent(this.el.nativeElement, 'mouseleave'));
+                       fromEvent(this.el.nativeElement, 'mouseleave'),
+                       fromEvent(this.el.nativeElement, 'touchcancel'));
 
     this.endSub = end$.subscribe(() => this.longEnd.emit());
     this.pressSub = start$

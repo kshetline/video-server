@@ -4,6 +4,7 @@ import { toInt } from '@tubular/util';
 import { Observable } from 'rxjs/internal/Observable';
 import { UserSession } from '../../server/src/shared-types';
 import { StatusInterceptor } from './status.service';
+import { broadcastMessage } from './video-ui-utils';
 
 @Injectable({
   providedIn: 'root'
@@ -17,6 +18,7 @@ export class AuthService {
     if (lastSession) {
       try {
         this.currentSession = JSON.parse(atob(lastSession));
+        broadcastMessage('session_start');
       }
       catch {}
     }
@@ -45,6 +47,7 @@ export class AuthService {
     localStorage.setItem('vs_expires_at', expiration.toString());
     localStorage.setItem('vs_session', btoa(JSON.stringify(session)));
     this.currentSession = session;
+    broadcastMessage('session_start');
   }
 
   logout(): void {
