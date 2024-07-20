@@ -71,12 +71,6 @@ export function normalizePort(val: number | string): string | number | false {
   return false;
 }
 
-const charsNeedingRegexEscape = /[-[\]/{}()*+?.\\^$|]/g;
-
-export function escapeForRegex(s: string): string {
-  return s.replace(charsNeedingRegexEscape, '\\$&');
-}
-
 export function timeStamp(): string {
   return '[' + new Date().toISOString() + ']';
 }

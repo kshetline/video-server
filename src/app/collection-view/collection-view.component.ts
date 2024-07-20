@@ -1,8 +1,9 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { LibraryItem } from '../../../server/src/shared-types';
-import { checksum53, hashTitle, isCollection, isTvShow } from '../../../server/src/shared-utils';
+import { hashTitle, isCollection, isTvShow } from '../../../server/src/shared-utils';
 import { floor } from '@tubular/math';
 import { StatusInterceptor } from '../status.service';
+import { checksum53 } from '@tubular/util';
 
 function getSortTime(item: LibraryItem): number {
   if (item.airDate)
@@ -56,7 +57,8 @@ export class CollectionViewComponent {
   onClick(item: LibraryItem): void {
     if (this.subCollection)
       return;
-    else if (isCollection(item) || isTvShow(item))
+
+    if (isCollection(item) || isTvShow(item))
       this.subCollection = item;
     else
       this.showSelected.emit(item);

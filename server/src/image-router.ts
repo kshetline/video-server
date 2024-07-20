@@ -1,11 +1,11 @@
 import { Request, Response, Router } from 'express';
 import paths from 'path';
-import { cacheDir, deleteIfPossible, escapeForRegex, existsAsync, safeLstat, thumbnailDir, touch } from './vs-util';
+import { cacheDir, deleteIfPossible, existsAsync, safeLstat, thumbnailDir, touch } from './vs-util';
 import { requestBinary } from 'by-request';
-import { isValidJson, toInt } from '@tubular/util';
+import { checksum53, isValidJson, regexEscape, toInt } from '@tubular/util';
 import { readdir, writeFile } from 'fs/promises';
+// eslint-disable-next-line n/no-extraneous-import
 import Jimp from 'jimp';
-import { checksum53 } from './shared-utils';
 
 export const router = Router();
 
@@ -150,7 +150,7 @@ router.post('/refresh', async (req, res) => {
 
   if (type === 'poster') {
     const thumbnails = await readdir(paths.join(thumbnailDir, type));
-    const match = new RegExp('^' + escapeForRegex(file.slice(0, -4)) + '-\\d+-\\d+\\.jpg$');
+    const match = new RegExp('^' + regexEscape(file.slice(0, -4)) + '-\\d+-\\d+\\.jpg$');
 
     for (const thumbnail of thumbnails) {
       if (match.test(thumbnail))

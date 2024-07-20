@@ -1,9 +1,9 @@
 import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
 import { LibraryItem, PlaybackProgress } from '../../../server/src/shared-types';
 import { canPlayVP9, getImageParam } from '../video-ui-utils';
-import { encodeForUri } from '@tubular/util';
+import { checksum53, encodeForUri } from '@tubular/util';
 import { HttpClient } from '@angular/common/http';
-import { checksum53, hashUri, isMovie, isTvShow } from '../../../server/src/shared-utils';
+import { hashUri, isMovie, isTvShow } from '../../../server/src/shared-utils';
 import { StatusInterceptor } from '../status.service';
 import { MenuItem } from 'primeng/api';
 import { AuthService } from '../auth.service';

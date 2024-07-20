@@ -91,7 +91,6 @@ export interface LibraryItem {
   position?: number;
   positionUser?: number;
   posterPath?: string;
-  randomSort?: number;
   ratingTomatoes?: string;
   releaseDate?: string;
   resolution?: string;
@@ -111,7 +110,6 @@ export interface LibraryItem {
   voteAverage?: number;
   watched?: boolean;
   watchedByUser?: boolean;
-  watchStatus?: WatchStatus;
   year?: number;
 }
 

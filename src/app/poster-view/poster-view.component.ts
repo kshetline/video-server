@@ -1,10 +1,10 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { LibraryItem, VideoLibrary, WatchStatus } from '../../../server/src/shared-types';
 import { ceil, floor, min, random } from '@tubular/math';
-import { clone, encodeForUri } from '@tubular/util';
+import { checksum53, clone, encodeForUri, getOrSet } from '@tubular/util';
 import { faFolderOpen } from '@fortawesome/free-regular-svg-icons';
 import { faShare } from '@fortawesome/free-solid-svg-icons';
-import { checksum53, getWatchInfo, hashTitle, isCollection, isFile, isMovie, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter } from '../../../server/src/shared-utils';
+import { getWatchInfo, hashTitle, isCollection, isFile, isMovie, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter } from '../../../server/src/shared-utils';
 import { searchForm, webSocketMessagesEmitter } from '../video-ui-utils';
 import { fromEvent } from 'rxjs/internal/observable/fromEvent';
 import { debounceTime } from 'rxjs/internal/operators/debounceTime';
@@ -66,31 +66,6 @@ function matchesGenre(item: LibraryItem, genre: string): boolean {
   return false;
 }
 
-function getWatchStatus(item: LibraryItem, admin: boolean): WatchStatus {
-  if (item.watchStatus != null)
-    return item.watchStatus;
-
-  const info = getWatchInfo(admin, item);
-
-  if (info.mixed)
-    return (item.watchStatus = WatchStatus.WATCHING);
-  else if (info.watched)
-    return (item.watchStatus = WatchStatus.WATCHED);
-  else
-    return (item.watchStatus = WatchStatus.UNWATCHED);
-}
-
-function watchSorter(a: LibraryItem, b: LibraryItem, admin = false): number {
-  return getWatchStatus(a, admin) - getWatchStatus(b, admin);
-}
-
-function randomSorter(a: LibraryItem, b: LibraryItem): number {
-  const sa = a.randomSort ?? (a.randomSort = random());
-  const sb = b.randomSort ?? (b.randomSort = random());
-
-  return sa - sb;
-}
-
 const SORT_CHOICES = [
   { label: 'Alphabetical', code: 'A' },
   { label: 'Watching', code: 'W' },
@@ -118,10 +93,12 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   private _genres: string[] = [];
   private _library: VideoLibrary;
   private loadingTimers = new Map<Element, any>();
+  private randomCache = new Map<number, number>();
   private resizeDebounceSub: Subscription;
   private resizeSub: Subscription;
   private _searchText = '';
   private _sortMode = SORT_CHOICES[0];
+  private watchedCache = new Map<number, WatchStatus>();
 
   filterChoices = ['All', 'Movies', 'TV', '4K', '3D'];
   filterNodes: any[];
@@ -396,9 +373,9 @@ export class PosterViewComponent implements OnDestroy, OnInit {
       let diff = 0;
 
       switch (this.sortMode.code) {
-        case 'R': diff = randomSorter(a, b); break;
-        case 'W': diff = watchSorter(a, b); break;
-        case 'Z': diff = watchSorter(a, b, true); break;
+        case 'R': diff = this.randomSorter(a, b); break;
+        case 'W': diff = this.watchSorter(a, b); break;
+        case 'Z': diff = this.watchSorter(a, b, true); break;
       }
 
       if (diff !== 0)
@@ -548,4 +525,28 @@ export class PosterViewComponent implements OnDestroy, OnInit {
     if (refilter)
       this.refilter();
   }
+
+  private getWatchStatus(item: LibraryItem, admin: boolean): WatchStatus {
+    return getOrSet(this.watchedCache, item.id, () => {
+      const info = getWatchInfo(admin, item);
+
+      if (info.mixed)
+        return WatchStatus.WATCHING;
+      else if (info.watched)
+        return WatchStatus.WATCHED;
+      else
+        return WatchStatus.UNWATCHED;
+    });
+  }
+
+  private watchSorter = (a: LibraryItem, b: LibraryItem, admin = false): number => {
+    return this.getWatchStatus(a, admin) - this.getWatchStatus(b, admin);
+  };
+
+  private randomSorter = (a: LibraryItem, b: LibraryItem): number => {
+    const sa = getOrSet(this.randomCache, a.id, () => random());
+    const sb = getOrSet(this.randomCache, b.id, () => random());
+
+    return sa - sb;
+  };
 }

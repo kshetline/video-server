@@ -1,10 +1,10 @@
 import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
 import { LibraryItem, PlaybackProgress } from '../../../server/src/shared-types';
 import { areImagesSimilar, canPlayVP9, getImageParam, getSeasonTitle, setCssVariable, webSocketMessagesEmitter } from '../video-ui-utils';
-import { compareCaseSecondary, encodeForUri } from '@tubular/util';
+import { checksum53, compareCaseSecondary, encodeForUri, nfe } from '@tubular/util';
 import { floor, max, round } from '@tubular/math';
 import { HttpClient } from '@angular/common/http';
-import { checksum53, hashUri, isFile, isMovie, isTvSeason, nfe } from '../../../server/src/shared-utils';
+import { hashUri, isFile, isMovie, isTvSeason } from '../../../server/src/shared-utils';
 import { StatusInterceptor } from '../status.service';
 import { AuthService } from '../auth.service';
 import { MenuItem, MessageService } from 'primeng/api';
