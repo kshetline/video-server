@@ -6,9 +6,13 @@ export enum WatchStatus { WATCHING = 0, UNWATCHED, WATCHED }
 
 export interface ServerStatus {
   currentFile: string;
+  currentVideo: string;
+  currentVideoId: number;
+  currentVideoPath: string;
   lastUpdate: string;
   localAccess?: boolean;
   ready: boolean;
+  playerAvailable: boolean;
   processing: boolean;
   stopPending: boolean;
   updateProgress: number;

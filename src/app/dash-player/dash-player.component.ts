@@ -13,7 +13,7 @@ export interface LibItem {
   duration: number;
   hash: string;
   id?: number;
-  lastUserWatchTime: number;
+  positionUser: number;
   streamUri: string;
   watched?: boolean;
   watchedByUser: boolean;
@@ -133,7 +133,7 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
 
         let lpt: number;
 
-        if ((lpt = value.item.lastUserWatchTime) > 60 && lpt < value.item.duration / 1000 - 5) {
+        if ((lpt = value.item.positionUser) > 60 && lpt < value.item.duration / 1000 - 5) {
           this.lastPlayTime = lpt;
 
           if (this.countdownTimer)
@@ -229,7 +229,7 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
 
   private sendTimeChange(): void {
     if (this.src.item && (this.player || this.playerElem))
-      this.src.item.lastUserWatchTime = this.player ? this.player.time() : this.playerElem.currentTime;
+      this.src.item.positionUser = this.player ? this.player.time() : this.playerElem.currentTime;
 
     if (this.videoUri)
       this.http.put('/api/stream/progress',

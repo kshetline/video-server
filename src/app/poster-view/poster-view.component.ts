@@ -85,7 +85,6 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   readonly hashTitle = hashTitle;
   readonly isCollection = isCollection;
   readonly titleAdjust = titleAdjust;
-  readonly console = console;
 
   private filter = 'All';
   private _filterNode: any;
@@ -143,7 +142,6 @@ export class PosterViewComponent implements OnDestroy, OnInit {
       const lastValue = this._filterNode;
 
       this._filterNode = value;
-      console.log(value);
 
       if (value.key === 'g')
         setTimeout(() => this.filterNode = lastValue);
@@ -166,6 +164,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   set sortMode(value: any) {
     if (this._sortMode !== value) {
       this._sortMode = value;
+      this.randomCache.clear();
       this.refilter();
     }
   }
@@ -256,6 +255,11 @@ export class PosterViewComponent implements OnDestroy, OnInit {
 
   onClick(item: LibraryItem): void {
     this.itemClicked.emit(item);
+  }
+
+  randomize(): void {
+    this.randomCache.clear();
+    this.refilter();
   }
 
   getPosterUrl(item: LibraryItem): string {

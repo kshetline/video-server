@@ -49,7 +49,10 @@ import {
   setWebSocketServer, timeStamp, unref, webSocketSend
 } from './vs-util';
 import { Resolver } from 'node:dns';
-import { cachedLibrary, findVideo, initLibrary, pendingLibrary, router as libraryRouter } from './library-router';
+import {
+  cachedLibrary, currentVideo, currentVideoId, currentVideoPath, findVideo, initLibrary, pendingLibrary,
+  playerAvailable, router as libraryRouter
+} from './library-router';
 import { router as imageRouter } from './image-router';
 import { router as streamingRouter } from './streaming-router';
 import { adminProcessing, currentFile, router as adminRouter, statsInProgress, stopPending, updateProgress } from './admin-router';
@@ -276,8 +279,12 @@ function shutdown(signal?: string): void {
 function getStatus(remote?: string): ServerStatus {
   const status: ServerStatus = {
     currentFile,
+    currentVideo,
+    currentVideoId,
+    currentVideoPath,
     lastUpdate: cachedLibrary?.lastUpdate,
     ready: cachedLibrary?.status === LibraryStatus.DONE,
+    playerAvailable,
     processing: adminProcessing || statsInProgress || !!pendingLibrary,
     stopPending,
     updateProgress: -1,

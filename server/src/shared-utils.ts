@@ -1,5 +1,5 @@
 import { LibraryItem, VideoLibrary, VType } from './shared-types';
-import { checksum53, clone, isArray, isObject } from '@tubular/util';
+import { checksum53, clone, getOrSet, isArray, isObject } from '@tubular/util';
 
 export function isAnyCollection(x: LibraryItem | number): boolean {
   if (isObject(x))
@@ -184,8 +184,10 @@ export function removeBackLinks(childrenOrLibOrItem: VideoLibrary | LibraryItem 
 
 export interface WatchInfo {
   counts?: {
-    watched: number;
+    duration: number;
+    position: number;
     unwatched: number;
+    watched: number;
   },
   duration: number;
   incomplete: boolean;
@@ -195,13 +197,22 @@ export interface WatchInfo {
   watched: boolean;
 }
 
+interface WatchedInfo {
+  duration: number;
+  item: LibraryItem;
+  lastWatchTime: number;
+  path: string;
+  position: number;
+  watched: boolean;
+}
+
 export function getWatchInfo(asAdmin: boolean, item: LibraryItem, wi?: WatchInfo, unique = true): WatchInfo {
   let atTop = false;
 
   if (!wi) {
     atTop = true;
     wi = {
-      counts: { watched: 0, unwatched: 0 },
+      counts: { duration: 0, position: 0, unwatched: 0, watched: 0 },
       duration: 0,
       incomplete: false,
       mixed: false,
@@ -217,31 +228,59 @@ export function getWatchInfo(asAdmin: boolean, item: LibraryItem, wi?: WatchInfo
 
   const priorCounts = clone(wi.counts);
   let watched = false;
+  let position = 0;
 
   if (item.duration != null && ((asAdmin && isFile(item)) || item.streamUri)) {
     watched = asAdmin ? item.watched : item.watchedByUser;
-    wi.counts.watched += watched && unique ? 1 : 0;
+    position = asAdmin ? item.position : item.positionUser;
+    wi.counts.duration += unique ? item.duration : 0;
+    wi.counts.position += unique ? (watched && position <= 0 ? item.duration : position) : 0;
     wi.counts.unwatched += watched ? 0 : 1;
+    wi.counts.watched += watched && unique ? 1 : 0;
   }
 
   let videoCount = 1;
 
   if (item.data) {
-    const uniqueVideos = new Map<string, number>();
+    const uniqueVideos = new Map<string, WatchedInfo[]>();
 
     videoCount = item.data.length;
-    item.data.forEach(i => {
-      const path = i.streamUri || i.uri?.replace('/2K/', '/');
-      const newPath = path && !uniqueVideos.has(path);
-      const lastCount = wi.counts.watched;
+    item.data.forEach((i, n) => {
+      const path = i.streamUri || i.uri?.replace('/2K/', '/') || '';
+      const key = path || n.toString();
+      const list = getOrSet(uniqueVideos, key, []);
 
-      if (newPath)
-        uniqueVideos.set(path, 0);
+      list.push({
+        duration: i.duration,
+        item: i,
+        lastWatchTime: asAdmin ? i.lastWatchTime : i.lastUserWatchTime,
+        path,
+        position: asAdmin ? i.position : i.positionUser,
+        watched: asAdmin ? i.watched : i.watchedByUser
+      });
+    });
 
-      getWatchInfo(asAdmin, i, wi, !path || newPath || uniqueVideos.get(path) === 0);
+    uniqueVideos.forEach(infos => {
+      let unique: WatchedInfo;
 
-      if (path)
-        uniqueVideos.set(path, wi.counts.watched > lastCount ? 1 : 0);
+      infos.sort((a, b) => b.lastWatchTime - a.lastWatchTime);
+      unique = infos.find(i => i.position > 0);
+
+      if (!unique) {
+        infos.sort((a, b) => b.position - a.position);
+        unique = infos.find(i => i.position > 0);
+      }
+
+      if (!unique) {
+        infos.sort((a, b) => b.duration - a.duration);
+        unique = infos.find(i => i.watched);
+      }
+
+      if (!unique)
+        unique = infos[0];
+
+      for (const info of infos)
+        getWatchInfo(asAdmin, info.item, wi, !info.path || info === unique);
     });
 
     if (uniqueVideos.size > 0 && uniqueVideos.size < videoCount)
@@ -254,6 +293,7 @@ export function getWatchInfo(asAdmin: boolean, item: LibraryItem, wi?: WatchInfo
                      (isAnyCollection(item) || isTvShow(item) || wi.counts.watched < videoCount) &&
                      wi.counts.unwatched > 0);
     wi.mixed = wi.incomplete && !isMovie(item);
+    wi.position = wi.counts.position;
     delete wi.counts;
   }
   else if (wi.counts.watched > priorCounts.watched && isMovie(item)) {

@@ -985,6 +985,12 @@ function findByUri(uri: string, canBeAlias = false, items?: LibraryItem[]): Libr
   return null;
 }
 
+interface WatchInfo {
+  id: number;
+  position: number;
+  watched: boolean;
+}
+
 async function watchCheck(id: number): Promise<void> {
   let item = findId(id);
 
@@ -996,16 +1002,16 @@ async function watchCheck(id: number): Promise<void> {
   try {
     const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getDetail?id=${id}`;
     const response: ShowInfo = await requestJson(url);
-    const statuses: { id: number, watched: boolean }[] = [];
+    const statuses: WatchInfo[] = [];
 
     if (response.aggregation?.aggregations) {
       for (const agg of response.aggregation.aggregations) {
         if (agg.type === VType.TV_EPISODE && agg.aggregations) {
           for (const vAgg of agg.aggregations)
-            statuses.push({ id: vAgg.id, watched: !!vAgg.watched });
+            statuses.push({ id: vAgg.id, watched: !!vAgg.watched, position: vAgg.position });
         }
         else
-          statuses.push({ id: agg.id, watched: !!agg.watched });
+          statuses.push({ id: agg.id, watched: !!agg.watched, position: agg.position });
       }
     }
 

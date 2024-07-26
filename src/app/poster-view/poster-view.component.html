@@ -9,6 +9,8 @@
     <div class="filter-selectors">
       <p-treeSelect class="wide" [(ngModel)]="filterNode" [options]="filterNodes"></p-treeSelect>
       <p-dropdown [options]="sortChoices" [(ngModel)]="sortMode" appendTo="body"></p-dropdown>
+      <p-button *ngIf="sortMode.code === 'R'" icon="pi pi-refresh" styleClass="p-button-rounded"
+                (click)="randomize()"></p-button>
     </div>
   </div>
 </div>
