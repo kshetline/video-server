@@ -221,10 +221,8 @@ export function getWatchInfo(asAdmin: boolean, item: LibraryItem, wi?: WatchInfo
     };
   }
 
-  if (!asAdmin && item.streamUri && !wi.stream) {
+  if (!asAdmin && item.streamUri && !wi.stream)
     wi.stream = item.streamUri;
-    wi.duration = item.duration / 1000;
-  }
 
   const priorCounts = clone(wi.counts);
   let watched = false;
@@ -293,6 +291,7 @@ export function getWatchInfo(asAdmin: boolean, item: LibraryItem, wi?: WatchInfo
                      (isAnyCollection(item) || isTvShow(item) || wi.counts.watched < videoCount) &&
                      wi.counts.unwatched > 0);
     wi.mixed = wi.incomplete && !isMovie(item);
+    wi.duration = wi.counts.duration;
     wi.position = wi.counts.position;
     delete wi.counts;
   }

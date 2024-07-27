@@ -155,7 +155,7 @@ export class BonusViewComponent implements OnInit {
 
         if (match)
           this.itemsByStream.set(stream,
-            { hash, duration: match.duration * 1000, positionUser: match.offset, streamUri: stream, watchedByUser: match.watched });
+            { hash, duration: match.duration, positionUser: match.offset, streamUri: stream, watchedByUser: match.watched });
         else
           this.itemsByStream.set(stream, { hash, duration: 0, positionUser: 0, streamUri: stream, watchedByUser: false });
       }

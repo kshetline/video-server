@@ -78,3 +78,24 @@ p-treeSelect .p-tree {
     }
   }
 }
+
+.playback-progress {
+  background-color: #00F;
+  height: 4px;
+  visibility: hidden;
+  width: 150px;
+
+  > div {
+    height: 100%;
+    background-color: #0CF;
+    width: 50%;
+  }
+
+  &.admin {
+    background-color: #060;
+
+    > div {
+      background-color: #0D0;
+    }
+  }
+}

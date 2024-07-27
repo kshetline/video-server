@@ -133,7 +133,7 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
 
         let lpt: number;
 
-        if ((lpt = value.item.positionUser) > 60 && lpt < value.item.duration / 1000 - 5) {
+        if ((lpt = value.item.positionUser) > 60 && lpt < value.item.duration - 5) {
           this.lastPlayTime = lpt;
 
           if (this.countdownTimer)

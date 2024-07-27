@@ -203,7 +203,7 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
       break;
 
     if (item.videoinfo) {
-      item.duration = item.videoinfo.duration;
+      item.duration = item.videoinfo.duration / 1000; // Make duration (originally in msecs) compatible with playback position (in seconds).
       item.uri = item.videoinfo.uri;
       delete item.videoinfo;
     }

@@ -323,7 +323,7 @@ export class ShowViewComponent implements OnInit {
   }
 
   getDuration(): string {
-    return round((this.video.duration || this.video.parent.duration) / 60000) + ' minutes';
+    return round((this.video.duration || this.video.parent.duration) / 60) + ' minutes';
   }
 
   getVoteAverage(): number {
@@ -540,6 +540,11 @@ export class ShowViewComponent implements OnInit {
           item.lastUserWatchTime = match.last_watched;
           item.positionUser = match.offset;
           item.watchedByUser = match.watched;
+        }
+        else {
+          item.lastUserWatchTime = -1;
+          item.positionUser = 0;
+          item.watchedByUser = false;
         }
       }
     });

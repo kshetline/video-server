@@ -96,24 +96,32 @@
   align-items: center;
   display: flex;
   flex-direction: column;
-  gap: 0.5em;
   position: relative;
   width: 150px;
 
-  .title {
-    display: -webkit-box;
-    height: 2.4em;
-    overflow: hidden;
-    text-align: center;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+  .progress-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    overflow: visible;
   }
 
   .rating-wrapper {
     display: flex;
     gap: 0.25em;
     height: 19px;
+    margin-top: 0.25em;
     user-select: none;
+  }
+
+  .title {
+    display: -webkit-box;
+    height: 2.4em;
+    margin-top: 0.5em;
+    overflow: hidden;
+    text-align: center;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 
   img {

@@ -69,7 +69,7 @@ async function setWatchedMultiple(item: LibraryItem, username: string, progress:
     if (isFile(child)) {
       progress.id = child.id;
       progress.hash = hashUri(child.streamUri);
-      progress.duration = child.duration / 1000;
+      progress.duration = child.duration;
       progress.last_watched = progress.watched ? Date.now() : progress.last_watched;
       progress.offset = progress.watched ? 0 : progress.offset;
       response = await setWatchedDb(child, username, progress);

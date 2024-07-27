@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { LibraryItem, PlaybackProgress } from '../../../server/src/shared-types';
 import { AuthService } from '../auth.service';
 import { HttpClient } from '@angular/common/http';
@@ -7,16 +7,21 @@ import { LibItem } from '../dash-player/dash-player.component';
 import { webSocketMessagesEmitter } from '../video-ui-utils';
 import { updatedItem } from '../app.component';
 import { isEqual } from '@tubular/util';
+import { min } from '@tubular/math';
 
 @Component({
   selector: 'app-watched-indicator',
   templateUrl: './watched-indicator.component.html',
   styleUrls: ['./watched-indicator.component.scss']
 })
-export class WatchedIndicatorComponent implements OnInit {
+export class WatchedIndicatorComponent implements OnDestroy, OnInit {
   private _asAdmin = false;
   private duration = 0;
+  private observer = MutationObserver;
+  private progress = 0;
+  private _progressBar: string;
   private stream: string;
+  private updateTimer: any;
   private _video: LibraryItem | LibItem;
 
   activated = false;
@@ -26,9 +31,21 @@ export class WatchedIndicatorComponent implements OnInit {
   started = false;
   watched = false;
 
-  constructor(private httpClient: HttpClient, private auth: AuthService) {}
+  constructor(private elem: ElementRef, private httpClient: HttpClient, private auth: AuthService) {
+  }
 
   ngOnInit(): void {
+    // @ts-ignore // Not sure why I need this ts-ignore, or the (this.observer as any) either. What's wrong with the MutationObserver definition?
+    this.observer = new MutationObserver(_mutations => {
+      if (!this.updateTimer) {
+        this.updateTimer = setTimeout(() => {
+          this.updateTimer = undefined;
+          this.updateProgressBar();
+        }, 500);
+      }
+    });
+    (this.observer as any).observe(this.elem.nativeElement, { childList: true, subtree: true });
+
     webSocketMessagesEmitter().subscribe(msg => {
       switch (msg.type) {
         case 'idUpdate2':
@@ -41,6 +58,18 @@ export class WatchedIndicatorComponent implements OnInit {
           break;
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    (this.observer as any).disconnect();
+  }
+
+  @Input() get progressBar(): string { return this._progressBar; }
+  set progressBar(value: string) {
+    if (this._progressBar !== value) {
+      this._progressBar = value;
+      this.updateProgressBar();
+    }
   }
 
   @Input() get video(): LibraryItem | LibItem { return this._video; }
@@ -122,7 +151,19 @@ export class WatchedIndicatorComponent implements OnInit {
     this.duration = wi.duration;
     this.incomplete = wi.incomplete;
     this.mixed = wi.mixed;
+    this.progress = wi.position > 0 && wi.duration > 0 ? min(wi.position * 100 / wi.duration, 100) : 0;
     this.stream = wi.stream;
     this.watched = wi.watched;
+    this.updateProgressBar();
+  }
+
+  private updateProgressBar(): void {
+    if (this.progressBar) {
+      const bar = document.getElementById(this.progressBar);
+      const inner = bar.firstElementChild as HTMLElement;
+
+      bar.style.visibility = this.showIndicator() && this.progress > 0 && this.progress < 100 ? 'visible' : 'hidden';
+      inner.style.width = this.progress.toFixed(1) + '%';
+    }
   }
 }
