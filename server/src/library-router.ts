@@ -52,6 +52,7 @@ export let playerAvailable = true;
 export let currentVideo: string;
 export let currentVideoId = -1;
 export let currentVideoPath: string;
+export let currentVideoPosition = -1;
 
 let pendingUpdate: any;
 let nextId: number;
@@ -932,13 +933,13 @@ function mapDurations(): void {
   mapDurationsAux(cachedLibrary?.array || []);
 }
 
-function updateItemWatchedState(item: LibraryItem, state: boolean): void {
+function updateItemWatchedState(item: LibraryItem, state: boolean, position: number): void {
   if (item) {
-    setWatched(item, state);
+    setWatched(item, state, position);
 
     const aliases = findAliases(item.id);
 
-    aliases.forEach(a => setWatched(a, state));
+    aliases.forEach(a => setWatched(a, state, position));
     webSocketSend({ type: 'idUpdate', data: item.id });
     updateCache(item.id).finally();
   }
@@ -991,7 +992,7 @@ interface WatchInfo {
   watched: boolean;
 }
 
-async function watchCheck(id: number): Promise<void> {
+async function watchCheck(id: number, position = -1): Promise<void> {
   let item = findId(id);
 
   while (item.parent && !isMovie(item) && !isTvSeason(item)) {
@@ -1008,18 +1009,20 @@ async function watchCheck(id: number): Promise<void> {
       for (const agg of response.aggregation.aggregations) {
         if (agg.type === VType.TV_EPISODE && agg.aggregations) {
           for (const vAgg of agg.aggregations)
-            statuses.push({ id: vAgg.id, watched: !!vAgg.watched, position: vAgg.position });
+            statuses.push({ id: vAgg.id, watched: !!vAgg.watched, position: position > 0 ? position : vAgg.position });
         }
         else
-          statuses.push({ id: agg.id, watched: !!agg.watched, position: agg.position });
+          statuses.push({ id: agg.id, watched: !!agg.watched, position: position > 0 ? position : agg.position });
       }
     }
+    else if (position > 0)
+      statuses.push({ id, watched: item.watched, position });
 
     for (const status of statuses) {
       const vItem = findId(status.id);
 
-      if (vItem?.watched !== status.watched)
-        updateItemWatchedState(vItem, status.watched);
+      if (vItem?.watched !== status.watched || vItem?.position !== status.position)
+        updateItemWatchedState(vItem, status.watched, status.position);
     }
   }
   catch {}
@@ -1036,13 +1039,14 @@ function monitorPlayer(): void {
       if (response.status === 200 && response.video?.path) {
         currentVideo = response.video.title || response.video.path;
         currentVideoPath = response.video.path.replace(/^[^#]*#[^/]*/, '').normalize();
+        currentVideoPosition = response.video.currentPosition / 1000;
 
         const item = findByUri(currentVideoPath);
         const lastId = currentVideoId;
 
         if (item?.id > 0) {
           currentVideoId = item.id;
-          await watchCheck(item.id);
+          await watchCheck(item.id, currentVideoPosition);
         }
         else
           currentVideoId = -1;
@@ -1188,18 +1192,18 @@ function makeSparse(items: LibraryItem[], depth = 0): void {
   }
 }
 
-function setWatched(item: LibraryItem, state: boolean): void {
+function setWatched(item: LibraryItem, state: boolean, position: number): void {
   if (!item)
     return;
 
   if (item.watched != null || isFile(item)) {
     item.watched = state;
     item.lastWatchTime = state ? Date.now() : -1;
-    item.position = state ? 0 : -1;
+    item.position = state ? 0 : position > 0 ? position : -1;
   }
 
   if (item.data)
-    item.data.forEach(i => setWatched(i, state));
+    item.data.forEach(i => setWatched(i, state, position));
 }
 
 let pendingLibUpdate: VideoLibrary;
@@ -1299,7 +1303,7 @@ router.put('/set-watched', async (req, res) => {
   const response = isFile(item) ? await setWatchedApi(item, watched) : await setWatchedMultiple(item, watched);
 
   if (!response) {
-    updateItemWatchedState(item, !!watched);
+    updateItemWatchedState(item, !!watched, 0);
     jsonOrJsonp(req, res, response);
   }
   else if (response.status === 500 && !response.msg)
