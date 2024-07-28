@@ -50,7 +50,7 @@ import {
 } from './vs-util';
 import { Resolver } from 'node:dns';
 import {
-  cachedLibrary, currentVideo, currentVideoId, currentVideoPath, findVideo, initLibrary, pendingLibrary,
+  cachedLibrary, currentVideo, currentVideoId, currentVideoPath, currentVideoPosition, findVideo, initLibrary, pendingLibrary,
   playerAvailable, router as libraryRouter
 } from './library-router';
 import { router as imageRouter } from './image-router';
@@ -282,6 +282,7 @@ function getStatus(remote?: string): ServerStatus {
     currentVideo,
     currentVideoId,
     currentVideoPath,
+    currentVideoPosition,
     lastUpdate: cachedLibrary?.lastUpdate,
     ready: cachedLibrary?.status === LibraryStatus.DONE,
     playerAvailable,

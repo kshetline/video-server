@@ -6,17 +6,17 @@
   <div *ngIf="overview" class="overview">{{overview}}</div>
   <div class="collection-title">{{collection?.name}}</div>
   <div class="item-list">
-    <div *ngFor="let item of items" class="library-item">
+    <div *ngFor="let item of items; index as i" class="library-item">
       <div class="loading">Loading...</div>
       <img [ngSrc]="getPosterUrl(item)" width=150 height=225 alt="{{item.name}}" priority>
       <div class="progress-wrapper">
-        <div class="playback-progress" [id]="'prog-c-' + item.id"><div></div></div>
-        <div class="playback-progress admin" [id]="'prog-c-a-' + item.id"><div></div></div>
+        <div class="playback-progress" [id]="'prog-c-' + item.id + '-' + i"><div></div></div>
+        <div class="playback-progress admin" [id]="'prog-c-a-' + item.id + '-' + i"><div></div></div>
       </div>
       <div class="rating-wrapper" [style.display]="subCollection ? 'none' : 'flex'">
-        <app-watched-indicator [progressBar]="'prog-c-a-' + item.id" [video]="item" class="show-watched" [asAdmin]="true" fade="unwatched" [title]="item.name"></app-watched-indicator>
-        <app-rating *ngIf="item.voteAverage" [value]="item.voteAverage" [topValue]="10"></app-rating>
-        <app-watched-indicator [progressBar]="'prog-c-' + item.id" [video]="item" class="show-watched" fade="unwatched"></app-watched-indicator>
+        <app-watched-indicator [progressBar]="'prog-c-a-' + item.id + '-' + i" [video]="item" class="show-watched" [asAdmin]="true" fade="unwatched" [title]="item.name"></app-watched-indicator>
+        <app-rating [style.opacity]="item.voteAverage ? '1' : '0'" [value]="item.voteAverage" [topValue]="10"></app-rating>
+        <app-watched-indicator [progressBar]="'prog-c-' + item.id + '-' + i" [video]="item" class="show-watched" fade="unwatched"></app-watched-indicator>
       </div>
       <div class="year">{{item.year || (item.data ?? [])[0]?.year || '\u00A0'}}</div>
       <div class="title" [style.font-style]="collection.isAlias ? 'italic' : 'plain'">{{item.name}}</div>

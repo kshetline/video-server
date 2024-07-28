@@ -1030,6 +1030,12 @@ async function watchCheck(id: number, position = -1): Promise<void> {
 
 function monitorPlayer(): void {
   unref(setInterval(async () => {
+    const lastPlayerAvailable = playerAvailable;
+    const lastCurrentVideo = currentVideo;
+    const lastCurrentVideoId = currentVideoId;
+    const lastCurrentVideoPath = currentVideoPath;
+    const lastCurrentVideoPosition = currentVideoPosition;
+
     try {
       const url = process.env.VS_ZIDOO_CONNECT + 'ZidooVideoPlay/getPlayStatus';
       const response: PlayStatus = await requestJson(url);
@@ -1051,12 +1057,15 @@ function monitorPlayer(): void {
         else
           currentVideoId = -1;
 
-        if (lastId > 0 && lastId !== currentVideoId)
+        if (lastId > 0 && lastId !== currentVideoId) {
+          updateCache(lastId).finally();
           setTimeout(() => watchCheck(lastId), 1000);
+        }
       }
       else {
         currentVideo = undefined;
         currentVideoPath = undefined;
+        currentVideoPosition = -1;
         currentVideoId = -1;
       }
     }
@@ -1065,7 +1074,15 @@ function monitorPlayer(): void {
       currentVideo = undefined;
       currentVideoId = -1;
       currentVideoPath = undefined;
+      currentVideoPosition = -1;
     }
+
+    if (lastPlayerAvailable !== playerAvailable ||
+        lastCurrentVideo !== currentVideo ||
+        lastCurrentVideoId !== currentVideoId ||
+        lastCurrentVideoPath !== currentVideoPath ||
+        lastCurrentVideoPosition !== currentVideoPosition)
+      sendStatus();
 
     const now = processMillis();
 

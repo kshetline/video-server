@@ -144,8 +144,13 @@ export class WatchedIndicatorComponent implements OnInit {
   private updateProgressBar(): void {
     if (this.progressBar) {
       const bar = document.getElementById(this.progressBar);
-      const inner = bar.firstElementChild as HTMLElement;
+      const inner = bar?.firstElementChild as HTMLElement;
       const visible = (this.showIndicator() && this.progress > 0 && this.progress < 100);
+
+      if (!bar || !inner) {
+        setTimeout(() => this.updateProgressBar(), 250);
+        return;
+      }
 
       bar.style.visibility = visible ? 'visible' : 'hidden';
       inner.style.width = this.progress.toFixed(1) + '%';
@@ -163,7 +168,7 @@ export class WatchedIndicatorComponent implements OnInit {
           }
           else if (--count === 0)
             clearInterval(elemCheck);
-        }, 500)
+        }, 500);
       }
     }
   }

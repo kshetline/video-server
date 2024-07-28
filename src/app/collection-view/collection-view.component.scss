@@ -49,7 +49,6 @@
       align-items: center;
       display: flex;
       flex-direction: column;
-      gap: 0.5em;
       position: relative;
       width: calc(150px + 2em);
 
@@ -68,10 +67,18 @@
         z-index: -1;
       }
 
+      .progress-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        overflow: visible;
+      }
+
       .rating-wrapper {
         display: flex;
         gap: 0.25em;
         height: 19px;
+        margin-top: 0.25em;
         position: relative;
       }
 
@@ -87,6 +94,7 @@
       }
 
       .title, .year {
+        margin-top: 0.5em;
         text-align: center;
       }
 

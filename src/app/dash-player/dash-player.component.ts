@@ -5,8 +5,9 @@ import { max, min } from '@tubular/math';
 import { AuthService } from '../auth.service';
 import { StatusInterceptor } from '../status.service';
 import { HttpClient } from '@angular/common/http';
-import { hashUri } from '../../../server/src/shared-utils';
+import { hashUri, itemPath } from '../../../server/src/shared-utils';
 import { LibraryItem, PlaybackProgress } from '../../../server/src/shared-types';
+import { broadcastMessage } from '../video-ui-utils';
 
 export interface LibItem {
   aggregationId?: number;
@@ -228,8 +229,12 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
   }
 
   private sendTimeChange(): void {
-    if (this.src.item && (this.player || this.playerElem))
+    if (this.src.item && (this.player || this.playerElem)) {
       this.src.item.positionUser = this.player ? this.player.time() : this.playerElem.currentTime;
+
+      if (this.src.item.id)
+        setTimeout(() => broadcastMessage('idUpdate2', itemPath(this.src.item as LibraryItem)));
+    }
 
     if (this.videoUri)
       this.http.put('/api/stream/progress',

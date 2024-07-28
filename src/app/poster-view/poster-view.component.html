@@ -39,13 +39,13 @@
         <fa-icon *ngIf="item.id !== floor(item.id) && !item.isLink" [icon]="faFolderOpen" class="fa-xl stroke-path"></fa-icon>
       </div>
       <div class="progress-wrapper">
-        <div class="playback-progress" [id]="'prog-' + item.id"><div></div></div>
-        <div class="playback-progress admin" [id]="'prog-a-' + item.id"><div></div></div>
+        <div class="playback-progress" [id]="'prog-' + item.id + '-' + i"><div></div></div>
+        <div class="playback-progress admin" [id]="'prog-a-' + item.id + '-' + i"><div></div></div>
       </div>
       <div class="rating-wrapper">
-        <app-watched-indicator [progressBar]="'prog-a-' + item.id" [video]="item" class="show-watched" [asAdmin]="true" fade="unwatched"></app-watched-indicator>
+        <app-watched-indicator [progressBar]="'prog-a-' + item.id + '-' + i" [video]="item" class="show-watched" [asAdmin]="true" fade="unwatched"></app-watched-indicator>
         <app-rating [style.opacity]="item.voteAverage ? '1' : '0'" [value]="item.voteAverage" [topValue]="10"></app-rating>
-        <app-watched-indicator [progressBar]="'prog-' + item.id" [video]="item" class="show-watched" fade="unwatched"></app-watched-indicator>
+        <app-watched-indicator [progressBar]="'prog-' + item.id + '-' + i" [video]="item" class="show-watched" fade="unwatched"></app-watched-indicator>
       </div>
       <div class="title" [style.font-style]="item.isAlias ? 'italic' : 'plain'">{{titleAdjust(item.name)}}</div>
 
