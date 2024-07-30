@@ -323,16 +323,16 @@ export class ShowViewComponent implements OnInit {
   }
 
   getDuration(): string {
-    return round((this.video.duration || this.video.parent.duration) / 60) + ' minutes';
+    return this.video ? round((this.video.duration || this.video.parent.duration) / 60) + ' minutes' : '';
   }
 
   getVoteAverage(): number {
-    return this.video.voteAverage || this.show.voteAverage;
+    return this.video?.voteAverage || this.show?.voteAverage;
   }
 
   getGenres(): string {
     if (this.show.genres?.length > 0)
-      return this.show.genres.join(', ');
+      return this.show?.genres.join(', ') || '';
     else
       return '';
   }
@@ -435,7 +435,7 @@ export class ShowViewComponent implements OnInit {
   }
 
   playOnMediaPlayer(player: number): void {
-    this.httpClient.get(`/api/play?id=${this.video.aggregationId}&player=${player}`).subscribe();
+    this.httpClient.get(`/api/play?id=${this.video?.aggregationId}&player=${player}`).subscribe();
   }
 
   closePlayer(): void {
@@ -479,7 +479,9 @@ export class ShowViewComponent implements OnInit {
     const b = this.badges = [];
     const v = this.video;
 
-    if (v.is4k)
+    if (!v)
+      return;
+    else if (v.is4k)
       b.push('4K');
     else if (v.is3d)
       b.push('3D');

@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { formatMillisToDays, formatSize, webSocketMessagesEmitter } from '../video-ui-utils';
+import { formatSecondsToDays, formatSize, webSocketMessagesEmitter } from '../video-ui-utils';
 import { HttpClient } from '@angular/common/http';
 import { ServerStatus, VideoStats } from '../../../server/src/shared-types';
 import { clone } from '@tubular/util';
@@ -12,7 +12,7 @@ import { ConfirmationService } from 'primeng/api';
   styleUrls: ['./admin-view.component.scss']
 })
 export class AdminViewComponent implements OnInit {
-  readonly formatMillisToDays = formatMillisToDays;
+  readonly formatSecondsToDays = formatSecondsToDays;
   readonly formatSize = formatSize;
 
   private lastStatus: ServerStatus;

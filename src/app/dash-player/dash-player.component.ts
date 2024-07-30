@@ -14,6 +14,7 @@ export interface LibItem {
   duration: number;
   hash: string;
   id?: number;
+  position?: number;
   positionUser: number;
   streamUri: string;
   watched?: boolean;
@@ -232,8 +233,11 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
     if (this.src.item && (this.player || this.playerElem)) {
       this.src.item.positionUser = this.player ? this.player.time() : this.playerElem.currentTime;
 
-      if (this.src.item.id)
-        setTimeout(() => broadcastMessage('idUpdate2', itemPath(this.src.item as LibraryItem)));
+      if (this.src.item.id) {
+        const item = this.src.item;
+
+        setTimeout(() => broadcastMessage('idUpdate2', itemPath(item as LibraryItem)));
+      }
     }
 
     if (this.videoUri)

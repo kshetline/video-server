@@ -209,8 +209,8 @@ export function webSocketMessagesEmitter(): EventEmitter<WSMessage> {
   return wsEmitter;
 }
 
-export function formatMillisToDays(millis: number): string {
-  let secs = round(millis / 1000);
+export function formatSecondsToDays(secs: number): string {
+  secs = round(secs);
   const days = floor(secs / 86400);
   secs -= days * 86400;
   const hours = floor(secs / 3600);

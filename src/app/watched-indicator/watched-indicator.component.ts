@@ -89,6 +89,7 @@ export class WatchedIndicatorComponent implements OnInit {
   start(): void {
     this.started = true;
     this.activated = false;
+    this.examineWatchedStates(this.video);
   }
 
   toggleWatched(): void {
@@ -96,6 +97,12 @@ export class WatchedIndicatorComponent implements OnInit {
 
     if (this.busy)
       return;
+
+    const success = (): void => {
+      this.onUpdate.emit();
+      this.watched = !this.watched;
+      this.progress = 0;
+    };
 
     if (this.video) {
       if (!this.asAdmin) {
@@ -108,18 +115,12 @@ export class WatchedIndicatorComponent implements OnInit {
             watched: !this.watched,
             id: this.video.id
           } as PlaybackProgress, { responseType: 'text' })
-          .subscribe({ next: () => {
-            this.onUpdate.emit();
-            this.watched = !this.watched;
-          }, complete: () => this.busy = false });
+          .subscribe({ next: success, complete: () => this.busy = false });
       }
       else if (this.video.id) {
         this.busy = true;
         this.httpClient.put(`/api/library/set-watched?id=${this.video.id}&watched=${this.watched ? 0 : 1}`, null)
-          .subscribe({ next: () => {
-            this.onUpdate.emit();
-            this.watched = !this.watched;
-          }, complete: () => this.busy = false });
+          .subscribe({ next: success, complete: () => this.busy = false });
       }
     }
   }

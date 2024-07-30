@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { LibraryItem, VideoLibrary, WatchStatus } from '../../../server/src/shared-types';
 import { ceil, floor, min, random } from '@tubular/math';
-import { checksum53, clone, encodeForUri, getOrSet, processMillis } from '@tubular/util';
+import { checksum53, clone, encodeForUri, getOrSet } from '@tubular/util';
 import { faFolderOpen } from '@fortawesome/free-regular-svg-icons';
 import { faShare } from '@fortawesome/free-solid-svg-icons';
 import { getWatchInfo, hashTitle, isCollection, isFile, isMovie, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter } from '../../../server/src/shared-utils';
@@ -165,6 +165,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
     if (this._sortMode !== value) {
       this._sortMode = value;
       this.randomCache.clear();
+      this.watchedCache.clear();
       this.refilter();
     }
   }

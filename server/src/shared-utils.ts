@@ -221,14 +221,14 @@ export function getWatchInfo(asAdmin: boolean, item: LibraryItem, wi?: WatchInfo
     };
   }
 
-  if (!asAdmin && item.streamUri && !wi.stream)
+  if (!asAdmin && item?.streamUri && !wi.stream)
     wi.stream = item.streamUri;
 
   const priorCounts = clone(wi.counts);
   let watched = false;
   let position = 0;
 
-  if (item.duration != null && ((asAdmin && isFile(item)) || item.streamUri)) {
+  if (item?.duration != null && ((asAdmin && isFile(item)) || item.streamUri)) {
     watched = asAdmin ? item.watched : item.watchedByUser;
     position = asAdmin ? item.position : item.positionUser;
     wi.counts.duration += unique ? item.duration : 0;
@@ -239,15 +239,17 @@ export function getWatchInfo(asAdmin: boolean, item: LibraryItem, wi?: WatchInfo
 
   let videoCount = 1;
 
-  if (item.data) {
+  if (item?.data) {
+    const uniquePaths = new Set<string>();
     const uniqueVideos = new Map<string, WatchedInfo[]>();
 
     videoCount = item.data.length;
     item.data.forEach((i, n) => {
       const path = i.streamUri || i.uri?.replace('/2K/', '/') || '';
-      const key = path || n.toString();
+      const key = isMovie(i.parent) ? '#' + i.parent.id : path || n.toString();
       const list = getOrSet(uniqueVideos, key, []);
 
+      uniquePaths.add(path);
       list.push({
         duration: i.duration,
         item: i,
@@ -281,8 +283,8 @@ export function getWatchInfo(asAdmin: boolean, item: LibraryItem, wi?: WatchInfo
         getWatchInfo(asAdmin, info.item, wi, !info.path || info === unique);
     });
 
-    if (uniqueVideos.size > 0 && uniqueVideos.size < videoCount)
-      videoCount = uniqueVideos.size;
+    if (uniquePaths.size > 0 && uniquePaths.size < videoCount)
+      videoCount = uniquePaths.size;
   }
 
   if (atTop) {

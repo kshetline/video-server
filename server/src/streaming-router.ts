@@ -14,13 +14,17 @@ function setWatched(item: LibraryItem, state: boolean): void {
 
   if (item.streamUri) {
     item.watchedByUser = state;
+    item.positionUser = state ? 0 : -1;
     item.lastUserWatchTime = state ? Date.now() : -1;
   }
 
-  if (item.parent?.data) {
-    item.parent.data.forEach(sibling => {
+  const parent = item.parent || findId(item.parentId);
+
+  if (parent?.data) {
+    parent.data.forEach(sibling => {
       if (sibling !== item && sibling.streamUri === item.streamUri) {
         sibling.watchedByUser = state;
+        sibling.positionUser = state ? 0 : -1;
         sibling.lastUserWatchTime = state ? Date.now() : -1;
       }
     });
@@ -47,9 +51,11 @@ async function setWatchedDb(item: LibraryItem, username: string, progress: Playb
       setWatched(item, wasWatched);
       webSocketSend({ type: 'idUpdate', data: item.id });
 
-      if (item.streamUri && isFile(item) && item.parent?.data &&
-          item.parent.data.reduce((sum, sibling) => sum + (sibling.streamUri === item.streamUri ? 1 : 0), 0) > 1)
-        webSocketSend({ type: 'idUpdate', data: item.parent.id });
+      const parent = item.parent || findId(item.parentId);
+
+      if (parent?.data && item.streamUri && isFile(item) &&
+          parent.data.reduce((sum, sibling) => sum + (sibling.streamUri === item.streamUri ? 1 : 0), 0) > 1)
+        webSocketSend({ type: 'idUpdate', data: parent.id });
     }
 
     return true;

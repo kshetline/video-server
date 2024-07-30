@@ -19,15 +19,19 @@
   </div>
   <div class="show-info-wrapper">
     <div class="show-info">
-      <app-watched-indicator [video]="video" class="show-watched" (onUpdate)="getPlaybackInfo()"></app-watched-indicator>
-      <app-watched-indicator [video]="video" class="show-watched-admin" [asAdmin]="true"></app-watched-indicator>
+      <div class="progress-wrapper">
+        <div class="playback-progress" id="prog-show"><div></div></div>
+        <div class="playback-progress admin" id="prog-show-a"><div></div></div>
+      </div>
+      <app-watched-indicator progressBar="prog-show" [video]="video" class="show-watched" (onUpdate)="getPlaybackInfo()"></app-watched-indicator>
+      <app-watched-indicator progressBar="prog-show-a" [video]="video" class="show-watched-admin" [asAdmin]="true"></app-watched-indicator>
       <div class="show-title">{{getSeasonTitle(show)}}</div>
       <div class="info-line">
         <app-rating *ngIf="getVoteAverage()" [value]="getVoteAverage()" [topValue]="10"></app-rating>
         <span *ngIf="hasYear()">{{selection.year}}</span>
         <span *ngIf="hasAirDate()" class="air-date">{{selection.airDate}}</span>
         <span *ngIf="show.certification" class="rating">{{show.certification}}</span>
-        <span *ngIf="video.duration || video.parent.duration" class="duration">{{getDuration()}}</span>
+        <span *ngIf="video?.duration || video?.parent?.duration" class="duration">{{getDuration()}}</span>
         <span *ngIf="show.homepage" class="homepage">
           <a [href]="show.homepage" target="_blank">
             <i class="pi pi-home"><span class="blank">&nbsp;</span></i><span class="text">Homepage</span></a>
