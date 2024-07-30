@@ -535,7 +535,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
     return getOrSet(this.watchedCache, item.id, () => {
       const info = getWatchInfo(admin, item);
 
-      if (info.mixed || info.position > 0)
+      if (info.mixed || (info.position > 0 && info.position < info.duration))
         return WatchStatus.WATCHING;
       else if (info.watched)
         return WatchStatus.WATCHED;
