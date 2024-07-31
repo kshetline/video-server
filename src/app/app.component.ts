@@ -40,6 +40,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   currentShow: LibraryItem;
   genres = defaultGenres;
   library: VideoLibrary;
+  logoffRequestTime = -Number.MAX_SAFE_INTEGER;
   logoffTime = 0;
   playing = false;
   showAdminPage = false;
@@ -63,10 +64,11 @@ export class AppComponent implements AfterViewInit, OnInit {
 
       switch (status) {
         case 440:
-          this.messageService.add({
-            severity: 'warn', summary: 'Session Expired',
-            detail: 'Your login session has expired.', sticky: true
-          });
+          if (processMillis() > this.logoffRequestTime + 10000)
+            this.messageService.add({
+              severity: 'warn', summary: 'Session Expired',
+              detail: 'Your login session has expired.', sticky: true
+            });
           break;
         case 403:
           this.messageService.add({
@@ -384,6 +386,7 @@ export class AppComponent implements AfterViewInit, OnInit {
       header: 'Log out',
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
+        this.logoffRequestTime = processMillis();
         this.goHome();
         this.auth.logout();
       }
