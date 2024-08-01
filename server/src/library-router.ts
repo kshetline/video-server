@@ -684,6 +684,9 @@ function fixVideoFlagsAndEncoding(items: LibraryItem[]): void {
         else
           delete (item as any)[flag];
       }
+
+      if (item.is3d || item.isHD || item.isFHD || item.is4k)
+        delete item.isSD;
     }
   }
 }
