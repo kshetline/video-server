@@ -1,7 +1,8 @@
 <div *ngIf="isLoggedIn()" class="poster-panel">
-  <app-poster-view [library]="library" [genres]="genres" (itemClicked)="itemClicked($event)"></app-poster-view>
+  <app-poster-view [library]="library" [genres]="genres" (itemClicked)="itemClicked($event)"
+    (filterChanged)="filter = $event"></app-poster-view>
   <app-collection-view *ngIf="isLoggedIn()" [class.active]="currentCollection" [collection]=currentCollection
-    (goBack)="currentCollection = null" (showSelected)="currentShow = $event"
+    (goBack)="currentCollection = null" (showSelected)="currentShow = $event" [filter]="filter"
     [currentShow]="currentShow"></app-collection-view>
   <app-show-view *ngIf="isLoggedIn()" [class.active]="currentShow" [show]="currentShow" (goBack)="currentShow = null"
                  (viewBonus)="bonusSource = $event" (playing)="playing = $event"

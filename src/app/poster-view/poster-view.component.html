@@ -7,7 +7,8 @@
          (click)="searchText = ''"></i>
     </span>
     <div class="filter-selectors">
-      <p-treeSelect class="wide" [(ngModel)]="filterNode" [options]="filterNodes"></p-treeSelect>
+      <p-treeSelect id="filter-tree" class="wide" [(ngModel)]="filterNode" [options]="filterNodes"
+        (onShow)="filterShow()" (onHide)="filterHide()"></p-treeSelect>
       <p-dropdown [options]="sortChoices" [(ngModel)]="sortMode" appendTo="body"></p-dropdown>
       <p-button *ngIf="sortMode.code === 'R'" icon="pi pi-refresh" styleClass="p-button-rounded"
                 (click)="randomize()"></p-button>
@@ -31,6 +32,10 @@
       <ng-template #notCollection><span class="hash">{{hashTitle(item.name)}}</span></ng-template>
 
       <div [attr.data-thumbnail]="'t-' + i" class="poster-thumbnail-wrapper">
+        <div class="video-tags">
+          <div *ngIf="item.is3d && filter !== '3D'">3D</div>
+          <div *ngIf="item.is4k && filter !== '4K'">4K</div>
+        </div>
         <div *ngIf="item.aliasPosterPath || !item.isAlias || item.isLink" class="loading">Loading...</div>
         <img *ngIf="i < 100 || showThumbnail['t-' + i]"
              [ngSrc]="getPosterUrl(item)" width="150" height="225" alt="{{item.id}}" priority>

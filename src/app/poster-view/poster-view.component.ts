@@ -86,10 +86,10 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   readonly isCollection = isCollection;
   readonly titleAdjust = titleAdjust;
 
-  private filter = 'All';
   private _filterNode: any;
   private genre: string;
   private _genres: string[] = [];
+  private genresLabel: HTMLElement;
   private _library: VideoLibrary;
   private loadingTimers = new Map<Element, any>();
   private randomCache = new Map<number, number>();
@@ -99,6 +99,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   private _sortMode = SORT_CHOICES[0];
   private watchedCache = new Map<number, WatchStatus>();
 
+  filter = 'All';
   filterChoices = ['All', 'Movies', 'TV', '4K', '3D'];
   filterNodes: any[];
   letterGroups: string[] = [];
@@ -114,6 +115,8 @@ export class PosterViewComponent implements OnDestroy, OnInit {
     this.updateFilterNodes();
     this._filterNode = this.filterNodes[0];
   }
+
+  @Output() filterChanged: EventEmitter<string> = new EventEmitter();
 
   @Input() get library(): VideoLibrary { return this._library; }
   set library(value : VideoLibrary) {
@@ -142,6 +145,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
       const lastValue = this._filterNode;
 
       this._filterNode = value;
+      this.filterChanged.emit(value.label);
 
       if (value.key === 'g')
         setTimeout(() => this.filterNode = lastValue);
@@ -294,8 +298,36 @@ export class PosterViewComponent implements OnDestroy, OnInit {
     }
   }
 
+  private genresClick = (evt: MouseEvent): void => {
+    evt.stopPropagation();
+
+    const button = (evt.currentTarget as HTMLElement)?.parentElement.querySelector('button');
+
+    if (button)
+      button.click(); // Expand or collapse Genres instead of selecting Genres as a tree item.
+  };
+
+  filterShow(): void {
+    const filterTree = document.getElementById('filter-tree');
+    const nodes = Array.from(filterTree?.querySelectorAll('.p-treenode-label > span') || []) as HTMLElement[];
+
+    this.genresLabel = nodes.find(n => n.innerText === 'Genres')?.parentElement;
+
+    if (this.genresLabel) {
+      this.genresLabel.addEventListener('click', this.genresClick, { capture: true });
+    }
+  }
+
+  filterHide(): void {
+    if (this.genresLabel)
+      this.genresLabel.removeEventListener('click', this.genresClick);
+  }
+
   private refilter(): void {
     const grid = document.querySelector('.poster-grid') as HTMLElement;
+
+    if (!grid)
+      return;
 
     this.showThumbnail = {};
     grid.style.scrollBehavior = 'auto';

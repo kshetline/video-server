@@ -38,6 +38,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   clickTimer: any;
   currentCollection: LibraryItem;
   currentShow: LibraryItem;
+  filter: string;
   genres = defaultGenres;
   library: VideoLibrary;
   logoffRequestTime = -Number.MAX_SAFE_INTEGER;

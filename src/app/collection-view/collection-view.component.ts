@@ -45,6 +45,7 @@ export class CollectionViewComponent {
   }
 
   @Input() currentShow: LibraryItem;
+  @Input() filter: string;
 
   @Output() goBack: EventEmitter<void> = new EventEmitter();
   @Output() showSelected: EventEmitter<LibraryItem> = new EventEmitter();
