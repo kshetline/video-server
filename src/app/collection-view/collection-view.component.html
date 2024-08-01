@@ -9,6 +9,7 @@
     <div *ngFor="let item of items; index as i" class="library-item">
       <div class="loading">Loading...</div>
       <div class="video-tags" [style.right]="'0.5em'">
+        <div *ngIf="item.isSD" class="sd">SD</div>
         <div *ngIf="item.is3d && filter !== '3D'">3D</div>
         <div *ngIf="item.is4k && filter !== '4K'">4K</div>
       </div>

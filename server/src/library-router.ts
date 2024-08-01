@@ -678,7 +678,7 @@ function fixVideoFlagsAndEncoding(items: LibraryItem[]): void {
     else {
       const data: any[] = item.data || [];
 
-      for (const flag of ['is3d', 'isHD', 'isFHD', 'is4k', 'isHdr']) {
+      for (const flag of ['isSD', 'is3d', 'isHD', 'isFHD', 'is4k', 'isHdr']) {
         if (data.find(v => v[flag]))
           (item as any)[flag] = true;
         else
@@ -889,7 +889,6 @@ export async function updateLibrary(quick = false): Promise<void> {
       sendStatus();
       pendingLibrary.status = LibraryStatus.ALL_VIDEOS;
       await getMediaInfo(pendingLibrary.array);
-      fixVideoFlagsAndEncoding(pendingLibrary.array);
       pendingLibrary.progress = 77.8;
       sendStatus();
       pendingLibrary.status = LibraryStatus.MEDIA_DETAILS;
@@ -897,6 +896,10 @@ export async function updateLibrary(quick = false): Promise<void> {
     }
 
     await addMappings();
+
+    if (!quick)
+      fixVideoFlagsAndEncoding(pendingLibrary.array);
+
     pendingLibrary.array.sort(librarySorter);
     pendingLibrary.status = LibraryStatus.DONE;
     pendingLibrary.lastUpdate = new Date().toISOString();
