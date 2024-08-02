@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { LibraryItem, VideoLibrary, WatchStatus } from '../../../server/src/shared-types';
 import { ceil, floor, min, random } from '@tubular/math';
-import { checksum53, clone, encodeForUri, getOrSet } from '@tubular/util';
+import { checksum53, clone, encodeForUri, getOrSet, nfe } from '@tubular/util';
 import { faFolderOpen } from '@fortawesome/free-regular-svg-icons';
 import { faShare } from '@fortawesome/free-solid-svg-icons';
 import { getWatchInfo, hashTitle, isCollection, isFile, isMovie, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter } from '../../../server/src/shared-utils';
@@ -490,8 +490,22 @@ export class PosterViewComponent implements OnDestroy, OnInit {
     else if ((!item.name && !item.title) || isTvEpisode(item) || isFile(item))
       return false;
 
-    const text = searchForm(this.searchText);
-    const itemText = (item.name && item.title ? item.name + '_' + item.title : item.name || item.title || '');
+    let text = this.searchText;
+    let itemText: string;
+    const $ = /^(act|dir)\w*\s*:\s*(.+)$/i.exec(text);
+
+    if ($) {
+      text = $[2];
+
+      if ($[1].toLowerCase() === 'act')
+        itemText = nfe(item.actors) ? item.actors.map(a => a.name).join(';') : '~~~';
+      else
+        itemText = nfe(item.directors) ? item.directors.map(d => d.name).join(';') : '~~~';
+    }
+    else
+      itemText = (item.name && item.title ? item.name + '_' + item.title : item.name || item.title || '');
+
+    text = searchForm(text);
 
     if (searchForm(itemText).includes(text))
       return true;
