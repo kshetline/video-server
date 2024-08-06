@@ -1,5 +1,5 @@
 :host {
-  background-color: #333;
+  background-color: #011C40;
   color: white;
   display: block;
   position: relative;
@@ -48,6 +48,9 @@
   position: relative;
 
   .poster-grid {
+    background-attachment: local;
+    background-image: url("/assets/stars.jpg");
+    background-repeat: repeat;
     display: flex;
     flex-wrap: wrap;
     gap: 3em;

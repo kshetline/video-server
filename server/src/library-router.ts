@@ -1219,9 +1219,12 @@ function setWatched(item: LibraryItem, state: boolean, position: number): void {
   if (!item)
     return;
 
+  if (!state && item.duration && position > item.duration - 120 && position > item.duration * 0.983)
+    state = true;
+
   if (item.watched != null || isFile(item)) {
     item.watched = state;
-    item.lastWatchTime = state ? Date.now() : -1;
+    item.lastWatchTime = state || position < 15 ? Date.now() : -1;
     item.position = state ? 0 : position > 0 ? position : -1;
   }
 

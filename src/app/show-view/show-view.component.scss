@@ -293,6 +293,20 @@
             position: absolute;
             right: 1em;
 
+            .role {
+              background-color: #FFC;
+              color: black;
+              display: -webkit-box;
+              font-size: 0.9em;
+              overflow: hidden;
+              padding: 1px 0.25em;
+              position: absolute;
+              text-align: center;
+              top: 0;
+              -webkit-box-orient: vertical;
+              -webkit-line-clamp: 2;
+            }
+
             .person {
               align-items: center;
               display: flex;
@@ -328,7 +342,6 @@
               .director {
                 color: white;
                 font-style: italic;
-                text-align: center;
                 text-shadow: 0 0 3px #444, -1px -1px 3px #444, -1px 1px 3px #444, 1px -1px 3px #444, 1px 1px 3px #444;
               }
 
@@ -336,7 +349,6 @@
                 display: -webkit-box;
                 min-height: 2.4em;
                 overflow: hidden;
-                text-align: center;
                 -webkit-box-orient: vertical;
                 -webkit-line-clamp: 2;
               }

@@ -1,5 +1,6 @@
 :host {
-  background-color: #222;
+  background-color: #00252F;
+  background-image: url("/assets/stars2.jpg");
   color: white;
   display: block;
 }
@@ -35,6 +36,7 @@
 
   .item-list {
     align-items: center;
+    background-repeat: repeat;
     column-gap: 1em;
     display: flex;
     flex-wrap: wrap;

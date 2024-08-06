@@ -47,6 +47,7 @@ export class ShowViewComponent implements OnInit {
   identicalThumbnail = false;
   people: Person[] = [];
   players: MenuItem[] = [];
+  roleId = -1;
   selection: LibraryItem;
   showCast = false;
   streamUri: string;

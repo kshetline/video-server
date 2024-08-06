@@ -69,13 +69,15 @@
         <div *ngIf="people.length === 0" class="tab"></div>
         <div *ngIf="people.length > 0" class="gallery-wrapper" [class.expand]="showCast">
           <div class="gallery">
-            <div *ngFor="let person of people" class="person"
+            <div *ngFor="let person of people; index as i" class="person"
+                (touchstart)="roleId = i" (touchend)="roleId = -1" (touchcancel)="roleId = -1"
                  [title]="(person.name?.length > 20 ? person.name + (person.role ? ': ' : '') : '') + (person.role || '')">
               <div class="image-frame">
                 <img [ngSrc]="getProfileUrl(person)" width=100 height=150 [alt]="person.name">
               </div>
               <div class="director">{{person.isDirector ? 'Director' : '\u00A0'}}</div>
               <div class="name">{{person.name}}</div>
+              <div *ngIf="roleId === i" class="role">{{person.role}}</div>
             </div>
           </div>
         </div>
