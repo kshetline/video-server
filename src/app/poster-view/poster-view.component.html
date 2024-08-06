@@ -34,7 +34,7 @@
       <div [attr.data-thumbnail]="'t-' + i" class="poster-thumbnail-wrapper">
         <div class="video-tags">
           <div *ngIf="item.isSD" class="sd">SD</div>
-          <div *ngIf="item.is3d && filter !== '3D'">3D</div>
+          <div *ngIf="item.is3d && filter !== '3D'" class="d3">3D</div>
           <div *ngIf="item.is4k && filter !== '4K'">4K</div>
         </div>
         <div *ngIf="item.aliasPosterPath || !item.isAlias || item.isLink" class="loading">Loading...</div>

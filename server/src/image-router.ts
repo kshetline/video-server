@@ -25,6 +25,15 @@ async function getImage(imageType: string, apiPath: string, req: Request, res: R
   let newFile = false;
   let profileName: string;
   let profileExt: string;
+  let isJson = false;
+
+  function sendImageError(buf: Buffer): void {
+    const msg = JSON.parse(buf.toString());
+
+    res.statusCode = msg.status;
+    res.setHeader('Content-Type', 'text/plain');
+    res.send(msg.msg);
+  }
 
   for (let i = 0; i < 2; ++i) {
     if (uri) {
@@ -57,7 +66,9 @@ async function getImage(imageType: string, apiPath: string, req: Request, res: R
         fullSize = TRANSPARENT_PIXEL;
       }
 
-      if (fullSize.length < 200 && isValidJson(fullSize.toString())) {
+      isJson = (fullSize.length < 200 && isValidJson(fullSize.toString()));
+
+      if (isJson) {
         if (id2) {
           newFile = true;
           await writeFile(imagePath, '', 'binary');
@@ -67,11 +78,7 @@ async function getImage(imageType: string, apiPath: string, req: Request, res: R
         else if (imageType === 'backdrop')
           fullSize = TRANSPARENT_PIXEL;
         else {
-          const msg = JSON.parse(fullSize.toString());
-
-          res.statusCode = msg.status;
-          res.setHeader('Content-Type', 'text/plain');
-          res.send(msg.msg);
+          sendImageError(fullSize);
           return;
         }
       }
@@ -97,9 +104,12 @@ async function getImage(imageType: string, apiPath: string, req: Request, res: R
       paths.join(thumbnailDir, imageType, `${req.query.id}-${req.query.cs}-${req.query.w}-${req.query.h}.jpg`);
 
   if (!await existsAsync(thumbnailPath)) {
-    Jimp.read((fullSize || imagePath) as any).then(image =>
-      image.resize(toInt(req.query.w), toInt(req.query.h)).quality(80).write(thumbnailPath,
-        () => res.sendFile(thumbnailPath)));
+    if (isJson)
+      sendImageError(fullSize);
+    else
+      Jimp.read((fullSize || imagePath) as any).then(image =>
+        image.resize(toInt(req.query.w), toInt(req.query.h)).quality(80).write(thumbnailPath,
+          () => res.sendFile(thumbnailPath)));
   }
   else {
     touch(thumbnailPath, false).finally(); // Track recency of cache usage

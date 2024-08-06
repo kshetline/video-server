@@ -7,6 +7,8 @@ import { merge, switchMap, takeUntil, tap, timer } from 'rxjs';
   selector: '[longPress]',
 })
 export class LongPressDirective implements OnInit, OnDestroy {
+  readonly elem: HTMLElement;
+
   private endSub!: Subscription;
   private pressSub!: Subscription;
 
@@ -15,26 +17,34 @@ export class LongPressDirective implements OnInit, OnDestroy {
   @Output() longStart = new EventEmitter<void>();
   @Output() longPress = new EventEmitter<void>();
   @Output() longEnd = new EventEmitter<void>();
+  @Output() metaClick = new EventEmitter<void>();
 
-  constructor(private el: ElementRef) {}
+  private press = (evt: MouseEvent): void => evt.metaKey ? this.longPress.emit() : null;
+
+  constructor(el: ElementRef) {
+    this.elem = el.nativeElement;
+  }
 
   ngOnInit(): void {
-    const start$ = merge(fromEvent(this.el.nativeElement, 'mousedown'),
-                         fromEvent(this.el.nativeElement, 'touchstart'));
-    const end$ = merge(fromEvent(this.el.nativeElement, 'mouseup'),
-                       fromEvent(this.el.nativeElement, 'touchend'),
-                       fromEvent(this.el.nativeElement, 'mouseleave'),
-                       fromEvent(this.el.nativeElement, 'touchcancel'));
+    const start$ = merge(fromEvent(this.elem, 'mousedown'),
+                         fromEvent(this.elem, 'touchstart'));
+    const end$ = merge(fromEvent(this.elem, 'mouseup'),
+                       fromEvent(this.elem, 'touchend'),
+                       fromEvent(this.elem, 'mouseleave'),
+                       fromEvent(this.elem, 'touchcancel'));
 
     this.endSub = end$.subscribe(() => this.longEnd.emit());
     this.pressSub = start$
       .pipe(tap(() => this.longStart.emit()))
       .pipe(switchMap(() => timer(this.duration).pipe(takeUntil(end$))))
       .subscribe(() => this.longPress.emit());
+
+    this.elem.addEventListener('click', this.press);
   }
 
   ngOnDestroy(): void {
     this.endSub.unsubscribe();
     this.pressSub.unsubscribe();
+    this.elem.removeEventListener('click', this.press);
   }
 }

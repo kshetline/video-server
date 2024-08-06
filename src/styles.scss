@@ -115,6 +115,10 @@ p-treeSelect .p-tree {
     color: black;
     padding: 0.2em;
 
+    &.d3 {
+      background: #CF3;
+    }
+
     &.sd {
       background: #F93;
     }
