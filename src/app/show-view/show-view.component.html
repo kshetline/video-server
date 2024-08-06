@@ -77,7 +77,7 @@
               </div>
               <div class="director">{{person.isDirector ? 'Director' : '\u00A0'}}</div>
               <div class="name">{{person.name}}</div>
-              <div *ngIf="roleId === i" class="role">{{person.role}}</div>
+              <div *ngIf="!person.isDirector && person.role && roleId === i" class="role">{{person.role}}</div>
             </div>
           </div>
         </div>
