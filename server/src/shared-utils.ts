@@ -147,6 +147,18 @@ export function itemPath(item: LibraryItem): number[] {
   return !item ? [] : [...itemPath(item.parent), item.id];
 }
 
+export function stripBackLinks(children: LibraryItem[]): void {
+  if (!children)
+    return;
+
+  for (const child of children || []) {
+    delete child.parent;
+
+    if (child.data)
+      stripBackLinks(child.data);
+  }
+}
+
 export function addBackLinks(children: LibraryItem[], parent?: LibraryItem): void {
   if (!children)
     return;

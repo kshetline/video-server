@@ -17,7 +17,7 @@ import {
 import { existsSync, lstatSync, readFileSync } from 'fs';
 import {
   addBackLinks, comparator, findAliases as _findAliases, hashUri, isAnyCollection, isCollection, isFile, isMovie,
-  isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, removeBackLinks, syncValues, toStreamPath
+  isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, removeBackLinks, stripBackLinks, syncValues, toStreamPath
 } from './shared-utils';
 import { sendStatus } from './app';
 import { setStopPending, stopPending } from './admin-router';
@@ -911,6 +911,7 @@ export async function updateLibrary(quick = false): Promise<void> {
     mapDurations();
     sendStatus();
 
+    stripBackLinks(cachedLibrary.array);
     await writeFile(libraryFile, JSON.stringify(cachedLibrary), 'utf8');
     addBackLinks(cachedLibrary.array);
   }
