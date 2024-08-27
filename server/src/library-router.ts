@@ -17,7 +17,8 @@ import {
 import { existsSync, lstatSync, readFileSync } from 'fs';
 import {
   addBackLinks, comparator, findAliases as _findAliases, hashUri, isAnyCollection, isCollection, isFile, isMovie,
-  isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, removeBackLinks, stripBackLinks, syncValues, toStreamPath
+  isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, removeBackLinks, stripBackLinks, syncValues,
+  toStreamPath
 } from './shared-utils';
 import { sendStatus } from './app';
 import { setStopPending, stopPending } from './admin-router';
@@ -697,7 +698,7 @@ function findMatchingUri(items: LibraryItem[], uri: string, parent?: LibraryItem
       continue;
     else if (parent && item.uri && paths.dirname(item.uri) === uri)
       return parent;
-    else if (item.data?.length > 0) {
+    else if (item.data?.length > 0 && item.collectionId !== -2) {
       let match = findMatchingUri(item.data, uri, item);
 
       if (match) {
@@ -795,7 +796,7 @@ async function addMappings(): Promise<void> {
       type: VType.COLLECTION,
       name: collection.name,
       isTV: !!collection.isTV,
-      id: ++nextId, parentId: -1, collectionId: -1, aggregationId: -1,
+      id: ++nextId, parentId: -1, collectionId: -2, aggregationId: -1,
       data: matchAliases(collection.aliases).map(a => { a.parentId = nextId; return a; })
     };
 
@@ -823,7 +824,7 @@ async function addMappings(): Promise<void> {
 function findVideoAux(asFile: boolean, id: number, item: LibraryItem, canBeAlias?: boolean): LibraryItem {
   if ((!asFile || isFile(item)) && item.id === id && !item.isAlias)
     return item;
-  else if (item.data) {
+  else if (item.data && (canBeAlias || item.collectionId !== -2)) {
     for (const child of item.data) {
       const match = findVideoAux(asFile, id, child, !!canBeAlias);
 
@@ -982,7 +983,7 @@ function findByUri(uri: string, canBeAlias = false, items?: LibraryItem[]): Libr
   for (const child of items) {
     if ((canBeAlias || !child.isAlias) && child.uri === uri)
       return child;
-    else if (child.data) {
+    else if (child.data && (canBeAlias || child.collectionId !== -2)) {
       const match = findByUri(uri, canBeAlias, child.data);
 
       if (match)
@@ -1326,6 +1327,12 @@ async function setWatchedMultiple(item: LibraryItem, watched: number): Promise<a
 router.put('/set-watched', async (req, res) => {
   const id = toInt(req.query.id);
   const item = findId(id);
+
+  if (!item) {
+    res.sendStatus(500);
+    return;
+  }
+
   const watched = toInt(req.query.watched);
   const response = isFile(item) ? await setWatchedApi(item, watched) : await setWatchedMultiple(item, watched);
 
@@ -1365,7 +1372,8 @@ router.get('/', async (req, res) => {
   removeBackLinks(response);
 
   if (toBoolean(req.query.test)) {
-    const keep = new Set(['watched', 'name', 'title', 'type', 'id', 'aggregationId', 'position', 'playPoint']);
+    const keep = new Set(['watched', 'name', 'title', 'type', 'id', 'aggregationId', 'position', 'playPoint',
+                          'collectionId']);
     const skip = new Set(['audio', 'video', 'subtitle', 'actors', 'directors', 'genres']);
     function strip(obj: any): void {
       const keys = Object.keys(obj);

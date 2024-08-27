@@ -109,21 +109,19 @@ export function hashUri(uri: string): string {
   return uri ? checksum53(uri.replace(/^\//, '').normalize()) : '';
 }
 
-export function findAliases(id: number, itemOrLib?: LibraryItem | VideoLibrary, matches: LibraryItem[] = []): LibraryItem[] {
+export function findAliases(id: number, itemOrLib?: LibraryItem | VideoLibrary, matches: LibraryItem[] = [], inAlias = false): LibraryItem[] {
   const item: LibraryItem = (itemOrLib as any).array ? null : itemOrLib as LibraryItem;
 
-  if (item?.id === id && item?.isAlias)
+  if (item?.id === id && (item?.isAlias || inAlias))
     matches.push(item);
 
   const data = item ? item.data : (itemOrLib as VideoLibrary)?.array;
 
-  if (data) {
-    for (const child of data) {
-      const match = findAliases(id, child, matches);
+  inAlias = inAlias || item?.collectionId === -2;
 
-      if (match)
-        return match;
-    }
+  if (data) {
+    for (const child of data)
+      findAliases(id, child, matches, inAlias);
   }
 
   return matches;

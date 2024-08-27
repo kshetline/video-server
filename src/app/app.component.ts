@@ -302,15 +302,18 @@ export class AppComponent implements AfterViewInit, OnInit {
     return newItem;
   }
 
-  findId(id: number, item?: LibraryItem, canBeAlias?: boolean): LibraryItem {
+  findId(id: number, item?: LibraryItem, canBeAlias?: boolean, inAlias = false): LibraryItem {
     if (!item)
       item = { data: this.library.array } as LibraryItem;
 
     if (item.id === id && (canBeAlias || !item.isAlias))
       return item;
-    else if (item.data) {
+
+    inAlias = inAlias || item.collectionId === -2;
+
+    if (item.data && (canBeAlias || !inAlias)) {
       for (const child of item.data) {
-        const match = this.findId(id, child, !!canBeAlias);
+        const match = this.findId(id, child, !!canBeAlias, inAlias);
 
         if (match)
           return match;
