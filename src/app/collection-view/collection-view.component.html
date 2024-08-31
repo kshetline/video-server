@@ -12,6 +12,7 @@
         <div *ngIf="item.isSD" class="sd">SD</div>
         <div *ngIf="item.is3d && filter !== '3D'" class="d3">3D</div>
         <div *ngIf="item.is4k && filter !== '4K'">4K</div>
+        <div *ngIf="item.isTV && filter !== 'TV'" class="tv">TV</div>
       </div>
       <img [ngSrc]="getPosterUrl(item)" width=150 height=225 alt="{{item.name}}" priority>
       <div class="progress-wrapper">

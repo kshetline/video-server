@@ -1,69 +1,18 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { LibraryItem, VideoLibrary, WatchStatus } from '../../../server/src/shared-types';
 import { ceil, floor, min, random } from '@tubular/math';
-import { checksum53, clone, encodeForUri, getOrSet, nfe } from '@tubular/util';
+import { checksum53, clone, encodeForUri, getOrSet } from '@tubular/util';
 import { faFolderOpen } from '@fortawesome/free-regular-svg-icons';
 import { faShare } from '@fortawesome/free-solid-svg-icons';
-import { getWatchInfo, hashTitle, isCollection, isFile, isMovie, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter } from '../../../server/src/shared-utils';
-import { searchForm, webSocketMessagesEmitter } from '../video-ui-utils';
+import { filter, getWatchInfo, hashTitle, isCollection } from '../../../server/src/shared-utils';
+import { webSocketMessagesEmitter } from '../video-ui-utils';
 import { fromEvent } from 'rxjs/internal/observable/fromEvent';
 import { debounceTime } from 'rxjs/internal/operators/debounceTime';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { AuthService } from '../auth.service';
 
-function isAMovie(item: LibraryItem): boolean {
-  return item.isTvMovie || isMovie(item) ||
-    (isCollection(item) && item.data?.length > 0 && !!item.data.find(i => isAMovie(i)));
-}
-
-function containsMovie(item: LibraryItem): boolean {
-  if (isAMovie(item))
-    return true;
-  else if (isTvCollection(item))
-    return false;
-
-  for (const child of (item.data || [])) {
-    if (containsMovie(child))
-      return true;
-  }
-
-  return false;
-}
-
-function isTV(item: LibraryItem): boolean {
-  return item.isTV || item.isTvMovie || isTvShow(item) || isTvSeason(item) ||
-      isTvEpisode(item) || isTvCollection(item) ||
-      (isCollection(item) && item.data?.length > 0 && !!item.data.find(i => isTV(i)));
-}
-
-function containsTV(item: LibraryItem): boolean {
-  if (isTV(item))
-    return true;
-
-  for (const child of (item.data || [])) {
-    if (containsTV(child))
-      return true;
-  }
-
-  return false;
-}
-
 function titleAdjust(title: string): string {
   return title.replace(/\s+Season\s+\d/i, '');
-}
-
-function matchesGenre(item: LibraryItem, genre: string): boolean {
-  if (item.genres?.find(g => g === genre))
-    return true;
-  else if (!item.data)
-    return false;
-
-  for (const child of item.data) {
-    if (matchesGenre(child, genre))
-      return true;
-  }
-
-  return false;
 }
 
 const SORT_CHOICES = [
@@ -334,202 +283,16 @@ export class PosterViewComponent implements OnDestroy, OnInit {
     grid.scrollTop = 0;
     setTimeout(() => grid.style.scrollBehavior = 'smooth', 1000);
 
-    if (!this.searchText && this.filter === 'All' && this.sortMode.code === 'A') {
-      this.items = this.library?.array || [];
-      return;
+    let sort: (a: LibraryItem, b: LibraryItem, admin?: boolean) => number;
+    let admin = false;
+
+    switch (this.sortMode.code) {
+      case 'R': sort = this.randomSorter; break;
+      case 'W': sort = this.watchSorter; break;
+      case 'Z': sort = this.watchSorter; admin = true; break;
     }
 
-    let matchFunction: (item: LibraryItem) => boolean;
-    let filterSeasons = false;
-
-    switch (this.filter) {
-      case 'All':
-        matchFunction = (_item: LibraryItem): boolean => true;
-        filterSeasons = true;
-        break;
-      case 'Movies':
-        matchFunction = containsMovie;
-        filterSeasons = true;
-        break;
-      case 'TV':
-        matchFunction = containsTV;
-        break;
-      case '4K':
-        matchFunction = (item: LibraryItem): boolean => item.is4k;
-        break;
-      case '3D':
-        matchFunction = (item: LibraryItem): boolean => item.is3d;
-        break;
-
-      default:
-        matchFunction = (item: LibraryItem): boolean => matchesGenre(item, this.genre);
-    }
-
-    const isAMatch = (item: LibraryItem): boolean => this.matchesSearch(item) && matchFunction(item);
-
-    this.items = clone(this.library.array).filter(item => isAMatch(item));
-
-    const deepFilter = (items: LibraryItem[], matcher = isAMatch): void => {
-      for (let i = 0; i < items.length; ++i) {
-        let item = items[i];
-
-        if (isCollection(item) || (isTvShow(item) && filterSeasons)) {
-          const saveMatcher = matcher;
-
-          if (this.matchesSearch(item, true))
-            matcher = matchFunction;
-          else if (item.isAlias) {
-            const orig = (item.parent ? (item.parent.data || []) : this.items).find(i => !i.isAlias && i.id === item.id);
-
-            if (orig && this.matchesSearch(orig, true))
-              matcher = matchFunction;
-          }
-
-          deepFilter(item.data, matcher);
-
-          const innerCount = item.data.reduce((sum, child) => sum + (matcher(child) ? 1 : 0), 0);
-
-          // If only one match within a collection, surface that one match and eliminate the collection
-          if (innerCount === 1) {
-            items[i] = item = item.data.find(c => matcher(c));
-
-            if (isTvSeason(item) && !this.matchesSearch(item, true))
-              item.name = item.parent.name + ' • ' + item.name;
-          }
-          // If multiple but partial matches within a collection, filter collection items that don't match.
-          else if (innerCount < item.data.length)
-            item.data = item.data.filter(c => matcher(c));
-
-          matcher = saveMatcher;
-        }
-      }
-    };
-
-    deepFilter(this.items);
-    this.items.sort((a, b) => {
-      let diff = 0;
-
-      switch (this.sortMode.code) {
-        case 'R': diff = this.randomSorter(a, b); break;
-        case 'W': diff = this.watchSorter(a, b); break;
-        case 'Z': diff = this.watchSorter(a, b, true); break;
-      }
-
-      if (diff !== 0)
-        return diff;
-
-      return librarySorter(a, b);
-    });
-
-    const reassignParents = (items: LibraryItem[], newParent?: LibraryItem): void => {
-      for (const item of items) {
-        item.parent = newParent;
-        reassignParents(item.data || [], item);
-      }
-    };
-
-    reassignParents(this.items);
-
-    // Purge duplicate results
-    let lastID = -1;
-
-    for (let i = this.items.length - 1; i >= 0; --i) {
-      const item = this.items[i];
-
-      if (item.id === lastID && lastID >= 0) {
-        if (!this.matchesSearch(item, true))
-          this.items.splice(i, 1);
-        else {
-          const other = this.items[i + 1];
-
-          if (!other.isAlias && this.matchesSearch(other, true))
-            this.items.splice(i, 1);
-          else
-            this.items.splice(i + 1, 1);
-        }
-      }
-
-      lastID = item.id;
-    }
-
-    // Purge items included in a displayed collection
-    const currentCollections = new Set(this.items.filter(i => isCollection(i)).map(i => i.id));
-
-    for (let i = this.items.length - 1; i >= 0; --i) {
-      let item = this.items[i];
-
-      if (isCollection(item)) {
-        if (item.isAlias)
-          item = this.findItemById(item.id);
-
-        if (item && item.parent && currentCollections.has(item.parent.id))
-          this.items.splice(i, 1);
-      }
-    }
-  }
-
-  private findItemById(id: number, items = this.items): LibraryItem {
-    for (const item of items) {
-      if (item.isAlias && !item.parent)
-        continue;
-      else if (item.id === id)
-        return item;
-
-      const match = this.findItemById(id, item.data || []);
-
-      if (match)
-        return match;
-    }
-
-    return null;
-  }
-
-  private matchesSearch(item: LibraryItem, simpleMatch = false): boolean {
-    if (!this.searchText)
-      return true;
-    else if ((!item.name && !item.title) || isTvEpisode(item) || isFile(item))
-      return false;
-
-    let text = this.searchText;
-    let itemText: string;
-    const $ = /^(act|dir)\w*\s*:\s*(.+)$/i.exec(text);
-
-    if ($) {
-      text = $[2];
-
-      if ($[1].toLowerCase() === 'act')
-        itemText = nfe(item.actors) ? item.actors.map(a => a.name).join(';') : '~~~';
-      else
-        itemText = nfe(item.directors) ? item.directors.map(d => d.name).join(';') : '~~~';
-    }
-    else
-      itemText = (item.name && item.title ? item.name + '_' + item.title : item.name || item.title || '');
-
-    text = searchForm(text);
-
-    if (searchForm(itemText).includes(text))
-      return true;
-    else if (simpleMatch || item.isAlias)
-      return false;
-    else { // Does the name of an ancestor collection match?
-      let testItem = item.parent && this.findItemById(item.id)?.parent;
-
-      while (testItem) {
-        const itemText = (testItem.name && testItem.title ? testItem.name + ';' + testItem.title : testItem.name || testItem.title || '');
-
-        if (isCollection(testItem) && searchForm(itemText).includes(text))
-          return true;
-
-        testItem = testItem.parent;
-      }
-    }
-
-    for (const child of (item.data || [])) {
-      if (this.matchesSearch(child))
-        return true;
-    }
-
-    return false;
+    this.items = filter(this.library?.array || [], this.searchText, this.filter, this.genre, sort, admin);
   }
 
   private determineLetterNavGroups(): void {

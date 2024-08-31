@@ -6,7 +6,7 @@ import {
 import {
   clone, compareCaseSecondary, forEach, isNumber, isObject, processMillis, toBoolean, toInt, toNumber
 } from '@tubular/util';
-import { abs, floor, min } from '@tubular/math';
+import { abs, floor, max, min } from '@tubular/math';
 import { requestJson } from 'by-request';
 import paths from 'path';
 import { readdir, readFile, writeFile } from 'fs/promises';
@@ -181,9 +181,9 @@ function getCodec(track: MediaInfoTrack): string {
   return codec;
 }
 
-const FIELDS_TO_KEEP = new Set(['id', 'parentId', 'collectionId', 'aggregationId', 'type', 'voteAverage', 'name', 'is3d',
-  'is4k', 'isHdr', 'isFHD', 'is2k', 'isHD', 'year', 'duration', 'watched', 'data', 'duration', 'uri', 'season', 'episode',
-  'position']);
+const FIELDS_TO_KEEP = new Set(['id', 'parentId', 'collectionId', 'aggregationId', 'type', 'voteAverage', 'name',
+  'is3d', 'is4k', 'isHdr', 'isFHD', 'is2k', 'isHD', 'year', 'duration', 'watched', 'data', 'uri', 'season',
+  'episode', 'position']);
 
 function filter(item: LibraryItem): void {
   if (item) {
@@ -206,6 +206,7 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
 
     if (item.videoinfo) {
       item.duration = item.videoinfo.duration / 1000; // Make duration (originally in msecs) compatible with playback position (in seconds).
+      item.position = item.videoinfo.playPoint ? max(item.videoinfo.playPoint / 1000, -1) : 0;
       item.uri = item.videoinfo.uri;
       delete item.videoinfo;
     }
@@ -384,7 +385,7 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
       const mediaInfo: MediaInfo = JSON.parse(data.mediaJson || 'null');
 
       item.lastWatchTime = data.lastWatchTime;
-      item.position = data.playPoint;
+      item.position = max(data.playPoint / 1000, -1);
 
       if (mediaInfo?.media?.track) {
         for (const track of mediaInfo.media.track) {
@@ -586,7 +587,7 @@ async function getShowInfo(items: LibraryItem[], showInfos?: ShowInfo): Promise<
               });
 
               if (inner.playPoint != null)
-                match.position = inner.playPoint;
+                match.position = max(inner.playPoint / 1000, -1);
 
               if (isTvEpisode(match))
                 await getShowInfo(match.data, { aggregation: info } as unknown as ShowInfo);

@@ -36,6 +36,7 @@
           <div *ngIf="item.isSD" class="sd">SD</div>
           <div *ngIf="item.is3d && filter !== '3D'" class="d3">3D</div>
           <div *ngIf="item.is4k && filter !== '4K'">4K</div>
+          <div *ngIf="item.isTV && filter !== 'TV'" class="tv">TV</div>
         </div>
         <div *ngIf="item.aliasPosterPath || !item.isAlias || item.isLink" class="loading">Loading...</div>
         <img *ngIf="i < 100 || showThumbnail['t-' + i]"

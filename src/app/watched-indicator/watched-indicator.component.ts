@@ -99,9 +99,16 @@ export class WatchedIndicatorComponent implements OnInit {
       return;
 
     const success = (): void => {
+      const state = !this.watched;
+
       this.onUpdate.emit();
-      this.watched = !this.watched;
+      this.watched = state;
       this.progress = 0;
+
+      if (this.asAdmin) {
+        (this.video as LibraryItem).lastWatchTime = state ? Date.now() : -1;
+        (this.video as LibraryItem).position = state ? 0 : -1;
+      }
     };
 
     if (this.video) {

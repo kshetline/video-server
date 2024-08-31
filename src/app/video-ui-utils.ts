@@ -129,10 +129,6 @@ export function canPlayVP9(): boolean {
   return supportsVP9;
 }
 
-export function searchForm(s: string): string {
-  return stripDiacriticals_lc(s.trim()).replace(/[^_0-9a-z]/gi, '');
-}
-
 async function getImageData(image: string | HTMLImageElement): Promise<ImageData> {
   return new Promise<ImageData>(resolve => {
     const drawImage = (img: HTMLImageElement): void => {
