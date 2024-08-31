@@ -61,9 +61,12 @@ export interface LibraryItem {
   audio?: Track[];
   backdropPath?: string;
   certification?: string
-  codec?: string
+  codec?: string;
+  commentaryAudio?: boolean;
+  commentaryText?: boolean;
   cut?: string;
   cutSort?: number;
+  defaultSubtitles?: boolean;
   directors?: {
     name: string;
     profilePath: string;

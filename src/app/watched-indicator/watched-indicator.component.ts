@@ -106,7 +106,7 @@ export class WatchedIndicatorComponent implements OnInit {
       this.progress = 0;
 
       if (this.asAdmin || this.video.id > 0)
-        setWatched(this.video as LibraryItem, state, this.asAdmin)
+        setWatched(this.video as LibraryItem, state, this.asAdmin);
     };
 
     if (this.video) {

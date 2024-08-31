@@ -1,6 +1,5 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { filter } from '../../server/src/shared-utils';
 import { LibraryItem, ServerStatus, VideoLibrary, VideoStats } from '../../server/src/shared-types';
 import { broadcastMessage, getZIndex, incrementImageIndex, webSocketMessagesEmitter } from './video-ui-utils';
 import { checksum53, clone, compareCaseSecondary, isEqual, isValidJson, processMillis } from '@tubular/util';
@@ -8,7 +7,7 @@ import { floor } from '@tubular/math';
 import { AuthService } from './auth.service';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import {
-  addBackLinks, findAliases as _findAliases, isAnyCollection, isMovie, isTvSeason, isTvShow,
+  addBackLinks, filter, findAliases as _findAliases, isAnyCollection, isMovie, isTvSeason, isTvShow,
   itemPath, syncValues, ts
 } from '../../server/src/shared-utils';
 import { StatusInterceptor } from './status.service';

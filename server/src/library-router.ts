@@ -427,10 +427,19 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
               t.channels = channelString(track);
               item.audio = item.audio ?? [];
               item.audio.push(t);
+
+              if (/commentary/i.test(track.Title))
+                item.commentaryAudio = true;
               break;
             case 'Text':
               item.subtitle = item.subtitle ?? [];
               item.subtitle.push(t);
+
+              if (/commentary/i.test(track.Title))
+                item.commentaryText = true;
+
+              if (track.Default === 'Yes' || track.Forced === 'Yes')
+                item.defaultSubtitles = true;
               break;
           }
         }
@@ -502,6 +511,9 @@ const FILE_DETAILS = new Set(['addedTime', 'lastWatchTime', 'overview', 'positio
 
 async function getShowInfo(items: LibraryItem[], showInfos?: ShowInfo): Promise<void> {
   for (const item of items || []) {
+    if (stopPending)
+      break;
+
     if (isNumber((item as any).seasonNumber)) {
       item.season = (item as any).seasonNumber;
       delete (item as any).seasonNumber;

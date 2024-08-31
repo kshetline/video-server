@@ -28,6 +28,7 @@ interface Person {
 })
 export class ShowViewComponent implements OnInit {
   readonly getSeasonTitle = getSeasonTitle;
+  readonly iconBadge = (s: string) => /^(AC|DS|TC)$/.test(s);
   readonly isTvSeason = isTvSeason;
 
   private backgroundMain = '';
@@ -528,6 +529,15 @@ export class ShowViewComponent implements OnInit {
       if (text && text !== 'DD')
         b.push(text);
     }
+
+    if (v.defaultSubtitles)
+      b.push('DS');
+
+    if (v.commentaryAudio)
+      b.push('AC');
+
+    if (v.commentaryText)
+      b.push('TC');
   }
 
   getPlaybackInfo(): void {

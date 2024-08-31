@@ -156,6 +156,9 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
       });
       const subStats = await walkVideoDirectoryAux(path, depth + 1, options, callback);
 
+      if (stopPending)
+        break;
+
       consolidateStats(subStats);
 
       if (isString(options.checkStreaming)) {
@@ -496,7 +499,6 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
         currentFile = '';
         updateProgress = -1;
         statsInProgress = false;
-        stopPending = false;
         sendStatus();
       }
     })();

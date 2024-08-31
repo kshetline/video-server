@@ -59,7 +59,12 @@
               <div *ngIf="anyOverview" class="overview"><div class="overview-content">{{selection.overview}}</div></div>
             </div>
             <div *ngIf="badges?.length > 0" class="badges">
-              <div *ngFor="let badge of badges" class="badge">{{badge}}</div>
+              <div *ngFor="let badge of badges" class="badge" [class.inverse]='iconBadge(badge)'>
+                <span *ngIf="!iconBadge(badge)">{{badge}}</span>
+                <i *ngIf="badge ==='DS'" class="pi pi-align-left"></i>
+                <span *ngIf="badge ==='AC'"><i class="pi pi-comments"></i><i class="pi pi-volume-up sup"></i></span>
+                <span *ngIf="badge ==='TC'"><i class="pi pi-comments"></i><i class="pi pi-align-left sup"></i></span>
+              </div>
             </div>
           </div>
         </div>

@@ -248,8 +248,23 @@
                 border-radius: 0.2em;
                 color: black;
                 padding: 0 0.4em;
+                position: relative;
                 user-select: none;
                 white-space: nowrap;
+
+                &.inverse {
+                  background-color: black;
+                  border: none;
+                  color: white;
+                  padding: 0 0.2em;
+                }
+
+                .sup {
+                  font-size: 0.67em;
+                  padding-left: 0.25em;
+                  position: relative;
+                  top: -1em;
+                }
               }
             }
           }
