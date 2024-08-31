@@ -141,7 +141,7 @@ export function matchesSearch(item: LibraryItem, searchText: string, simpleMatch
 
 export function filter(items: LibraryItem[], searchText: string, filter: string, genre: string,
                        sort?: (a: LibraryItem, b: LibraryItem, admin?: boolean) => number, admin?: boolean): LibraryItem[] {
-  if (!searchText && filter === 'All' && !sort)
+  if (!searchText && filter === 'All' && !genre && !sort)
     return items;
 
   let matchFunction: (item: LibraryItem) => boolean;
@@ -562,4 +562,45 @@ export function getWatchInfo(asAdmin: boolean, item: LibraryItem, wi?: WatchInfo
   }
 
   return wi;
+}
+
+export function setWatched(item: LibraryItem, state: boolean, admin = false, position?: number,
+                    findId?: (id: number) => LibraryItem, now?: number): void {
+  if (!item)
+    return;
+
+  if (position == null)
+    position = state ? 0 : -1
+
+  if (now == null)
+    now = Date.now();
+
+  if (admin && !state && item.duration && position > item.duration - 120 && position > item.duration * 0.983)
+    state = true;
+
+  if (admin && item.watched != null || isFile(item)) {
+    item.watched = state;
+    item.lastWatchTime = state || position < 15 ? now : -1;
+    item.position = state ? 0 : position > 0 ? position : -1;
+  }
+  else if (!admin && item.streamUri) {
+    item.watchedByUser = state;
+    item.positionUser = state ? 0 : -1;
+    item.lastUserWatchTime = state ? now : -1;
+  }
+
+  const parent = !admin && item.parent || (findId && findId(item.parentId));
+
+  if (parent?.data) {
+    parent.data.forEach(sibling => {
+      if (sibling !== item && sibling.streamUri === item.streamUri) {
+        sibling.watchedByUser = state;
+        sibling.positionUser = state ? 0 : -1;
+        sibling.lastUserWatchTime = state ? Date.now() : -1;
+      }
+    });
+  }
+
+  if (item.data)
+    item.data.forEach(i => setWatched(i, state, admin, position, findId, now));
 }

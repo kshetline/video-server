@@ -17,7 +17,7 @@ import {
 import { existsSync, lstatSync, readFileSync } from 'fs';
 import {
   addBackLinks, comparator, findAliases as _findAliases, hashUri, isAnyCollection, isCollection, isFile, isMovie,
-  isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, removeBackLinks, stripBackLinks, syncValues,
+  isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, removeBackLinks, setWatched, stripBackLinks, syncValues,
   toStreamPath
 } from './shared-utils';
 import { sendStatus } from './app';
@@ -944,11 +944,11 @@ function mapDurations(): void {
 
 function updateItemWatchedState(item: LibraryItem, state: boolean, position: number): void {
   if (item) {
-    setWatched(item, state, position);
+    setWatched(item, state, true, position);
 
     const aliases = findAliases(item.id);
 
-    aliases.forEach(a => setWatched(a, state, position));
+    aliases.forEach(a => setWatched(a, state, true, position));
     webSocketSend({ type: 'idUpdate', data: item.id });
     updateCache(item.id).finally();
   }
@@ -1216,23 +1216,6 @@ function makeSparse(items: LibraryItem[], depth = 0): void {
     if (item.data)
       makeSparse(item.data, depth + 1);
   }
-}
-
-function setWatched(item: LibraryItem, state: boolean, position: number): void {
-  if (!item)
-    return;
-
-  if (!state && item.duration && position > item.duration - 120 && position > item.duration * 0.983)
-    state = true;
-
-  if (item.watched != null || isFile(item)) {
-    item.watched = state;
-    item.lastWatchTime = state || position < 15 ? Date.now() : -1;
-    item.position = state ? 0 : position > 0 ? position : -1;
-  }
-
-  if (item.data)
-    item.data.forEach(i => setWatched(i, state, position));
 }
 
 let pendingLibUpdate: VideoLibrary;

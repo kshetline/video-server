@@ -1,8 +1,9 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { filter } from '../../server/src/shared-utils';
 import { LibraryItem, ServerStatus, VideoLibrary, VideoStats } from '../../server/src/shared-types';
 import { broadcastMessage, getZIndex, incrementImageIndex, webSocketMessagesEmitter } from './video-ui-utils';
-import { checksum53, compareCaseSecondary, isEqual, isValidJson, processMillis } from '@tubular/util';
+import { checksum53, clone, compareCaseSecondary, isEqual, isValidJson, processMillis } from '@tubular/util';
 import { floor } from '@tubular/math';
 import { AuthService } from './auth.service';
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -26,6 +27,10 @@ const defaultGenres = [
   providers: [ConfirmationService, MessageService, StatusInterceptor]
 })
 export class AppComponent implements AfterViewInit, OnInit {
+  static filter = 'All';
+  static genre = '';
+  static searchText: string;
+
   private getSparseLibrary = true;
   private gettingLibrary = false;
   private readyToPoll = false;
@@ -272,10 +277,16 @@ export class AppComponent implements AfterViewInit, OnInit {
         }
 
         if (this.currentCollection?.id) {
-          const match = this.findId(this.currentCollection.id);
+          let match = this.findId(this.currentCollection.id);
 
-          if (match)
+          if (match) {
+            if (match.data && (AppComponent.searchText || AppComponent.filter !== 'All' || AppComponent.genre)) {
+              match = clone(match);
+              match.data = filter(match.data, AppComponent.searchText, AppComponent.filter, AppComponent.genre);
+            }
+
             this.currentCollection = match;
+          }
         }
       }
       else

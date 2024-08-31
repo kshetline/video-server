@@ -10,6 +10,7 @@ import { fromEvent } from 'rxjs/internal/observable/fromEvent';
 import { debounceTime } from 'rxjs/internal/operators/debounceTime';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { AuthService } from '../auth.service';
+import { AppComponent } from '../app.component';
 
 function titleAdjust(title: string): string {
   return title.replace(/\s+Season\s+\d/i, '');
@@ -36,7 +37,6 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   readonly titleAdjust = titleAdjust;
 
   private _filterNode: any;
-  private genre: string;
   private _genres: string[] = [];
   private genresLabel: HTMLElement;
   private _library: VideoLibrary;
@@ -44,11 +44,9 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   private randomCache = new Map<number, number>();
   private resizeDebounceSub: Subscription;
   private resizeSub: Subscription;
-  private _searchText = '';
   private _sortMode = SORT_CHOICES[0];
   private watchedCache = new Map<number, WatchStatus>();
 
-  filter = 'All';
   filterChoices = ['All', 'Movies', 'TV', '4K', '3D'];
   filterNodes: any[];
   letterGroups: string[] = [];
@@ -123,10 +121,16 @@ export class PosterViewComponent implements OnDestroy, OnInit {
     }
   }
 
-  get searchText(): string { return this._searchText; }
+  get filter(): string { return AppComponent.filter; }
+  set filter(value: string) { AppComponent.filter = value; }
+
+  get genre(): string { return AppComponent.genre; }
+  set genre(value: string) { AppComponent.genre = value; }
+
+  get searchText(): string { return AppComponent.searchText; }
   set searchText(value: string) {
-    if (this._searchText !== value) {
-      this._searchText = value;
+    if (AppComponent.searchText !== value) {
+      AppComponent.searchText = value;
       this.refilter();
     }
   }

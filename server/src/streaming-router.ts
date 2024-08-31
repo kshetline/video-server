@@ -4,35 +4,9 @@ import { existsAsync, isDemo, jsonOrJsonp, username, watched, webSocketSend } fr
 import { LibraryItem, PlaybackProgress } from './shared-types';
 import { getDb } from './settings';
 import { findId } from './library-router';
-import { hashUri, isFile } from './shared-utils';
+import { hashUri, isFile, setWatched } from './shared-utils';
 
 export const router = Router();
-
-function setWatched(item: LibraryItem, state: boolean): void {
-  if (!item)
-    return;
-
-  if (item.streamUri) {
-    item.watchedByUser = state;
-    item.positionUser = state ? 0 : -1;
-    item.lastUserWatchTime = state ? Date.now() : -1;
-  }
-
-  const parent = item.parent || findId(item.parentId);
-
-  if (parent?.data) {
-    parent.data.forEach(sibling => {
-      if (sibling !== item && sibling.streamUri === item.streamUri) {
-        sibling.watchedByUser = state;
-        sibling.positionUser = state ? 0 : -1;
-        sibling.lastUserWatchTime = state ? Date.now() : -1;
-      }
-    });
-  }
-
-  if (item.data)
-    item.data.forEach(i => setWatched(i, state));
-}
 
 async function setWatchedDb(item: LibraryItem, username: string, progress: PlaybackProgress): Promise<boolean> {
   try {
@@ -48,7 +22,7 @@ async function setWatchedDb(item: LibraryItem, username: string, progress: Playb
         username, progress.hash, progress.duration, progress.offset, wasWatched ? 1 : 0, Date.now());
 
     if (item) {
-      setWatched(item, wasWatched);
+      setWatched(item, wasWatched, false, null, findId);
       webSocketSend({ type: 'idUpdate', data: item.id });
 
       const parent = item.parent || findId(item.parentId);
