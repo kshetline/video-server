@@ -16,7 +16,7 @@ import {
 } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
 import {
-  addBackLinks, comparator, findAliases as _findAliases, hashUri, isAnyCollection, isCollection, isFile, isMovie,
+  addBackLinks, comparator, findAliases as _findAliases, hashUri, isAnyCollection, isCollection, isFile, isMovie, isTV,
   isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, removeBackLinks, setWatched, stripBackLinks, syncValues,
   toStreamPath
 } from './shared-utils';
@@ -199,7 +199,7 @@ function filter(item: LibraryItem): void {
   }
 }
 
-async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directoryMap: Map<string, string[]>): Promise<void> {
+async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directoryMap: Map<string, string[]>, depth = 0): Promise<void> {
   for (const item of (items || [])) {
     if (stopPending)
       break;
@@ -219,7 +219,7 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
 
       if (data) {
         item.data = data;
-        await getChildren(item.data, bonusDirs, directoryMap);
+        await getChildren(item.data, bonusDirs, directoryMap, depth + 1);
       }
     }
     else if (!/-Extras-|Bonus Disc/i.exec(item.uri || '')) {
@@ -330,6 +330,9 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
       item.data.sort((a, b) => (a.episode || 0) - (b.episode || 0));
 
     let uri: string;
+
+    if (depth === 0 && isTV(item))
+      item.isTV = true;
 
     if (item.data?.length > 0) {
       const checkedUris = new Set<string>();

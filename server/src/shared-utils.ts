@@ -570,7 +570,7 @@ export function setWatched(item: LibraryItem, state: boolean, admin = false, pos
     return;
 
   if (position == null)
-    position = state ? 0 : -1
+    position = state ? 0 : -1;
 
   if (now == null)
     now = Date.now();
