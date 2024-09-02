@@ -40,7 +40,6 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   private _genres: string[] = [];
   private genresLabel: HTMLElement;
   private _library: VideoLibrary;
-  private loadingTimers = new Map<Element, any>();
   private randomCache = new Map<number, number>();
   private resizeDebounceSub: Subscription;
   private resizeSub: Subscription;
@@ -51,11 +50,8 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   filterNodes: any[];
   letterGroups: string[] = [];
   items: LibraryItem[];
-  intersectionObserver: IntersectionObserver;
-  mutationObserver: MutationObserver;
   overview = '';
   resizing = false;
-  showThumbnail: Record<string, boolean> = {};
   sortChoices = clone(SORT_CHOICES);
 
   constructor(private authService: AuthService) {
@@ -70,7 +66,6 @@ export class PosterViewComponent implements OnDestroy, OnInit {
     if (this._library !== value) {
       this._library = value;
       this.items = value?.array;
-      this.showThumbnail = {};
       this.refilter();
     }
   }
@@ -147,54 +142,6 @@ export class PosterViewComponent implements OnDestroy, OnInit {
     });
 
     this.updateFilterNodes();
-
-    this.intersectionObserver = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        const target = entry.target;
-        const thumbnail = target.getAttribute('data-thumbnail');
-
-        if (this.showThumbnail[thumbnail])
-          return;
-
-        const timer = this.loadingTimers.get(target);
-
-        if (entry.isIntersecting && thumbnail && !timer) {
-          const loadingTimer = setTimeout(() => {
-            this.showThumbnail[thumbnail] = true;
-            this.loadingTimers.delete(target);
-          }, 100);
-          this.loadingTimers.set(target, loadingTimer);
-        }
-        else if (!entry.isIntersecting && timer) {
-          clearTimeout(timer);
-          this.loadingTimers.delete(target);
-        }
-      });
-    });
-
-    this.mutationObserver = new MutationObserver((mutationList, _observer) => {
-      mutationList.forEach(mr => {
-        if (mr.type === 'childList') {
-          mr.addedNodes.forEach(node => {
-            const imageWrappers = (node as HTMLElement).querySelectorAll &&
-              (node as HTMLElement).querySelectorAll('.poster-thumbnail-wrapper');
-
-            if (imageWrappers)
-              imageWrappers.forEach(iw => this.intersectionObserver.observe(iw));
-          });
-
-          mr.removedNodes.forEach(node => {
-            const imageWrappers = (node as HTMLElement).querySelectorAll &&
-              (node as HTMLElement).querySelectorAll('.poster-thumbnail-wrapper');
-
-            if (imageWrappers)
-              imageWrappers.forEach(iw => this.intersectionObserver.unobserve(iw));
-          });
-        }
-      });
-    });
-
-    this.mutationObserver.observe(document.body, { childList: true, subtree: true });
 
     const resizes = fromEvent(window, 'resize');
 
@@ -282,7 +229,6 @@ export class PosterViewComponent implements OnDestroy, OnInit {
     if (!grid)
       return;
 
-    this.showThumbnail = {};
     grid.style.scrollBehavior = 'auto';
     grid.scrollTop = 0;
     setTimeout(() => grid.style.scrollBehavior = 'smooth', 1000);

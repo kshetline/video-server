@@ -20,18 +20,16 @@
     <div *ngIf="overview" class="overview">{{overview}}</div>
     <div *ngFor="let item of items; index as i" class="library-item">
       <ng-container *ngIf="!item.isAlias && isCollection(item); else notCollection">
-        <div *ngIf="item.data?.length > 1" [attr.data-thumbnail]="'t2-' + i" class="poster-thumbnail-wrapper offset2">
-          <img *ngIf="i < 100 || showThumbnail['t2-' + i]"
-               [ngSrc]="getPosterUrl(item.data[1])" width="150" height="225" alt="{{item.data[1].name}}" priority>
+        <div *ngIf="item.data?.length > 1" class="poster-thumbnail-wrapper offset2">
+          <img [ngSrc]="getPosterUrl(item.data[1])" width="150" height="225" alt="{{item.data[1].name}}" priority>
         </div>
-        <div *ngIf="item.data?.length > 0" [attr.data-thumbnail]="'t1-' + i" class="poster-thumbnail-wrapper offset">
-          <img *ngIf="i < 100 || showThumbnail['t1-' + i]"
-               [ngSrc]="getPosterUrl(item.data[0])" width="150" height="225" alt="{{item.data[0].name}}" priority>
+        <div *ngIf="item.data?.length > 0" class="poster-thumbnail-wrapper offset">
+          <img [ngSrc]="getPosterUrl(item.data[0])" width="150" height="225" alt="{{item.data[0].name}}" priority>
         </div>
       </ng-container>
       <ng-template #notCollection><span class="hash">{{hashTitle(item.name)}}</span></ng-template>
 
-      <div [attr.data-thumbnail]="'t-' + i" class="poster-thumbnail-wrapper">
+      <div class="poster-thumbnail-wrapper">
         <div class="video-tags">
           <div *ngIf="item.isSD" class="sd">SD</div>
           <div *ngIf="item.is3d && filter !== '3D'" class="d3">3D</div>
@@ -39,8 +37,7 @@
           <div *ngIf="item.isTV && filter !== 'TV'" class="tv">TV</div>
         </div>
         <div *ngIf="item.aliasPosterPath || !item.isAlias || item.isLink" class="loading">Loading...</div>
-        <img *ngIf="i < 100 || showThumbnail['t-' + i]"
-             [ngSrc]="getPosterUrl(item)" width="150" height="225" alt="{{item.id}}" priority>
+        <img [ngSrc]="getPosterUrl(item)" width="150" height="225" alt="{{item.id}}" priority>
         <fa-icon *ngIf="item.isLink" [icon]="faShare"
                  class="fa-xl fa-rotate-by stroke-path" style="--fa-rotate-angle: -45deg;"></fa-icon>
         <fa-icon *ngIf="item.id !== floor(item.id) && !item.isLink" [icon]="faFolderOpen" class="fa-xl stroke-path"></fa-icon>
