@@ -28,7 +28,7 @@ interface Person {
 })
 export class ShowViewComponent implements OnInit {
   readonly getSeasonTitle = getSeasonTitle;
-  readonly iconBadge = (s: string) => /^(AC|DS|TC)$/.test(s);
+  readonly iconBadge = (s: string): boolean => /^(AC|DS|TC)$/.test(s);
   readonly isTvSeason = isTvSeason;
 
   private backgroundMain = '';

@@ -1,6 +1,6 @@
 import { htmlEscape, toInt, toNumber } from '@tubular/util';
 import { ChildProcess } from 'child_process';
-import { dirname } from 'path';
+import { basename, dirname, join } from 'path';
 import { closeSync, mkdirSync, openSync } from 'fs';
 import { readFile, rename, writeFile } from 'fs/promises';
 import { MediaWrapper, VideoWalkOptionsPlus } from './shared-types';
@@ -206,6 +206,16 @@ async function checkAndFixBadDuration(path: string, progress: Progress | VideoPr
   }
 }
 
+async function has2kVersion(path: string): Promise<boolean> {
+  const dir = dirname(path);
+  const file = basename(path, '.mkv').replace(/\s*\(4K\)$/, '').trim();
+  const alt1 = join(dir, file + ' (2K).mkv');
+  const alt2 = join(dir, '2K', file + '.mkv');
+  const alt3 = join(dir, '2K', file + ' (2K).mkv');
+
+  return (await existsAsync(alt1)) || (await existsAsync(alt2)) || (await existsAsync(alt3));
+}
+
 export async function createStreaming(path: string, options: VideoWalkOptionsPlus,
                                       info: VideoWalkInfo): Promise<boolean> {
   currentProcesses = [];
@@ -224,7 +234,7 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
   const [wd, hd] = (video?.properties.display_dimensions || '1x1').split('x').map(d => toInt(d));
   const aspect = wd / hd;
 
-  if ((h > 1100 && !path.includes('(extended edition) (4K)')) || video?.properties.stereo_mode)
+  if ((h > 1100 && (await has2kVersion(path)) && !path.includes('(extended edition) (4K)')) || video?.properties.stereo_mode)
     return false;
 
   const hasDesktopVideo = await existsAsync(mpdPath) || await existsAsync(avPath);
