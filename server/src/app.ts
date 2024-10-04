@@ -45,8 +45,8 @@ import * as https from 'https';
 import { WebSocketServer } from 'ws';
 import logger from 'morgan';
 import {
-  cacheDir, existsAsync, getRemoteAddress, isAdmin, isDemo, jsonOrJsonp, noCache, normalizePort, safeLstat, safeUnlink,
-  setWebSocketServer, timeStamp, unref, webSocketSend
+  cacheDir, existsAsync, getIp, getRemoteAddress, isAdmin, isDemo, jsonOrJsonp, noCache, normalizePort, safeLstat,
+  safeUnlink, setWebSocketServer, timeStamp, unref, webSocketSend
 } from './vs-util';
 import { Resolver } from 'node:dns';
 import {
@@ -84,6 +84,7 @@ let wsServer: WebSocketServer;
 const MAX_START_ATTEMPTS = 3;
 let startAttempts = 0;
 let hostIps: string[];
+const blockedIps = new Map<string, number>();
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
@@ -93,6 +94,9 @@ process.on('unhandledRejection', err => console.error(`${timeStamp()} -- Unhandl
 const CACHE_CHECK_INTERVAL = 14_400_000; // Four hours
 const CACHE_MAX_AGE = 604_800_000; // One week
 const EXTENDED_COOKIE_LIFE = 3_600_000; // One hour
+const BAD_REQUEST_COUNT = 3;
+const BAD_REQUEST_DELAY = 30_000; // 30 seconds
+const IP_BLOCK_TIME = 600_000; // 10 minutes
 let cacheCheckTimer: any;
 
 createAndStartServer();
@@ -327,6 +331,28 @@ export function sendStatus(): void {
 
 function getApp(): Express {
   const theApp = express();
+
+  theApp.use((req, res, next) => {
+    const now = processMillis();
+    const ips = Array.from(blockedIps.keys());
+
+    for (const ip of ips) {
+      const block = blockedIps.get(ip);
+
+      if (block > 0 && block < now - IP_BLOCK_TIME)
+        blockedIps.delete(ip);
+    }
+
+    const ip = getIp(req);
+    const block = blockedIps.get(ip);
+
+    if (!block || block < 0)
+      next();
+    else {
+      console.log('Delayed response to', ip);
+      unref(setTimeout(() => res.sendStatus(429), BAD_REQUEST_DELAY));
+    }
+  });
 
   theApp.use(logger('[:date[iso]] :remote-addr - :remote-user ":method :url HTTP/:http-version" :status :res[content-length] :response-time'));
   theApp.use(express.json());
@@ -621,6 +647,35 @@ function getApp(): Express {
       else
         res.sendStatus(404);
     }
+  });
+
+  // Unmatched routes
+  theApp.use((req, res) => {
+    const token = (req.cookies as NodeJS.Dict<string>).vs_jwt;
+
+    jwt.verify(token, process.env.VS_TOKEN_SECRET as string, (err: any) => {
+      if (!err)
+        res.sendStatus(401);
+      else {
+        const ip = getIp(req);
+        let block = blockedIps.get(ip);
+
+        if (block == null)
+          blockedIps.set(ip, -1);
+        if (block < 0) {
+          --block;
+
+          if (block <= -BAD_REQUEST_COUNT) {
+            console.log('Blocking:', ip);
+            blockedIps.set(ip, processMillis());
+          }
+          else
+            blockedIps.set(ip, block);
+        }
+
+        res.sendStatus(403);
+      }
+    });
   });
 
   return theApp;

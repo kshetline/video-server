@@ -212,3 +212,7 @@ export async function watched(timeOrVideo: number | string, durationOrUser?: num
 
   return time >= 3600 && percent > 93 || percent > 95;
 }
+
+export function getIp(req: Request): string {
+  return req.ip || req.socket?.remoteAddress || (req as any).connection?.remoteAddress || (req as any).connection?.socket?.remoteAddress;
+}
