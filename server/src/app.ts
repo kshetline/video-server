@@ -348,10 +348,8 @@ function getApp(): Express {
 
     if (!block || block < 0)
       next();
-    else {
-      console.log('Delayed response to', ip);
+    else
       unref(setTimeout(() => res.sendStatus(429), BAD_REQUEST_DELAY));
-    }
   });
 
   theApp.use(logger('[:date[iso]] :remote-addr - :remote-user ":method :url HTTP/:http-version" :status :res[content-length] :response-time'));
