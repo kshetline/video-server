@@ -101,7 +101,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       const codec = getCodec(track);
       const cCount = tp.audio_channels;
       const channels = (cCount === 2 && pl2) ? 'Dolby PL2' : channelString(tp);
-      let da = /\bda(\s+([0-9.]+|stereo|mono))?$/i.test(name);
+      let da = /\bda(\s+([0-9.]+|stereo|mono|atmos))?$/i.test(name);
       let audioDescr = `:${codec}: ${channels}`;
 
       if (!da && tp.flag_visual_impaired)
@@ -110,7 +110,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       if (language && (langCount > 1 || da))
         audioDescr = language + ' ' + audioDescr;
 
-      audioDescr = audioDescr.replace(/:/g, '');
+      audioDescr = audioDescr.replace(/:/g, ''); // TODO: This doesn't appear to be used, but why isn't it flagged as unused?
 
       if (!tp.flag_commentary && /commentary/i.test(name)) {
         editArgs.push('--edit', 'track:a' + i, '--set', 'flag-commentary=1');

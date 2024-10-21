@@ -137,12 +137,17 @@ export interface VideoLibrary {
 
 export interface MediaInfoTrack {
   '@type': string;
+  extra?: {
+    NumberOfDynamicObjects: string;
+  };
   VideoCount: string;
   AudioCount: string;
   FrameRate: string;
   Title: string;
   Movie: string;
   Format: string;
+  Format_AdditionalFeatures?: string;
+  Format_Commercial_IfAny?: string;
   HDR_Format: string;
   HDR_Format_Compatibility: string;
   CodecID: string;
@@ -378,6 +383,10 @@ export interface VideoWalkOptions {
   skipMovies?: boolean;
   skipTV?: boolean;
   updateExtraMetadata?: boolean;
+  walkStart?: string;
+  walkStartA?: string[];
+  walkStop?: string;
+  walkStopA?: string[];
 }
 
 export interface VideoWalkOptionsPlus extends VideoWalkOptions {

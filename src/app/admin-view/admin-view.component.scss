@@ -37,6 +37,10 @@
     align-items: center;
     display: flex;
     gap: 1em;
+
+    label > input {
+      margin-left: 0.5em;
+    }
   }
 
   .mono {

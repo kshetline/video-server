@@ -87,6 +87,16 @@ export class AdminViewComponent implements OnInit {
   runProcess(): void {
     const options = clone(this.options);
 
+    if (options.startWalk)
+      options.startWalk = options.startWalk.trim();
+    else
+      delete options.startWalk;
+
+    if (options.stopWalk)
+      options.stopWalk = options.stopWalk.trim();
+    else
+      delete options.stopWalk;
+
     if (!this.setEarliest)
       delete options.earliest;
 

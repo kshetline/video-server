@@ -104,6 +104,10 @@
       <p-checkbox [(ngModel)]="setEarliest" [binary]="true" label="Set earliest"></p-checkbox>
       <p-calendar [(ngModel)]="options.earliest" dateFormat="yy-mm-dd" [showIcon]="true" [disabled]="!setEarliest"></p-calendar>
     </div>
+    <div class="row">
+      <label>Start<input type="text" pInputText [(ngModel)]="options.walkStart"/></label>
+      <label>Stop<input type="text" pInputText [(ngModel)]="options.walkStop"/></label>
+    </div>
     <div class="skip-options">
       <p-checkbox [(ngModel)]="options.skipMovies" [binary]="true" label="Skip movies"></p-checkbox>
       <p-checkbox [(ngModel)]="options.skipTV" [binary]="true" label="Skip TV shows"></p-checkbox>

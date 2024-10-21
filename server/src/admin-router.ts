@@ -97,6 +97,12 @@ export async function walkVideoDirectory(
   if (options.checkStreaming === true)
     options.checkStreaming = getValue('videoDirectory') + '\t' + getValue('streamingDirectory');
 
+  if (options.walkStart)
+    options.walkStartA = options.walkStart.split('/');
+
+  if (options.walkStop)
+    options.walkStopA = options.walkStop.split('/');
+
   return await walkVideoDirectoryAux(dir, 0, options, callback);
 }
 
@@ -138,6 +144,10 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
     if (!stat || file.startsWith('.') || file.endsWith('~') || /~\.mkv$/i.test(file) || stat.isSymbolicLink()) {
       // Do nothing
     }
+    else if (options.walkStartA?.length > depth && file < options.walkStartA[depth])
+      await callback(path, depth, options, { skip: true });
+    else if (options.walkStopA?.length > depth && file > options.walkStopA[depth] && !file.startsWith(options.walkStopA[depth]))
+      await callback(path, depth, options, { skip: true });
     else if (stat.isDirectory()) {
       if (dontRecurse || options.directoryExclude && options.directoryExclude(path, file, depth))
         continue;
@@ -426,6 +436,8 @@ interface UpdateOptions {
   skipMovies?: boolean;
   skipTV?: boolean;
   stats?: boolean;
+  walkStart?: string;
+  walkStop?: string;
 }
 
 function saveVideoStats(stats: VideoStats): void {
@@ -454,16 +466,19 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
     await (async (): Promise<void> => {
       try {
         let lastChar = '';
+        const vDir = terminateDir(getValue('videoDirectory'));
         stats = await walkVideoDirectory({
           canModify: options.canModify,
           checkStreaming: options.checkStreaming,
           earliest: options.earliest,
           getMetadata: options.mkvFlags || options.generateStreaming,
           mkvFlags: options.mkvFlags,
-          generateStreaming: options.generateStreaming
+          generateStreaming: options.generateStreaming,
+          walkStart: options.walkStart,
+          walkStop: options.walkStop
         },
           async (path: string, depth: number, options: VideoWalkOptionsPlus, info: VideoWalkInfo): Promise<void> => {
-            const startChar = path.charAt(info.videoDirectory.length);
+            const startChar = path.charAt((info?.videoDirectory || vDir).length);
             const isMkv = /\.mkv$/i.test(path);
 
             if (depth === 1 && lastChar !== startChar) {
@@ -485,7 +500,7 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
               await createStreaming(path, options, info);
           });
 
-        if (options.generateStreaming || options.checkStreaming) {
+        if ((options.generateStreaming || options.checkStreaming) && !options.walkStart && !options.walkStart) {
           stats.totalDuration = Array.from(stats.durations).map(d => d[1]).reduce((total, val) => total + val, 0);
           delete stats.durations;
           saveVideoStats(stats);
@@ -545,7 +560,9 @@ router.post('/process', async (req, res) => {
       skipExtras: toBoolean(req.body.skipExtras, null, true),
       skipMovies: toBoolean(req.body.skipMovies, null, true),
       skipTV: toBoolean(req.body.skipTV, null, true),
-      stats: true
+      stats: true,
+      walkStart: req.body.walkStart,
+      walkStop: req.body.walkStop
     };
 
     sendStatus();

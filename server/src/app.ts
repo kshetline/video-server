@@ -339,8 +339,10 @@ function getApp(): Express {
     for (const ip of ips) {
       const block = blockedIps.get(ip);
 
-      if (block > 0 && block < now - IP_BLOCK_TIME)
+      if (block > 0 && block < now - IP_BLOCK_TIME) {
+        console.log('Unblocking:', ip);
         blockedIps.delete(ip);
+      }
     }
 
     const ip = getIp(req);
@@ -362,7 +364,18 @@ function getApp(): Express {
     const token = (req.cookies as NodeJS.Dict<string>).vs_jwt;
     const userInfo = token?.split('.')[1];
 
-    if (!/^\/api\//.test(req.url) || /^\/api\/(login|status)\b/.test(req.url))
+    if (/^\/(ab2g|ab2h|admin|app|apps|backup|blog|cgi-bin|cms|crm|laravel|lib|panel|password|phpunit|systembc|test|V2|vendor|workspace|ws|yii|zend)/.test(req.url)) {
+      const ip = getIp(req);
+      const block = blockedIps.get(ip);
+
+      if (block == null || block < 0) {
+        console.log('Blocking:', ip);
+        blockedIps.set(ip, processMillis());
+      }
+
+      unref(setTimeout(() => res.sendStatus(403), BAD_REQUEST_DELAY));
+    }
+    else if (!/^\/api\//.test(req.url) || /^\/api\/(login|status)\b/.test(req.url))
       next();
     else if (!userInfo)
       res.sendStatus(401);
@@ -660,7 +673,7 @@ function getApp(): Express {
 
         if (block == null)
           blockedIps.set(ip, -1);
-        if (block < 0) {
+        else if (block < 0) {
           --block;
 
           if (block <= -BAD_REQUEST_COUNT) {

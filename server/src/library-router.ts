@@ -134,9 +134,13 @@ function formatResolution(track: MediaInfoTrack): string {
 }
 
 function channelString(track: MediaInfoTrack): string {
+  if (/\bAtmos\b/i.exec(track.Title || ''))
+    return 'Atmos';
+
+  const atmos = /\bAtmos\b/i.test(track.Format_Commercial_IfAny) || toInt(track.extra?.NumberOfDynamicObjects) > 0;
   const $ = /\b(mono|stereo|(\d\d?\.\d))\b/i.exec(track.Title || '');
 
-  if ($)
+  if ($ && !atmos)
     return $[1];
 
   // The code below is a bit iffy. It's working for me for now, but there's some stuff I don't
@@ -149,6 +153,8 @@ function channelString(track: MediaInfoTrack): string {
     return 'Mono';
   else if (channels === 2 && !sub)
     return 'Stereo';
+  else if (atmos)
+    return 'Atmos';
   else if (!sub)
     return channels + '.0';
   else
