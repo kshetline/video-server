@@ -2,18 +2,19 @@ import { htmlEscape, toInt, toNumber } from '@tubular/util';
 import { ChildProcess } from 'child_process';
 import { basename, dirname, join } from 'path';
 import { closeSync, mkdirSync, openSync } from 'fs';
-import { readFile, rename, writeFile } from 'fs/promises';
+import { mkdtemp, readFile, rename, writeFile } from 'fs/promises';
 import { MediaWrapper, VideoWalkOptionsPlus } from './shared-types';
 import { existsAsync, safeUnlink, webSocketSend } from './vs-util';
 import { abs, floor, min, round } from '@tubular/math';
-import { ErrorMode, monitorProcess, spawn } from './process-util';
+import { ErrorMode, monitorProcess, ProcessInterrupt, spawn } from './process-util';
 import { stopPending, VideoWalkInfo } from './admin-router';
 import { toStreamPath } from './shared-utils';
+import * as os from 'os';
+import { lang2to3 } from './lang';
 
 interface Progress {
   duration?: number;
   lastPercent?: number;
-  path: string;
   percentStr?: string;
 }
 
@@ -39,6 +40,7 @@ interface VideoRender {
 
 let currentProcesses: ChildProcess[] = [];
 let currentTempFiles: string[] = [];
+const isWindows = (os.platform() === 'win32');
 
 function trackProcess(process: ChildProcess): ChildProcess {
   currentProcesses.push(process);
@@ -90,6 +92,9 @@ export async function killStreamingProcesses(): Promise<void> {
 }
 
 function aacProgress(data: string, stream: number, progress: Progress): void {
+  if (stopPending)
+    throw new ProcessInterrupt();
+
   progress.duration = progress.duration ?? -1;
   progress.lastPercent = progress.lastPercent ?? -1;
   progress.percentStr = progress.percentStr ?? '';
@@ -216,6 +221,109 @@ async function has2kVersion(path: string): Promise<boolean> {
   return (await existsAsync(alt1)) || (await existsAsync(alt2)) || (await existsAsync(alt3));
 }
 
+export async function createFallbackAudio(path: string, options: VideoWalkOptionsPlus,
+                                      info: VideoWalkInfo): Promise<boolean> {
+  const video = info.video && info.video[0];
+  const [w, h] = (video?.properties.pixel_dimensions || '1x1').split('x').map(d => toInt(d));
+
+  if (!video || w > 1920 || h > 1080)
+    return false;
+
+  const audio = info.audio && info.audio[0];
+
+  if (!audio || !audio.properties)
+    return false;
+
+  const lang = audio.properties.language;
+  const aacTrack = info.audio.findIndex(track => {
+    const props = track.properties;
+
+    return (track.codec === 'AAC' && props?.language === lang && props.audio_channels <= 2);
+  });
+
+  if (aacTrack >= 0)
+    return false;
+
+  const mainChannels = audio.properties.audio_channels;
+  const args = ['-i', path, '-map', '0:1', '-c', 'aac', '-ac', min(mainChannels, 2).toString(),
+                '-b:a', mainChannels < 2 ? '96k' : '192k'];
+  const progress: Progress = {};
+  const aacFile = join(os.tmpdir(), await mkdtemp('tmp-') + '.tmp.aac');
+
+  if (mainChannels > 3)
+    args.push('-af', 'aresample=matrix_encoding=dplii');
+
+  args.push('-ar', '44100', aacFile);
+  webSocketSend({ type: 'audio-progress', data: '    Generating AAC fallback audio started at ' + new Date().toLocaleString() });
+
+  const backupPath = path.replace(/\.mkv$/i, '[zni].bak.mkv');
+  const updatePath = path.replace(/\.mkv$/i, '[zni].upd.mkv');
+
+  try {
+    await safeUnlink(aacFile);
+    await monitorProcess(spawn('ffmpeg', args), (data, stream) => aacProgress(data, stream, progress));
+
+    trackTempFile(aacFile, true);
+
+    if (stopPending) {
+      await safeUnlink(aacFile);
+      webSocketSend({ type: 'audio-progress', data: '' });
+      return false;
+    }
+
+    webSocketSend({ type: 'audio-progress', data: 'Remuxing fallback audio...' });
+
+    const nameStart = (/^(\w)\s+(AAC|DTS|E-AC3|FLAC|Surround|TrueHD)\b/.exec(audio.properties.track_name) || [])[1];
+    const aacTrackName = (nameStart ? nameStart + ' ' : '') + (mainChannels > 3 ? 'Dolby PL2' : mainChannels > 1 ? 'AAC Stereo' : 'AAC Mono');
+    const args2 = ['-o', updatePath, path];
+    let tracks = '';
+
+    for (let i = 0; i < info.video.length + 2; ++i)
+      tracks += '0:' + i + ',';
+
+    args2.push('--original-flag', '0', '--track-name', '0:' + aacTrackName,
+      '--language', '0:' + (lang2to3[lang] || lang || 'und'), aacFile, '--track-order', tracks + '1:0');
+
+    let percentStr = '';
+    const mergeProgress = (data: string, stream: number): void => {
+      let $: RegExpExecArray;
+
+      if (stream === 0 && ($ = /\bProgress: (\d{1,3}%)/.exec(data)) && percentStr !== $[1]) {
+        if (percentStr)
+          process.stdout.write('%\x1B[' + (percentStr.length + 1) + 'D');
+
+        percentStr = $[1];
+        process.stdout.write(percentStr + '\x1B[K');
+      }
+    };
+
+    await safeUnlink(updatePath);
+    await monitorProcess(spawn('mkvmerge', args2), mergeProgress, ErrorMode.DEFAULT, 4096);
+    webSocketSend({ type: 'audio-progress', data: '' });
+
+    if (!isWindows)
+      await monitorProcess(spawn('chmod', ['--reference=' + backupPath, path]), null, ErrorMode.IGNORE_ERRORS);
+
+    await rename(path, backupPath);
+    await rename(updatePath, path);
+    await safeUnlink(backupPath);
+    await safeUnlink(aacFile);
+  }
+  catch (e) {
+    if (await existsAsync(backupPath)) {
+      await rename(backupPath, path);
+      await safeUnlink(updatePath);
+    }
+
+    await safeUnlink(aacFile);
+    webSocketSend({ type: 'audio-progress', data: '' });
+
+    return false;
+  }
+
+  return true;
+}
+
 export async function createStreaming(path: string, options: VideoWalkOptionsPlus,
                                       info: VideoWalkInfo): Promise<boolean> {
   currentProcesses = [];
@@ -290,7 +398,7 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
     if (!await existsAsync(audioPath)) {
       const args = ['-i', path, '-vn', '-sn', ...audioArgs, '-dash', '1', '-f', 'webm', trackTempFile(tmp(audioPath)),
                     '-map_chapters', '-1'];
-      const progress: Progress = { path };
+      const progress: Progress = {};
 
       if (groupedVideoCount === 0)
         args.splice(args.indexOf('-dash'), 2);

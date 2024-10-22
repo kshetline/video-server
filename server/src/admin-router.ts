@@ -11,7 +11,7 @@ import { AudioTrack, MediaWrapper, MKVInfo, SubtitlesTrack, VideoStats, VideoTra
 import { characterToProgress, comparator, sorter, toStreamPath } from './shared-utils';
 import { examineAndUpdateMkvFlags } from './mkv-flags';
 import { sendStatus } from './app';
-import { createStreaming, killStreamingProcesses } from './streaming';
+import { createFallbackAudio, createStreaming, killStreamingProcesses } from './streaming';
 import { abs, max, min } from '@tubular/math';
 
 export const router = Router();
@@ -430,6 +430,7 @@ interface UpdateOptions {
   canModify?: boolean;
   checkStreaming?: boolean;
   earliest?: Date;
+  generateFallbackAudio?: boolean;
   generateStreaming?: boolean;
   mkvFlags?: boolean;
   skipExtras?: boolean;
@@ -471,8 +472,9 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
           canModify: options.canModify,
           checkStreaming: options.checkStreaming,
           earliest: options.earliest,
-          getMetadata: options.mkvFlags || options.generateStreaming,
+          getMetadata: options.mkvFlags || options.generateFallbackAudio || options.generateStreaming,
           mkvFlags: options.mkvFlags,
+          generateFallbackAudio: options.generateFallbackAudio,
           generateStreaming: options.generateStreaming,
           walkStart: options.walkStart,
           walkStop: options.walkStop
@@ -492,6 +494,9 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
 
             currentFile = path.substring(info.videoDirectory.length);
             webSocketSend({ type: 'currentFile', data: currentFile });
+
+            if (options.generateFallbackAudio && isMkv)
+              await createFallbackAudio(path, options, info);
 
             if (options.mkvFlags && isMkv)
               await examineAndUpdateMkvFlags(path, options, info);
@@ -549,12 +554,14 @@ router.post('/process', async (req, res) => {
 
   if (!adminProcessing) {
     const mkvFlags = toBoolean(req.body.mkvFlags, null, true);
+    const generateFallbackAudio = toBoolean(req.body.generateFallbackAudio, null, true);
     const generateStreaming = toBoolean(req.body.generateStreaming, null, true);
     const canModify = mkvFlags || generateStreaming;
     const options: UpdateOptions = {
       canModify,
       checkStreaming: generateStreaming,
       earliest: req.body.earliest ? new Date(req.body.earliest) : undefined,
+      generateFallbackAudio,
       generateStreaming,
       mkvFlags,
       skipExtras: toBoolean(req.body.skipExtras, null, true),
