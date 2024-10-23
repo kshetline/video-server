@@ -221,8 +221,26 @@ async function has2kVersion(path: string): Promise<boolean> {
   return (await existsAsync(alt1)) || (await existsAsync(alt2)) || (await existsAsync(alt3));
 }
 
-export async function createFallbackAudio(path: string, options: VideoWalkOptionsPlus,
-                                      info: VideoWalkInfo): Promise<boolean> {
+async function tryThrice(fn: () => Promise<any>): Promise<void> {
+  let err: any;
+
+  for (let i = 0; i < 3; ++i) {
+    if (i > 0)
+      await new Promise<void>(resolve => { setTimeout(resolve, 1000); });
+
+    try {
+      await fn();
+      return;
+    }
+    catch (e) {
+      err = e;
+    }
+  }
+
+  throw err;
+}
+
+export async function createFallbackAudio(path: string, info: VideoWalkInfo): Promise<boolean> {
   const video = info.video && info.video[0];
   const [w, h] = (video?.properties.pixel_dimensions || '1x1').split('x').map(d => toInt(d));
 
@@ -302,17 +320,17 @@ export async function createFallbackAudio(path: string, options: VideoWalkOption
     webSocketSend({ type: 'audio-progress', data: '' });
 
     if (!isWindows)
-      await monitorProcess(spawn('chmod', ['--reference=' + backupPath, path]), null, ErrorMode.IGNORE_ERRORS);
+      await tryThrice(() => monitorProcess(spawn('chmod', ['--reference=' + backupPath, path]), null, ErrorMode.IGNORE_ERRORS));
 
-    await rename(path, backupPath);
-    await rename(updatePath, path);
-    await safeUnlink(backupPath);
+    await tryThrice(() => rename(path, backupPath));
+    await tryThrice(() => rename(updatePath, path));
+    await tryThrice(() => safeUnlink(backupPath));
     await safeUnlink(aacFile);
   }
   catch (e) {
     if (await existsAsync(backupPath)) {
-      await rename(backupPath, path);
-      await safeUnlink(updatePath);
+      await tryThrice(() => rename(backupPath, path));
+      await tryThrice(() => safeUnlink(updatePath));
     }
 
     await safeUnlink(aacFile);

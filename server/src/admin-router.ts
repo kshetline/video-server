@@ -496,7 +496,7 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
             webSocketSend({ type: 'currentFile', data: currentFile });
 
             if (options.generateFallbackAudio && isMkv)
-              await createFallbackAudio(path, options, info);
+              await createFallbackAudio(path, info);
 
             if (options.mkvFlags && isMkv)
               await examineAndUpdateMkvFlags(path, options, info);
