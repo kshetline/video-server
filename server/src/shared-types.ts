@@ -269,6 +269,7 @@ interface MediaTrack {
   Duration?: string;
   Encoded_Library?: string;
   HDR_Format?: string;
+  HDR_Format_Compatibility?: string;
 }
 
 export interface MediaWrapper {

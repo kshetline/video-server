@@ -1,4 +1,4 @@
-import { htmlEscape, toInt, toNumber } from '@tubular/util';
+import { extendDelimited, htmlEscape, toInt, toNumber } from '@tubular/util';
 import { ChildProcess } from 'child_process';
 import { basename, dirname, join } from 'path';
 import { closeSync, mkdirSync, openSync } from 'fs';
@@ -452,11 +452,15 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
   }
 
   const subtitleIndex = subtitles.findIndex(s => s.properties.track_name === 'en' || s.properties.forced_track);
+  // TODO: Add other text subtitle codecs
+  const isGraphicSub = subtitleIndex >= 0 && !/^(SubRip\/SRT)$/.test(subtitles[subtitleIndex].codec);
   const dashVideos: string[] = [];
 
   if (video) {
     const videoQueue: VideoRender[] = [];
     const progress: VideoProgress = { duration, path, readFromError: true, start: Date.now() };
+    const media = video.properties?.media;
+    const hdr = !!(media?.HDR_Format && /^HDR/.test(media?.HDR_Format_Compatibility));
 
     for (const resolution of resolutions) {
       if (shouldSkipVideo(resolution.w, resolution.h))
@@ -480,6 +484,8 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
       let encodeW = targetW;
       let encodeH = targetW / aspect;
       let anamorph = 1;
+      let filter = '';
+      let subtitleInput = '0:v';
 
       if (encodeH > resolution.h) {
         encodeH = resolution.h;
@@ -501,9 +507,22 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
       if (resolution.h === 320) // For sample video clip
         args.push('-ss', duration < 480000 ? '00:00:00' : '00:05:00', '-t', '180'); // TODO: Handle non-image subtitles
 
-      if (subtitleIndex >= 0) // TODO: Handle non-image subtitles
-        args.push('-filter_complex', `[0:v][0:s:${subtitleIndex}]overlay[v]`, '-map', '[v]');
-      else
+      if (hdr) {
+        filter = '[0:v]zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv,format=yuv420p[v0]';
+        subtitleInput = 'v0';
+      }
+
+      if (subtitleIndex >= 0) {
+        if (isGraphicSub)
+          filter = extendDelimited(filter, `[${subtitleInput}][0:s:${subtitleIndex}]overlay[v]`, ';');
+        else
+          filter = extendDelimited(filter, `[${subtitleInput}]subtitle=${path}:si=${subtitleIndex}[v]`, ';');
+      }
+
+      if (filter)
+        args.push('-filter_complex', filter, '-map', '[v]');
+
+      if (subtitleIndex < 0)
         args.push('-sn');
 
       if ((groupedVideoCount === 1 || small) && audioIndex >= 0) {
