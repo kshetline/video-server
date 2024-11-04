@@ -16,3 +16,4 @@ tsc-out
 /dist/
 /server/db.sqlite
 /server/db.sqlite-journal
+/server/sublink.mkv

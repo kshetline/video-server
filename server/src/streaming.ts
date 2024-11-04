@@ -2,7 +2,7 @@ import { extendDelimited, htmlEscape, toInt, toNumber } from '@tubular/util';
 import { ChildProcess } from 'child_process';
 import { basename, dirname, join } from 'path';
 import { closeSync, mkdirSync, openSync } from 'fs';
-import { mkdtemp, readFile, rename, writeFile } from 'fs/promises';
+import { mkdtemp, readFile, rename, symlink, writeFile } from 'fs/promises';
 import { MediaWrapper, VideoWalkOptionsPlus } from './shared-types';
 import { existsAsync, safeUnlink, webSocketSend } from './vs-util';
 import { abs, floor, min, round } from '@tubular/math';
@@ -451,10 +451,12 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
     }
   }
 
-  const subtitleIndex = subtitles.findIndex(s => s.properties.track_name === 'en' || s.properties.forced_track);
+  const subtitleIndex = subtitles.findIndex(s => s.properties.default_track || s.properties.forced_track);
   // TODO: Add other text subtitle codecs
   const isGraphicSub = subtitleIndex >= 0 && !/^(SubRip\/SRT)$/.test(subtitles[subtitleIndex].codec);
   const dashVideos: string[] = [];
+  const symlinkName = 'sublink.mkv';
+  let sublink = '';
 
   if (video) {
     const videoQueue: VideoRender[] = [];
@@ -515,9 +517,25 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
       if (subtitleIndex >= 0) {
         if (isGraphicSub)
           filter = extendDelimited(filter, `[${subtitleInput}][0:s:${subtitleIndex}]overlay[v]`, ';');
-        else
-          filter = extendDelimited(filter, `[${subtitleInput}]subtitle=${path}:si=${subtitleIndex}[v]`, ';');
+        else {
+          let subpath = path;
+
+          if (/[',\\]/.test(path)) {
+            if (!sublink) {
+              await safeUnlink(symlinkName);
+              await symlink(path, symlinkName);
+              sublink = symlinkName;
+              trackTempFile(sublink, true);
+            }
+
+            subpath = sublink;
+          }
+
+          filter = extendDelimited(filter, `[${subtitleInput}]subtitles=${subpath}:si=${subtitleIndex}[v]`, ';');
+        }
       }
+      else if (filter)
+        filter = filter.replace('[v0]', '[v]');
 
       if (filter)
         args.push('-filter_complex', filter, '-map', '[v]');
@@ -701,6 +719,9 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
   console.log('    Total time generating streaming content: %s (%sx)',
     formatTime(elapsed * 1000000).slice(0, -3), (duration / elapsed).toFixed(2));
   await safeUnlink(busyPath);
+
+  if (sublink)
+    await safeUnlink(sublink);
 
   info.createdStreaming = true;
 
