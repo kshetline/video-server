@@ -1,14 +1,14 @@
-import { extendDelimited, htmlEscape, toInt, toNumber } from '@tubular/util';
+import { extendDelimited, htmlEscape, regexEscape, toInt, toNumber } from '@tubular/util';
 import { ChildProcess } from 'child_process';
 import { basename, dirname, join } from 'path';
 import { closeSync, mkdirSync, openSync } from 'fs';
-import { mkdtemp, readFile, rename, symlink, writeFile } from 'fs/promises';
+import { mkdtemp, readdir, readFile, rename, symlink, writeFile } from 'fs/promises';
 import { MediaWrapper, VideoWalkOptionsPlus } from './shared-types';
 import { existsAsync, safeUnlink, webSocketSend } from './vs-util';
 import { abs, floor, min, round } from '@tubular/math';
 import { ErrorMode, monitorProcess, ProcessInterrupt, spawn } from './process-util';
 import { stopPending, VideoWalkInfo } from './admin-router';
-import { toStreamPath } from './shared-utils';
+import { comparator, toStreamPath } from './shared-utils';
 import * as os from 'os';
 import { lang2to3 } from './lang';
 
@@ -218,7 +218,33 @@ async function has2kVersion(path: string): Promise<boolean> {
   const alt2 = join(dir, '2K', file + '.mkv');
   const alt3 = join(dir, '2K', file + ' (2K).mkv');
 
-  return (await existsAsync(alt1)) || (await existsAsync(alt2)) || (await existsAsync(alt3));
+  if ((await existsAsync(alt1)) || (await existsAsync(alt2)) || (await existsAsync(alt3)))
+    return true;
+
+  const $ = /^(.*)\(\d*#4K([^)]*)\)$/.exec(file);
+
+  if ($) {
+    let files = (await readdir(dir)).sort(comparator);
+    const match = new RegExp('^' + regexEscape($[1]) + '\\(\\d*#2K' + regexEscape($[2]) + '\\)\\.mkv$');
+
+    for (const sib of files) {
+      if (sib !== basename(path) && match.test(sib))
+        return true;
+    }
+
+    const dir2k = join(dir, '2K');
+
+    if (await existsAsync(dir2k)) {
+      files = (await readdir(dir2k)).sort(comparator);
+
+      for (const sib of files) {
+        if (match.test(sib))
+          return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 async function tryThrice(fn: () => Promise<any>): Promise<void> {

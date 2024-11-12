@@ -336,7 +336,7 @@ export function toStreamPath(s: string, volumeBase?: string, streamBase?: string
   }
 
   s = s.replace(/(\.mkv)$/i, '').replace(/\s*\([234][DK]\)(?=\(|$)/, '').replace(/(?<=\()\d+(?=#.*\))/, '')
-    .replace(/#/g, '_').replace(/[-_][234][DK](?=\))/, '').replace('()', '');
+    .replace(/#/g, '_').replace(/[-_][234][DK](?=\))/, '').replace('()', '').trim();
 
   return parent + s;
 }
