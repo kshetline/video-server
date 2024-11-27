@@ -33,6 +33,8 @@ export interface ItemStreamPair {
 })
 export class DashPlayerComponent implements OnDestroy, OnInit {
   private aspectRatio = -1;
+  private delay = 0;
+  private delayMonitor: any = undefined;
   private mouseTimer: any;
   private playerElem: HTMLVideoElement;
   private _src: ItemStreamPair;
@@ -105,6 +107,7 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
       this.videoUrl = '';
       this.aspectRatio = -1;
       this.playerElem = undefined;
+      this.delay = 0;
 
       if (this.player) {
         this.player.destroy();
@@ -122,6 +125,12 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
         let playerId = '#direct-player';
 
         if (url.endsWith('.mpd')) {
+          this.http.get<number>('/api/stream/get-delay' + url.substring(11))
+            .subscribe(delay => {
+              this.delay = delay;
+              this.monitorDelay();
+            });
+
           this.player = MediaPlayer().create();
           playerId = '#dash-player';
           this.player.updateSettings({ streaming: { buffer: { fastSwitchEnabled: true } } });
@@ -185,6 +194,16 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
     this.registerTimeChange(true);
     this.onClose.emit();
     this.playerElem = undefined;
+
+    if (this.player) {
+      this.player.destroy();
+      this.player = undefined;
+    }
+
+    if (this.delayMonitor) {
+      clearInterval(this.delayMonitor);
+      this.delayMonitor = undefined;
+    }
   }
 
   private findPlayer(id: string, tries = 0): void {
@@ -206,6 +225,8 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
       this.aspectRatio = this.playerElem.videoWidth / this.playerElem.videoHeight;
       this.onResize();
     });
+    this.playerElem.addEventListener('playing', () => this.monitorDelay());
+    this.playerElem.addEventListener('seeking', () => this.monitorDelay());
     this.playerElem.addEventListener('ended', () => { this.registerTimeChange(true); this.onMouseMove(); });
     this.playerElem.addEventListener('pause', () => { this.registerTimeChange(true); this.onMouseMove(); });
     this.playerElem.addEventListener('seeked', () => { this.registerTimeChange(); this.onMouseMove(); });
@@ -267,5 +288,24 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
         this.timeChangeTimer = undefined;
         this.sendTimeChange();
       }, 5000);
+  }
+
+  private monitorDelay(count = 0): void {
+    if (!this.player || this.delay < 0.045 || count > 40 || this.delayMonitor)
+      return;
+
+    const time = this.player.time();
+
+    if (time >= this.delay)
+      this.delayMonitor = null;
+    else if (count > 10 && time < this.delay && !this.player.isPaused()) {
+      this.player.seek(this.delay);
+      this.delayMonitor = null;
+    }
+    else
+      this.delayMonitor = setTimeout(() => {
+        this.delayMonitor = undefined;
+        this.monitorDelay(count + 1);
+      }, 100);
   }
 }

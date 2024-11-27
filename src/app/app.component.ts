@@ -43,6 +43,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   currentCollection: LibraryItem;
   currentShow: LibraryItem;
   filter: string;
+  fullLibrary = false;
   genres = defaultGenres;
   library: VideoLibrary;
   logoffRequestTime = -Number.MAX_SAFE_INTEGER;
@@ -354,6 +355,8 @@ export class AppComponent implements AfterViewInit, OnInit {
           setTimeout(() => this.pollLibrary());
         }
         else {
+          this.fullLibrary = true;
+
           const genres = new Set<string>(defaultGenres);
 
           function collectGenres(items: LibraryItem[]): void {

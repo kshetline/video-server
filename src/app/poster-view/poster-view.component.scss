@@ -57,7 +57,10 @@
     overflow: auto;
     padding: 2em calc(2.5em + 2 * var(--scrollbar-width));
     position: relative;
-    scroll-behavior: smooth;
+
+    &.ready {
+      scroll-behavior: smooth;
+    }
   }
 
   .letter-nav {

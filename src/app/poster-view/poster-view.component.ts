@@ -81,6 +81,8 @@ export class PosterViewComponent implements OnDestroy, OnInit {
 
   @Output() itemClicked: EventEmitter<LibraryItem> = new EventEmitter();
 
+  @Input() fullLibrary = false;
+
   get filterNode(): any { return this._filterNode; }
   set filterNode(value: any) {
     if (this._filterNode !== value) {

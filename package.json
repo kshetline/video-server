@@ -33,7 +33,7 @@
     "@tubular/math": "^3.3.1",
     "@tubular/util": "^4.16.1",
     "canvas": "^2.11.2",
-    "dashjs": "^4.7.2",
+    "dashjs": "^4.7.4",
     "jimp": "^0.22.10",
     "primeicons": "^6.0.1",
     "primeng": "~15.4.1",

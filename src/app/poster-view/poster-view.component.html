@@ -16,15 +16,15 @@
   </div>
 </div>
 <div class="poster-wrapper">
-  <div class='poster-grid'>
+  <div class="poster-grid" [class.ready]="fullLibrary">
     <div *ngIf="overview" class="overview">{{overview}}</div>
     <div *ngFor="let item of items; index as i" class="library-item">
       <ng-container *ngIf="!item.isAlias && isCollection(item); else notCollection">
         <div *ngIf="item.data?.length > 1" class="poster-thumbnail-wrapper offset2">
-          <img [ngSrc]="getPosterUrl(item.data[1])" width="150" height="225" alt="{{item.data[1].name}}" priority>
+          <img [ngSrc]="getPosterUrl(item.data[1])" width="150" height="225" alt="{{item.data[1].name}}">
         </div>
         <div *ngIf="item.data?.length > 0" class="poster-thumbnail-wrapper offset">
-          <img [ngSrc]="getPosterUrl(item.data[0])" width="150" height="225" alt="{{item.data[0].name}}" priority>
+          <img [ngSrc]="getPosterUrl(item.data[0])" width="150" height="225" alt="{{item.data[0].name}}">
         </div>
       </ng-container>
       <ng-template #notCollection><span class="hash">{{hashTitle(item.name)}}</span></ng-template>
@@ -37,7 +37,7 @@
           <div *ngIf="item.isTV && filter !== 'TV'" class="tv">TV</div>
         </div>
         <div *ngIf="item.aliasPosterPath || !item.isAlias || item.isLink" class="loading">Loading...</div>
-        <img [ngSrc]="getPosterUrl(item)" width="150" height="225" alt="{{item.id}}" priority>
+        <img [ngSrc]="getPosterUrl(item)" width="150" height="225" alt="{{item.id}}">
         <fa-icon *ngIf="item.isLink" [icon]="faShare"
                  class="fa-xl fa-rotate-by stroke-path" style="--fa-rotate-angle: -45deg;"></fa-icon>
         <fa-icon *ngIf="item.id !== floor(item.id) && !item.isLink" [icon]="faFolderOpen" class="fa-xl stroke-path"></fa-icon>

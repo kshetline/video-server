@@ -5,6 +5,9 @@ import { LibraryItem, PlaybackProgress } from './shared-types';
 import { getDb } from './settings';
 import { findId } from './library-router';
 import { hashUri, isFile, setWatched } from './shared-utils';
+import { monitorProcess } from './process-util';
+import { spawn } from 'child_process';
+import { toNumber } from '@tubular/util';
 
 export const router = Router();
 
@@ -94,9 +97,33 @@ router.get('/progress', async (req, res) => {
   }
 });
 
+function getFilePath(url: string, offset = 1): string {
+  return paths.join(process.env.VS_STREAMING_SOURCE,
+    url.substring(offset).split('/').map(s => decodeURIComponent(s)).join('/')).normalize();
+}
+
+router.get('/get-delay/*', async (req, res) => {
+  const filePath = getFilePath(req.url, 11).replace(/\.mpd$/, '.v480.webm');
+
+  if (await existsAsync(filePath)) {
+    try {
+      const mediaJson = JSON.parse(await monitorProcess(spawn('mediainfo', [filePath, '--Output=JSON'])));
+      const delay = toNumber((mediaJson.media?.track || [])[1]?.Delay);
+
+      if (delay) {
+        res.send(delay.toString());
+
+        return;
+      }
+    }
+    catch {}
+  }
+
+  res.send(0);
+});
+
 router.get('/*', async (req, res) => {
-  const filePath = paths.join(process.env.VS_STREAMING_SOURCE,
-    req.url.substring(1).split('/').map(s => decodeURIComponent(s)).join('/')).normalize();
+  const filePath = getFilePath(req.url);
 
   if (isDemo(req) && !filePath.endsWith('.sample.mp4')) {
     res.sendStatus(403);
