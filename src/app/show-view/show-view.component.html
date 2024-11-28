@@ -11,10 +11,10 @@
     [style.width]="thumbnailWidth"></div>
   <div class="poster-area">
     <div class="logo">
-      <img *ngIf="show.logo" [ngSrc]="getLogoUrl()" [alt]="show.name" fill priority="true">
+      <img *ngIf="show.logo" [ngSrc]="getLogoUrl()" [alt]="show.name" fill="true" priority="true">
     </div>
     <div class="poster">
-      <img [ngSrc]="getPosterUrl(show)" class="poster" [alt]="show.name" fill priority>
+      <img [ngSrc]="getPosterUrl(show)" class="poster" [alt]="show.name" fill="true" priority="true">
     </div>
   </div>
   <div class="show-info-wrapper">

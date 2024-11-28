@@ -175,10 +175,10 @@ export function filter(items: LibraryItem[], searchText: string, filter: string,
   items = clone(items).filter(item => isAMatch(item));
 
   const deepFilter = (items: LibraryItem[], matcher = isAMatch): void => {
-    for (let i = 0; i < items.length; ++i) {
+    for (let i = 0; i < items?.length; ++i) {
       let item = items[i];
 
-      if (isCollection(item) || (isTvShow(item) && filterSeasons)) {
+      if (item.data && (isCollection(item) || (isTvShow(item) && filterSeasons))) {
         const saveMatcher = matcher;
 
         if (matchesSearch(item, searchText, true))
@@ -504,6 +504,9 @@ export function getWatchInfo(asAdmin: boolean, item: LibraryItem, wi?: WatchInfo
 
     videoCount = item.data.length;
     item.data.forEach((i, n) => {
+      if (!i.streamUri && !i.uri && i.data?.length === 1)
+        i = i.data[0];
+
       const path = i.streamUri || i.uri?.replace('/2K/', '/') || '';
       const key = isMovie(i.parent) ? '#' + i.parent.id : path || n.toString();
       const list = getOrSet(uniqueVideos, key, []);
@@ -578,7 +581,7 @@ export function setWatched(item: LibraryItem, state: boolean, admin = false, pos
   if (admin && !state && item.duration && position > item.duration - 120 && position > item.duration * 0.983)
     state = true;
 
-  if (admin && item.watched != null || isFile(item)) {
+  if (admin && (item.watched != null || isFile(item))) {
     item.watched = state;
     item.lastWatchTime = state || position < 15 ? now : -1;
     item.position = state ? 0 : position > 0 ? position : -1;

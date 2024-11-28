@@ -1,7 +1,7 @@
 import { Directive, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { fromEvent } from 'rxjs/internal/observable/fromEvent';
-import { merge, switchMap, takeUntil, tap, timer } from 'rxjs';
+import { filter, merge, switchMap, takeUntil, tap, timer } from 'rxjs';
 
 @Directive({
   selector: '[longPress]',
@@ -26,7 +26,7 @@ export class LongPressDirective implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    const start$ = merge(fromEvent(this.elem, 'mousedown'),
+    const start$ = merge(fromEvent(this.elem, 'mousedown').pipe(filter((e: MouseEvent) => e.button === 0)),
                          fromEvent(this.elem, 'touchstart'));
     const end$ = merge(fromEvent(this.elem, 'mouseup'),
                        fromEvent(this.elem, 'touchend'),

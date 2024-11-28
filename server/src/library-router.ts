@@ -1358,7 +1358,7 @@ router.get('/', async (req, res) => {
 
   let response: LibraryItem | VideoLibrary = clone(cachedLibrary);
 
-  response.array = response.array.filter(i => !i.hide);
+  response.array = response.array?.filter(i => !i.hide) || [];
 
   if (!isAdmin(req))
     filterLibrary(response.array, role(req));
