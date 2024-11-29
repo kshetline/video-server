@@ -10,6 +10,7 @@ export interface ServerStatus {
   currentVideoId: number;
   currentVideoPath: string;
   currentVideoPosition: number;
+  encodeProgress: string;
   lastUpdate: string;
   localAccess?: boolean;
   ready: boolean;

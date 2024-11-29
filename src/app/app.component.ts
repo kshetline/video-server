@@ -19,6 +19,9 @@ const defaultGenres = [
   'History', 'Horror', 'Music', 'Mystery', 'Nature', 'Politics', 'Romance', 'Sci-fi', 'Suspense', 'TV Movie',
   'Thriller', 'War', 'Western'];
 
+const MAX_ACTIVE_DELAY = 15000; // 15 seconds
+const MAX_RESTING_DELAY = 180000; // 3 minutes
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -32,8 +35,10 @@ export class AppComponent implements AfterViewInit, OnInit {
 
   private getSparseLibrary = true;
   private gettingLibrary = false;
+  private lastStatusTime = 0;
   private readyToPoll = false;
   private reestablishing = false;
+  private statusPending = false;
   private socketEverOpen = false;
   private webSocket: WebSocket;
 
@@ -188,10 +193,10 @@ export class AppComponent implements AfterViewInit, OnInit {
 
         if (this.status.wsPort)
           this.connectToWebSocket();
-        else {
+        else
           console.warn('Web socket not available');
-          this.pollStatus();
-        }
+
+        this.pollStatus();
       },
       complete: () => this.readyToPoll = true
     });
@@ -441,6 +446,7 @@ export class AppComponent implements AfterViewInit, OnInit {
 
     status.localAccess = status.localAccess ?? this.status.localAccess;
     this.status = status;
+    this.lastStatusTime = processMillis();
 
     if (broadcast)
       broadcastMessage('status', status);
@@ -451,16 +457,22 @@ export class AppComponent implements AfterViewInit, OnInit {
   }
 
   private pollStatus = (): void => {
-    if (this.wsReady) {}
+    const now = processMillis();
+
+    if (this.statusPending) {}
+    else if (this.wsReady && now < this.lastStatusTime + (this.status.processing ? MAX_ACTIVE_DELAY : MAX_RESTING_DELAY))
+      setTimeout(() => this.pollStatus(), 10000);
     else if (!this.readyToPoll)
       setTimeout(() => this.pollStatus(), 500);
     else {
+      this.statusPending = true;
       this.getStatusObservable().subscribe({
         next: status => {
           this.receiveStatus(status, true);
           setTimeout(() => this.pollStatus(), this.status.updateProgress < 0 ? 60000 : 2000);
         },
-        error: () => setTimeout(() => this.pollStatus(), 1000)
+        error: () => setTimeout(() => this.pollStatus(), 1000),
+        complete: () => this.statusPending = false
       });
     }
   };

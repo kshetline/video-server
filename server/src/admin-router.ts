@@ -17,11 +17,16 @@ import { abs, max, min } from '@tubular/math';
 export const router = Router();
 export let adminProcessing = false;
 export let currentFile = '';
+export let encodeProgress = '';
 export let stopPending = false;
 export let updateProgress = -1;
 
 export function setStopPending(state: boolean): void {
   stopPending = state;
+}
+
+export function setEncodeProgress(s: string): void {
+  encodeProgress = s;
 }
 
 const DEFAULT_VW_OPTIONS: VideoWalkOptions = {
@@ -517,6 +522,7 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
       }
       finally {
         currentFile = '';
+        encodeProgress = '';
         updateProgress = -1;
         statsInProgress = false;
         sendStatus();

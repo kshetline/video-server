@@ -52,6 +52,7 @@ export class AdminViewComponent implements OnInit {
           this.currentFile = this.lastStatus.currentFile;
           this.stopPending = this.lastStatus.stopPending;
           this.updateProgress = this.lastStatus.updateProgress;
+          this.encodeProgress = this.lastStatus.encodeProgress;
           break;
 
         case 'video-progress':

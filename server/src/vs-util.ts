@@ -7,6 +7,7 @@ import { hashTitle } from './shared-utils';
 import { WebSocketServer } from 'ws';
 import { isObject, isString } from '@tubular/util';
 import { getDb } from './settings';
+import { setEncodeProgress } from './admin-router';
 
 const guestFilter = new Set(process.env.VS_GUEST_FILTER ? process.env.VS_GUEST_FILTER.split(';') : []);
 const demoFilter = new Set(process.env.VS_DEMO_FILTER ? process.env.VS_DEMO_FILTER.split(';') : []);
@@ -32,8 +33,16 @@ export function setWebSocketServer(wss: WebSocketServer): void {
 }
 
 export function webSocketSend(message: string | object): void {
-  if (isObject(message))
+  if (isObject(message)) {
+    switch (message.type) {
+      case 'audio-progress':
+        setEncodeProgress(message.data ? 'Audio: ' + message.data : ''); break;
+      case 'video-progress':
+        setEncodeProgress(message.data); break;
+    }
+
     message = JSON.stringify(message);
+  }
 
   if (wsServer)
     wsServer.clients.forEach(client => client.send(message as string));

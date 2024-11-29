@@ -55,7 +55,7 @@ import {
 } from './library-router';
 import { router as imageRouter } from './image-router';
 import { router as streamingRouter } from './streaming-router';
-import { adminProcessing, currentFile, router as adminRouter, statsInProgress, stopPending, updateProgress } from './admin-router';
+import { adminProcessing, currentFile, encodeProgress, router as adminRouter, statsInProgress, stopPending, updateProgress } from './admin-router';
 import { LibraryItem, LibraryStatus, ServerStatus, User, UserSession } from './shared-types';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
@@ -287,6 +287,7 @@ function getStatus(remote?: string): ServerStatus {
     currentVideoId,
     currentVideoPath,
     currentVideoPosition,
+    encodeProgress,
     lastUpdate: cachedLibrary?.lastUpdate,
     ready: cachedLibrary?.status === LibraryStatus.DONE,
     playerAvailable,
