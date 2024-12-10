@@ -4,7 +4,20 @@ export enum VType { FILE = 0, MOVIE, COLLECTION, TV_SHOW, TV_SEASON, TV_EPISODE,
 export enum LibraryStatus { NOT_STARTED, INITIALIZED, BONUS_MATERIAL_LINKED, ALL_VIDEOS, MEDIA_DETAILS, DONE = 100 }
 export enum WatchStatus { WATCHING = 0, UNWATCHED, WATCHED }
 
+export interface ProcessArgs {
+  earliest: string;
+  fallback: boolean;
+  mkvFlags: boolean;
+  skipExtras: boolean;
+  skipMovies: boolean;
+  skipTv: boolean;
+  start: string;
+  stop: string;
+  streaming: boolean;
+}
+
 export interface ServerStatus {
+  currentOp: string;
   currentFile: string;
   currentVideo: string;
   currentVideoId: number;
@@ -15,6 +28,7 @@ export interface ServerStatus {
   localAccess?: boolean;
   ready: boolean;
   playerAvailable: boolean;
+  processArgs: ProcessArgs;
   processing: boolean;
   stopPending: boolean;
   updateProgress: number;

@@ -19,7 +19,7 @@ const defaultGenres = [
   'History', 'Horror', 'Music', 'Mystery', 'Nature', 'Politics', 'Romance', 'Sci-fi', 'Suspense', 'TV Movie',
   'Thriller', 'War', 'Western'];
 
-const MAX_ACTIVE_DELAY = 15000; // 15 seconds
+const MAX_ACTIVE_DELAY = 10000; // 10 seconds
 const MAX_RESTING_DELAY = 180000; // 3 minutes
 
 @Component({
@@ -456,11 +456,12 @@ export class AppComponent implements AfterViewInit, OnInit {
       this.pollLibrary();
   }
 
-  private pollStatus = (): void => {
+  pollStatus = (): void => {
     const now = processMillis();
 
     if (this.statusPending) {}
-    else if (this.wsReady && now < this.lastStatusTime + (this.status.processing ? MAX_ACTIVE_DELAY : MAX_RESTING_DELAY))
+    else if (this.wsReady && now < this.lastStatusTime +
+        (this.status.processing || this.status.updateProgress >= 0 ? MAX_ACTIVE_DELAY : MAX_RESTING_DELAY))
       setTimeout(() => this.pollStatus(), 10000);
     else if (!this.readyToPoll)
       setTimeout(() => this.pollStatus(), 500);
@@ -575,4 +576,9 @@ export function updatedItem(item: LibraryItem): LibraryItem {
     return This.updatedItem(item);
   else
     return null;
+}
+
+export function repoll(): void {
+  if (This)
+    return This.pollStatus();
 }

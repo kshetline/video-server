@@ -11,7 +11,7 @@ import { requestJson } from 'by-request';
 import paths from 'path';
 import { readdir, readFile, writeFile } from 'fs/promises';
 import {
-  cacheDir, existsAsync, isAdmin, isDemo, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat,
+  existsAsync, isAdmin, isDemo, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat,
   unref, username, webSocketSend
 } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
@@ -23,6 +23,7 @@ import {
 import { sendStatus } from './app';
 import { setStopPending, stopPending } from './admin-router';
 import { getDb } from './settings';
+import { cacheDir } from './shared-values';
 
 export const router = Router();
 

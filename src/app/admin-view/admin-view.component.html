@@ -7,8 +7,10 @@
 </div>
 <div class="content" [class.show-busy]="stopPending">
   <p-button label="Refresh Video Library" icon="pi pi-refresh"
+            [styleClass]="lastStatus?.currentOp === 'lib' ? 'p-button-success' : ''"
             [disabled]="status?.processing" (click)="!status?.processing && (showRefreshDialog = true)"/>
   <p-button label="Refresh Video Inventory" icon="pi pi-refresh"
+            [styleClass]="lastStatus?.currentOp === 'inv' ? 'p-button-success' : ''"
             [disabled]="status?.processing" (click)="!status?.processing && refreshInventory()"/>
   <table>
     <tr>
@@ -118,7 +120,11 @@
     <p-checkbox [(ngModel)]="options.generateStreaming" [binary]="true" label="Generate streaming files"></p-checkbox>
   </div>
   <p-button label="Process" icon="pi pi-wrench"
-            [disabled]="status?.processing" (click)="!status?.processing && runProcess()"/>
+            [styleClass]="lastStatus?.currentOp === 'proc' ? 'p-button-success' : ''"
+            [disabled]="status?.processing ||
+                        (!options.generateFallbackAudio && !options.mkvFlags && !options.generateStreaming) ||
+                        (options.skipMovies && options.skipTV && options.skipExtras)"
+            (click)="!status?.processing && runProcess()"/>
   <div>{{currentFile}}<span style="opacity: 0; user-select: none">：</span></div>
   <div class="mono">{{currentFile ? encodeProgress : ''}}</div>
 </div>

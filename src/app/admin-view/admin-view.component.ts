@@ -5,6 +5,7 @@ import { ServerStatus, VideoStats } from '../../../server/src/shared-types';
 import { clone } from '@tubular/util';
 import { characterToProgress } from '../../../server/src/shared-utils';
 import { ConfirmationService } from 'primeng/api';
+import { repoll } from '../app.component';
 
 @Component({
   selector: 'app-admin-view',
@@ -15,8 +16,6 @@ export class AdminViewComponent implements OnInit {
   readonly formatSecondsToDays = formatSecondsToDays;
   readonly formatSize = formatSize;
 
-  private lastStatus: ServerStatus;
-
   constructor(private httpClient: HttpClient, private confirmationService: ConfirmationService) {}
 
   options: Record<string, any> = { // TODO: better typing
@@ -25,6 +24,7 @@ export class AdminViewComponent implements OnInit {
 
   currentFile = '';
   encodeProgress = '';
+  lastStatus: ServerStatus;
   setEarliest = false;
   showRefreshDialog = false;
   stopPending = false;
@@ -49,6 +49,7 @@ export class AdminViewComponent implements OnInit {
 
         case 'status':
           this.lastStatus = (msg.data as ServerStatus);
+          this.updateProcessSettings();
           this.currentFile = this.lastStatus.currentFile;
           this.stopPending = this.lastStatus.stopPending;
           this.updateProgress = this.lastStatus.updateProgress;
@@ -71,7 +72,11 @@ export class AdminViewComponent implements OnInit {
       }
     });
 
-    this.httpClient.get('/api/admin/stats').subscribe((stats: VideoStats) => this.videoStats = stats);
+    this.httpClient.get('/api/admin/stats').subscribe((stats: VideoStats) => {
+      this.videoStats = stats;
+      this.updateProcessSettings();
+      repoll();
+    });
   }
 
   refresh(quick = false): void {
@@ -85,18 +90,49 @@ export class AdminViewComponent implements OnInit {
     this.httpClient.get('/api/admin/stats?update=true').subscribe((stats: VideoStats) => this.videoStats = stats);
   }
 
+  updateProcessSettings(): void {
+    if (this.lastStatus?.processing && this.lastStatus.processArgs) {
+      const pa = this.lastStatus.processArgs;
+      const options = {
+        generateFallbackAudio: pa.fallback,
+        generateStreaming: pa.streaming,
+        mkvFlags: pa.mkvFlags,
+        skipExtras: pa.skipExtras,
+        skipMovies: pa.skipMovies,
+        skipTv: pa.skipTv
+      } as any;
+
+      if (pa.earliest) {
+        options.earliest = new Date(pa.earliest);
+        this.setEarliest = true;
+      }
+      else {
+        options.earliest = undefined;
+        this.setEarliest = false;
+      }
+
+      if (pa.start)
+        options.walkStart = pa.start;
+
+      if (pa.stop)
+        options.walkStop = pa.stop;
+
+      this.options = options;
+    }
+  }
+
   runProcess(): void {
     const options = clone(this.options);
 
-    if (options.startWalk)
-      options.startWalk = options.startWalk.trim();
+    if (options.walkStart)
+      options.walkStart = options.walkStart.trim();
     else
-      delete options.startWalk;
+      delete options.walkStart;
 
-    if (options.stopWalk)
-      options.stopWalk = options.stopWalk.trim();
+    if (options.walkStop)
+      options.walkStop = options.walkStop.trim();
     else
-      delete options.stopWalk;
+      delete options.walkStop;
 
     if (!this.setEarliest)
       delete options.earliest;

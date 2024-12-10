@@ -45,7 +45,7 @@ import * as https from 'https';
 import { WebSocketServer } from 'ws';
 import logger from 'morgan';
 import {
-  cacheDir, existsAsync, getIp, getRemoteAddress, isAdmin, isDemo, jsonOrJsonp, noCache, normalizePort, safeLstat,
+  existsAsync, getIp, getRemoteAddress, isAdmin, isDemo, jsonOrJsonp, noCache, normalizePort, safeLstat,
   safeUnlink, setWebSocketServer, timeStamp, unref, webSocketSend
 } from './vs-util';
 import { Resolver } from 'node:dns';
@@ -55,7 +55,7 @@ import {
 } from './library-router';
 import { router as imageRouter } from './image-router';
 import { router as streamingRouter } from './streaming-router';
-import { adminProcessing, currentFile, encodeProgress, router as adminRouter, statsInProgress, stopPending, updateProgress } from './admin-router';
+import { adminProcessing, currentFile, currentOp, encodeProgress, processArgs, router as adminRouter, statsInProgress, stopPending, updateProgress } from './admin-router';
 import { LibraryItem, LibraryStatus, ServerStatus, User, UserSession } from './shared-types';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
@@ -64,6 +64,7 @@ import { readdir } from 'fs/promises';
 import { requestText } from 'by-request';
 import { closeSettings, openSettings, users } from './settings';
 import { doZidooDbMaintenance } from './zidoo-db-maintenance';
+import { cacheDir } from './shared-values';
 
 const debug = require('debug')('express:server');
 
@@ -283,6 +284,7 @@ function shutdown(signal?: string): void {
 function getStatus(remote?: string): ServerStatus {
   const status: ServerStatus = {
     currentFile,
+    currentOp,
     currentVideo,
     currentVideoId,
     currentVideoPath,
@@ -291,6 +293,7 @@ function getStatus(remote?: string): ServerStatus {
     lastUpdate: cachedLibrary?.lastUpdate,
     ready: cachedLibrary?.status === LibraryStatus.DONE,
     playerAvailable,
+    processArgs,
     processing: adminProcessing || statsInProgress || !!pendingLibrary,
     stopPending,
     updateProgress: -1,
@@ -365,7 +368,7 @@ function getApp(): Express {
     const token = (req.cookies as NodeJS.Dict<string>).vs_jwt;
     const userInfo = token?.split('.')[1];
 
-    if (/^\/(ab2g|ab2h|admin|app|apps|backup|blog|cgi-bin|cms|crm|laravel|lib|panel|password|phpunit|systembc|test|V2|vendor|workspace|ws|yii|zend)/.test(req.url)) {
+    if (/^\/(ab2g|ab2h|admin|app|apps|backup|blog|cgi-bin|cms|crm|laravel|lib|panel|password|phpunit|systembc|test|V2|workspace|ws|yii|zend)/.test(req.url)) {
       const ip = getIp(req);
       const block = blockedIps.get(ip);
 

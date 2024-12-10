@@ -1,13 +1,13 @@
 import { Request, Response, Router } from 'express';
 import { existsAsync, isAdmin, jsonOrJsonp, noCache, safeLstat, webSocketSend } from './vs-util';
 import { mappedDurations, updateLibrary } from './library-router';
-import { asLines, clone, forEach, isFunction, isNumber, isObject, isString, last, toBoolean, toInt } from '@tubular/util';
+import { asLines, clone, compareCaseInsensitive, forEach, isFunction, isNumber, isObject, isString, last, toBoolean, toInt } from '@tubular/util';
 import { readdir } from 'fs/promises';
 import { getDb, getValue, setValue } from './settings';
 import { join as pathJoin, sep } from 'path';
 import { ErrorMode, monitorProcess } from './process-util';
 import { spawn } from 'child_process';
-import { AudioTrack, MediaWrapper, MKVInfo, SubtitlesTrack, VideoStats, VideoTrack, VideoWalkOptions, VideoWalkOptionsPlus } from './shared-types';
+import { AudioTrack, MediaWrapper, MKVInfo, ProcessArgs, SubtitlesTrack, VideoStats, VideoTrack, VideoWalkOptions, VideoWalkOptionsPlus } from './shared-types';
 import { characterToProgress, comparator, sorter, toStreamPath } from './shared-utils';
 import { examineAndUpdateMkvFlags } from './mkv-flags';
 import { sendStatus } from './app';
@@ -17,7 +17,9 @@ import { abs, max, min } from '@tubular/math';
 export const router = Router();
 export let adminProcessing = false;
 export let currentFile = '';
+export let currentOp = '';
 export let encodeProgress = '';
+export let processArgs: ProcessArgs = null;
 export let stopPending = false;
 export let updateProgress = -1;
 
@@ -103,10 +105,10 @@ export async function walkVideoDirectory(
     options.checkStreaming = getValue('videoDirectory') + '\t' + getValue('streamingDirectory');
 
   if (options.walkStart)
-    options.walkStartA = options.walkStart.split('/');
+    options.walkStartA = options.walkStart.split('/').map(s => s.toLowerCase());
 
   if (options.walkStop)
-    options.walkStopA = options.walkStop.split('/');
+    options.walkStopA = options.walkStop.split('/').map(s => s.toLowerCase());
 
   return await walkVideoDirectoryAux(dir, 0, options, callback);
 }
@@ -149,9 +151,12 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
     if (!stat || file.startsWith('.') || file.endsWith('~') || /~\.mkv$/i.test(file) || stat.isSymbolicLink()) {
       // Do nothing
     }
-    else if (options.walkStartA?.length > depth && file < options.walkStartA[depth])
+    else if (options.walkStartA?.length > depth &&
+             compareCaseInsensitive(file, options.walkStartA[depth]) < 0)
       await callback(path, depth, options, { skip: true });
-    else if (options.walkStopA?.length > depth && file > options.walkStopA[depth] && !file.startsWith(options.walkStopA[depth]))
+    else if (options.walkStopA?.length > depth &&
+             compareCaseInsensitive(file, options.walkStopA[depth]) > 0 &&
+             !file.toLowerCase().startsWith(options.walkStopA[depth]))
       await callback(path, depth, options, { skip: true });
     else if (stat.isDirectory()) {
       if (dontRecurse || options.directoryExclude && options.directoryExclude(path, file, depth))
@@ -403,10 +408,13 @@ router.post('/library-refresh', async (req: Request, res: Response) => {
   else {
     if (!adminProcessing) {
       adminProcessing = true;
+      currentOp = 'lib';
+      processArgs = null;
       sendStatus();
       updateLibrary(toBoolean(req.query.quick)).finally(() => {
         adminProcessing = false;
         stopPending = false;
+        currentOp = '';
         sendStatus();
       });
     }
@@ -545,9 +553,13 @@ router.get('/stats', async (req, res) => {
   catch {}
 
   if (!statsInProgress && !adminProcessing && toBoolean(req.query.update)) {
+    currentOp = 'inv';
+    processArgs = null;
+
     videoWalk({ checkStreaming: true, stats: true }).finally(() => {
       adminProcessing = false;
       stopPending = false;
+      currentOp = '';
       sendStatus();
     });
   }
@@ -559,17 +571,27 @@ router.post('/process', async (req, res) => {
   noCache(res);
 
   if (!adminProcessing) {
-    const mkvFlags = toBoolean(req.body.mkvFlags, null, true);
-    const generateFallbackAudio = toBoolean(req.body.generateFallbackAudio, null, true);
-    const generateStreaming = toBoolean(req.body.generateStreaming, null, true);
-    const canModify = mkvFlags || generateStreaming;
+    currentOp = 'proc';
+    processArgs = {
+      earliest: req.body.earliest,
+      fallback: toBoolean(req.body.generateFallbackAudio, null, true),
+      mkvFlags: toBoolean(req.body.mkvFlags, null, true),
+      skipExtras: toBoolean(req.body.skipExtras, null, true),
+      skipMovies: toBoolean(req.body.skipMovies, null, true),
+      skipTv: toBoolean(req.body.skipTV, null, true),
+      start: req.body.walkStart,
+      stop: req.body.walkStop,
+      streaming: toBoolean(req.body.generateStreaming, null, true)
+    };
+
+    const canModify = processArgs.mkvFlags || processArgs.streaming;
     const options: UpdateOptions = {
       canModify,
-      checkStreaming: generateStreaming,
+      checkStreaming: processArgs.streaming,
       earliest: req.body.earliest ? new Date(req.body.earliest) : undefined,
-      generateFallbackAudio,
-      generateStreaming,
-      mkvFlags,
+      generateFallbackAudio: processArgs.fallback,
+      generateStreaming: processArgs.streaming,
+      mkvFlags: processArgs.mkvFlags,
       skipExtras: toBoolean(req.body.skipExtras, null, true),
       skipMovies: toBoolean(req.body.skipMovies, null, true),
       skipTV: toBoolean(req.body.skipTV, null, true),
@@ -582,6 +604,8 @@ router.post('/process', async (req, res) => {
     videoWalk(options).finally(() => {
       adminProcessing = false;
       stopPending = false;
+      currentOp = '';
+      processArgs = null;
       sendStatus();
     });
     res.send('OK');

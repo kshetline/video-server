@@ -8,12 +8,10 @@ import { WebSocketServer } from 'ws';
 import { isObject, isString } from '@tubular/util';
 import { getDb } from './settings';
 import { setEncodeProgress } from './admin-router';
+import { cacheDir, thumbnailDir } from './shared-values';
 
 const guestFilter = new Set(process.env.VS_GUEST_FILTER ? process.env.VS_GUEST_FILTER.split(';') : []);
 const demoFilter = new Set(process.env.VS_DEMO_FILTER ? process.env.VS_DEMO_FILTER.split(';') : []);
-
-export const cacheDir = paths.join(process.cwd(), 'cache');
-export const thumbnailDir = paths.join(cacheDir, 'thumbnail');
 
 for (const dir of [
   cacheDir, thumbnailDir,
