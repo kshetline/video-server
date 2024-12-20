@@ -13,6 +13,7 @@ import { examineAndUpdateMkvFlags } from './mkv-flags';
 import { sendStatus } from './app';
 import { createFallbackAudio, createStreaming, killStreamingProcesses } from './streaming';
 import { abs, max, min } from '@tubular/math';
+import { mkvValidate } from './mkvalidator';
 
 export const router = Router();
 export let adminProcessing = false;
@@ -156,8 +157,10 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
       await callback(path, depth, options, { skip: true });
     else if (options.walkStopA?.length > depth &&
              compareCaseInsensitive(file, options.walkStopA[depth]) > 0 &&
-             !file.toLowerCase().startsWith(options.walkStopA[depth]))
+             !file.toLowerCase().startsWith(options.walkStopA[depth])) {
+      options.walkStartA = options.walkStartA.slice(0, depth);
       await callback(path, depth, options, { skip: true });
+    }
     else if (stat.isDirectory()) {
       if (dontRecurse || options.directoryExclude && options.directoryExclude(path, file, depth))
         continue;
@@ -450,6 +453,8 @@ interface UpdateOptions {
   skipMovies?: boolean;
   skipTV?: boolean;
   stats?: boolean;
+  validate?: boolean;
+  validateReset?: boolean;
   walkStart?: string;
   walkStop?: string;
 }
@@ -490,7 +495,8 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
           generateFallbackAudio: options.generateFallbackAudio,
           generateStreaming: options.generateStreaming,
           walkStart: options.walkStart,
-          walkStop: options.walkStop
+          walkStop: options.walkStop,
+          validate: options.validate
         },
           async (path: string, depth: number, options: VideoWalkOptionsPlus, info: VideoWalkInfo): Promise<void> => {
             const startChar = path.charAt((info?.videoDirectory || vDir).length);
@@ -516,6 +522,9 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
 
             if (options.generateStreaming && isMkv)
               await createStreaming(path, options, info);
+
+            if (options.validate && isMkv)
+              await mkvValidate(path, options);
           });
 
         if ((options.generateStreaming || options.checkStreaming) && !options.walkStart && !options.walkStart) {
@@ -581,7 +590,8 @@ router.post('/process', async (req, res) => {
       skipTv: toBoolean(req.body.skipTV, null, true),
       start: req.body.walkStart,
       stop: req.body.walkStop,
-      streaming: toBoolean(req.body.generateStreaming, null, true)
+      streaming: toBoolean(req.body.generateStreaming, null, true),
+      validate: toBoolean(req.body.validate, null, true)
     };
 
     const canModify = processArgs.mkvFlags || processArgs.streaming;
@@ -596,6 +606,7 @@ router.post('/process', async (req, res) => {
       skipMovies: toBoolean(req.body.skipMovies, null, true),
       skipTV: toBoolean(req.body.skipTV, null, true),
       stats: true,
+      validate: processArgs.validate,
       walkStart: req.body.walkStart,
       walkStop: req.body.walkStop
     };

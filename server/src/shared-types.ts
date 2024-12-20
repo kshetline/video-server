@@ -14,6 +14,7 @@ export interface ProcessArgs {
   start: string;
   stop: string;
   streaming: boolean;
+  validate: boolean;
 }
 
 export interface ServerStatus {
@@ -400,6 +401,7 @@ export interface VideoWalkOptions {
   skipMovies?: boolean;
   skipTV?: boolean;
   updateExtraMetadata?: boolean;
+  validate?: boolean;
   walkStart?: string;
   walkStartA?: string[];
   walkStop?: string;

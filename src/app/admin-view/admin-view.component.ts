@@ -99,7 +99,8 @@ export class AdminViewComponent implements OnInit {
         mkvFlags: pa.mkvFlags,
         skipExtras: pa.skipExtras,
         skipMovies: pa.skipMovies,
-        skipTv: pa.skipTv
+        skipTv: pa.skipTv,
+        validate: pa.validate
       } as any;
 
       if (pa.earliest) {

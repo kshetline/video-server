@@ -118,11 +118,12 @@
     <p-checkbox [(ngModel)]="options.generateFallbackAudio" [binary]="true" label="Generate fallback audio"></p-checkbox>
     <p-checkbox [(ngModel)]="options.mkvFlags" [binary]="true" label="Update MKV flags"></p-checkbox>
     <p-checkbox [(ngModel)]="options.generateStreaming" [binary]="true" label="Generate streaming files"></p-checkbox>
+    <p-checkbox [(ngModel)]="options.validate" [binary]="true" label="MKV validate"></p-checkbox>
   </div>
   <p-button label="Process" icon="pi pi-wrench"
             [styleClass]="lastStatus?.currentOp === 'proc' ? 'p-button-success' : ''"
             [disabled]="status?.processing ||
-                        (!options.generateFallbackAudio && !options.mkvFlags && !options.generateStreaming) ||
+                        (!options.generateFallbackAudio && !options.mkvFlags && !options.generateStreaming && !options.validate) ||
                         (options.skipMovies && options.skipTV && options.skipExtras)"
             (click)="!status?.processing && runProcess()"/>
   <div>{{currentFile}}<span style="opacity: 0; user-select: none">：</span></div>

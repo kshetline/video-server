@@ -344,7 +344,7 @@ function getApp(): Express {
       const block = blockedIps.get(ip);
 
       if (block > 0 && block < now - IP_BLOCK_TIME) {
-        console.log('Unblocking:', ip);
+        console.log(timeStamp(), 'Unblocking:', ip);
         blockedIps.delete(ip);
       }
     }
@@ -373,7 +373,7 @@ function getApp(): Express {
       const block = blockedIps.get(ip);
 
       if (block == null || block < 0) {
-        console.log('Blocking:', ip);
+        console.log(timeStamp(), 'Blocking:', ip);
         blockedIps.set(ip, processMillis());
       }
 
@@ -681,7 +681,7 @@ function getApp(): Express {
           --block;
 
           if (block <= -BAD_REQUEST_COUNT) {
-            console.log('Blocking:', ip);
+            console.log(timeStamp(), 'Blocking:', ip);
             blockedIps.set(ip, processMillis());
           }
           else

@@ -39,6 +39,14 @@ export async function openSettings(): Promise<void> {
     )`);
 
   await db.exec(
+   `CREATE TABLE IF NOT EXISTS "validation" (
+      "key" TEXT NOT NULL UNIQUE,
+      "mdate" REAL NOT NULL,
+      "error" TEXT,
+      PRIMARY KEY ("key")
+    )`);
+
+  await db.exec(
    `CREATE TABLE IF NOT EXISTS "watched" (
       "user" TEXT NOT NULL,
       "video" TEXT NOT NULL,

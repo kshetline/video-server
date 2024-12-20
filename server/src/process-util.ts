@@ -200,7 +200,7 @@ export function monitorProcess(proc: ChildProcess, markTime: (data?: string, str
       doMarkTime(code.toString(), code === 0 ? 0 : 1, true);
       clearInterval(slowSpin);
 
-      if (code === 0 || errorMode === ErrorMode.IGNORE_ERRORS)
+      if (code === 0 || errorMode === ErrorMode.IGNORE_ERRORS || errorMode === ErrorMode.COLLECT_ERROR_STREAM)
         resolve(output);
       else
         reject(new ProcessError(errors || code.toString(), code, output, proc.spawnargs));
