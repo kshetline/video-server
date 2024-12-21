@@ -4,6 +4,9 @@ import { code2Name, lang3to2 } from './lang';
 import { toInt } from '@tubular/util';
 import { ErrorMode, linuxEscape, monitorProcess } from './process-util';
 import { spawn } from 'child_process';
+import { safeLstat } from './vs-util';
+import { join } from 'path';
+import { abs } from '@tubular/math';
 
 function getLanguage(props: GeneralTrackProperties): string {
   let lang = (props.language_ietf !== 'und' && props.language_ietf) || props.language || props.language_ietf;
@@ -138,10 +141,41 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
   }
 
   if (subtitles?.length > 0) {
+    let defaultSubs = -1;
+
+    for (let i = 1; i <= subtitles.length; ++i) {
+      const track = subtitles[i - 1];
+      const tp = track.properties;
+
+      if (tp.enabled_track) {
+        defaultSubs = i;
+        break;
+      }
+    }
+
     for (let i = 1; i <= subtitles.length; ++i) {
       const track = subtitles[i - 1];
       const tp = track.properties;
       const lang = getLanguage(tp);
+
+      // Subtitle tracks named 'en' which are neither default tracks or forced tracks mirror already-burned-in
+      //   subtitles, therefore should not be changed to default or forced.
+      if (/^[a-z]{2}$/.test(tp.track_name) && tp.track_name !== 'en' || tp.default_track || tp.forced_track) {
+        if (!tp.forced_track) {
+          editArgs.push('--edit', 'track:s' + i, '--set', 'flag-forced=1');
+          tp.forced_track = true;
+        }
+
+        if (!tp.default_track && tp.track_name === primaryLang && defaultSubs < 0) {
+          editArgs.push('--edit', 'track:s' + i, '--set', 'flag-default=1');
+          tp.default_track = true;
+        }
+
+        if (tp.default_track && tp.track_name !== primaryLang) {
+          editArgs.push('--edit', 'track:s' + i, '--set', 'flag-default=0');
+          tp.default_track = false;
+        }
+      }
 
       if (!tp.flag_commentary && /commentary|info/i.test(tp.track_name)) {
         editArgs.push('--edit', 'track:s' + i, '--set', 'flag-commentary=1');
@@ -178,16 +212,36 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
   }
 
   if (editArgs.length > 1 && (!info.isExtra || options.updateExtraMetadata)) {
+    const backups = process.env.VS_VIDEO_BACKUPS ? process.env.VS_VIDEO_BACKUPS.split(',') : [];
+    const stats = await safeLstat(path);
+    let lastPath: string;
+
     try {
       if (options.canModify) {
+        lastPath = path;
         await monitorProcess(spawn('mkvpropedit', editArgs), null, ErrorMode.FAIL_ON_ANY_ERROR);
         console.log('mkvpropedit ' + editArgs.map(arg => linuxEscape(arg)).join(' '));
       }
 
       info.wasModified = true;
+
+      if (stats && backups.length) {
+        for (const dir of backups) {
+          const backPath = join(dir, path.substring(options.videoDirectory.length));
+          const backStats = await safeLstat(backPath);
+
+          if (backStats && abs(stats.mtimeMs - backStats.mtimeMs) < 2) {
+            editArgs[0] = backPath;
+            lastPath = backPath;
+            await monitorProcess(spawn('mkvpropedit', editArgs), null, ErrorMode.FAIL_ON_ANY_ERROR);
+            await monitorProcess(spawn('touch', ['-r', path, backPath]), null, ErrorMode.FAIL_ON_ANY_ERROR);
+            console.log('   also updated:', backPath);
+          }
+        }
+      }
     }
     catch (e) {
-      info.error = `Update of ${path} failed: ${e.message}`;
+      info.error = `Update of ${lastPath} failed: ${e.message}`;
       console.error(info.error);
     }
   }
