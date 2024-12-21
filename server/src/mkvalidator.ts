@@ -27,21 +27,21 @@ export async function mkvValidate(path: string, options: VideoWalkOptionsPlus): 
       linkName = makePlainASCII(basename(path), true);
       await monitorProcess(spawn('ln', ['-s', path, linkName]));
 
-      let result = (await monitorProcess(spawn('mkvalidator', [linkName]), () => {
+      const result = (await monitorProcess(spawn('mkvalidator', [linkName]), () => {
         if (stopPending)
           throw new ProcessInterrupt();
-      }, ErrorMode.COLLECT_ERROR_STREAM)).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      }, ErrorMode.COLLECT_ERROR_STREAM)).replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n+/g, '\n')
+        .replace(/^(\.|\s)+$/gm, '').trim();
 
       const allCount = (result.match(/^(ERR|WRN)[0-9A-F]{3}:/gm) || []).length;
 
       if (allCount > 12 || /^ERR[0-9A-F]{3}:/m.test(result) || /^WRN(?!(0B8|0C0|0D0|0E7|103))[0-9A-F]{3}:/m.test(result)) {
-        result = result.replace(/^(\.|\s)+$/gm, '').trim();
-
         const errCount = (result.match(/^ERR[0-9A-F]{3}:/gm) || []).length;
+        const warnCount = (result.match(/^WRN[0-9A-F]{3}:/gm) || []).length;
         const $0C2Count = (result.match(/^WRN0C2:/gm) || []).length;
         const $861Count = (result.match(/^WRN861:/gm) || []).length;
 
-        if (errCount > 0 || $861Count > 0 || $0C2Count > 6 || allCount > $0C2Count + 6) {
+        if (errCount > 0 || $861Count > 0 || $0C2Count > 25 || warnCount - $0C2Count > 5) {
           console.log(result);
           error = result;
         }
