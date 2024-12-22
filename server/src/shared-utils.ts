@@ -607,3 +607,9 @@ export function setWatched(item: LibraryItem, state: boolean, admin = false, pos
   if (item.data)
     item.data.forEach(i => setWatched(i, state, admin, position, findId, now));
 }
+
+export async function sleep(millis: number): Promise<void> {
+  return new Promise<void>(resolve => {
+    setTimeout(() => resolve(), millis);
+  });
+}

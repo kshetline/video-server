@@ -7,6 +7,7 @@ import { spawn } from 'child_process';
 import { safeLstat } from './vs-util';
 import { join } from 'path';
 import { abs } from '@tubular/math';
+import { utimes } from 'fs/promises';
 
 function getLanguage(props: GeneralTrackProperties): string {
   let lang = (props.language_ietf !== 'und' && props.language_ietf) || props.language || props.language_ietf;
@@ -160,7 +161,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
 
       // Subtitle tracks named 'en' which are neither default tracks or forced tracks mirror already-burned-in
       //   subtitles, therefore should not be changed to default or forced.
-      if (/^[a-z]{2}$/.test(tp.track_name) && tp.track_name !== 'en' || tp.default_track || tp.forced_track) {
+      if (/^[a-z]{2}$/.test(tp.track_name) && !(tp.track_name === 'en' && !tp.default_track && !tp.forced_track)) {
         if (!tp.forced_track) {
           editArgs.push('--edit', 'track:s' + i, '--set', 'flag-forced=1');
           tp.forced_track = true;
@@ -225,17 +226,25 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
 
       info.wasModified = true;
 
-      if (stats && backups.length) {
-        for (const dir of backups) {
-          const backPath = join(dir, path.substring(options.videoDirectory.length));
-          const backStats = await safeLstat(backPath);
+      if (options.canModify && stats && backups.length) {
+        const newStats = await safeLstat(path);
 
-          if (backStats && abs(stats.mtimeMs - backStats.mtimeMs) < 2) {
-            editArgs[0] = backPath;
-            lastPath = backPath;
-            await monitorProcess(spawn('mkvpropedit', editArgs), null, ErrorMode.FAIL_ON_ANY_ERROR);
-            await monitorProcess(spawn('touch', ['-r', path, backPath]), null, ErrorMode.FAIL_ON_ANY_ERROR);
-            console.log('   also updated:', backPath);
+        if (newStats) {
+          const bumpedTime = new Date((newStats.mtime.getTime() + 1000) % 1000);
+
+          await utimes(path, bumpedTime, bumpedTime); // Bump modification time to make rsync time match work better.
+
+          for (const dir of backups) {
+            const backPath = join(dir, path.substring(options.videoDirectory.length));
+            const backStats = await safeLstat(backPath);
+
+            if (backStats && backStats.size === stats.size && abs(stats.mtimeMs - backStats.mtimeMs) < 2) {
+              editArgs[0] = backPath;
+              lastPath = backPath;
+              await monitorProcess(spawn('mkvpropedit', editArgs), null, ErrorMode.FAIL_ON_ANY_ERROR);
+              await utimes(backPath, bumpedTime, bumpedTime);
+              console.log('   also updated:', backPath);
+            }
           }
         }
       }
