@@ -6,7 +6,7 @@ import { ErrorMode, linuxEscape, monitorProcess } from './process-util';
 import { spawn } from 'child_process';
 import { safeLstat } from './vs-util';
 import { join } from 'path';
-import { abs } from '@tubular/math';
+import { abs, ceil, max } from '@tubular/math';
 import { utimes } from 'fs/promises';
 
 function getLanguage(props: GeneralTrackProperties): string {
@@ -80,6 +80,9 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
   const subtitles = info.subtitles;
   let primaryLang = '';
   let langCount = 0;
+  let newDate = new Date(ceil(Date.now(), 1000));
+  const stats = await safeLstat(path);
+  const badDate = stats && stats.mtime.getTime() < 100000;
 
   if (audio?.length > 0) {
     const defaultTrack = audio.find(t => t.properties.default_track) ?? audio[0];
@@ -212,16 +215,21 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
     }
   }
 
-  if (editArgs.length > 1 && (!info.isExtra || options.updateExtraMetadata)) {
+  if (badDate || (editArgs.length > 1 && (!info.isExtra || options.updateExtraMetadata))) {
+    if (badDate)
+      console.log('Fixing invalid modification time:', path);
+
     const backups = process.env.VS_VIDEO_BACKUPS ? process.env.VS_VIDEO_BACKUPS.split(',') : [];
-    const stats = await safeLstat(path);
     let lastPath: string;
 
     try {
       if (options.canModify) {
         lastPath = path;
-        await monitorProcess(spawn('mkvpropedit', editArgs), null, ErrorMode.FAIL_ON_ANY_ERROR);
-        console.log('mkvpropedit ' + editArgs.map(arg => linuxEscape(arg)).join(' '));
+
+        if (editArgs.length > 1) {
+          await monitorProcess(spawn('mkvpropedit', editArgs), null, ErrorMode.FAIL_ON_ANY_ERROR);
+          console.log('mkvpropedit ' + editArgs.map(arg => linuxEscape(arg)).join(' '));
+        }
       }
 
       info.wasModified = true;
@@ -230,9 +238,9 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
         const newStats = await safeLstat(path);
 
         if (newStats) {
-          const bumpedTime = new Date((newStats.mtime.getTime() + 1000) % 1000);
-
-          await utimes(path, bumpedTime, bumpedTime); // Bump modification time to make rsync time match work better.
+          // Bump modification time to make rsync time match work better.
+          newDate = new Date(ceil(max(newStats.mtime.getTime(), newDate.getTime()), 1000));
+          await utimes(path, newDate, newDate);
 
           for (const dir of backups) {
             const backPath = join(dir, path.substring(options.videoDirectory.length));
@@ -241,8 +249,11 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
             if (backStats && backStats.size === stats.size && abs(stats.mtimeMs - backStats.mtimeMs) < 2) {
               editArgs[0] = backPath;
               lastPath = backPath;
-              await monitorProcess(spawn('mkvpropedit', editArgs), null, ErrorMode.FAIL_ON_ANY_ERROR);
-              await utimes(backPath, bumpedTime, bumpedTime);
+
+              if (editArgs.length > 1)
+                await monitorProcess(spawn('mkvpropedit', editArgs), null, ErrorMode.FAIL_ON_ANY_ERROR);
+
+              await utimes(backPath, newDate, newDate);
               console.log('   also updated:', backPath);
             }
           }
@@ -253,6 +264,14 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       info.error = `Update of ${lastPath} failed: ${e.message}`;
       console.error(info.error);
     }
+  }
+
+  if (badDate && info.wasModified) {
+    const key = path.substring(options.videoDirectory.length).normalize();
+    const row = await options.db.get<any>('SELECT * FROM validation WHERE key = ?', key);
+
+    if (row)
+      await options.db.run('UPDATE validation SET mdate = ? WHERE key = ?', newDate.getTime(), key);
   }
 
   return true;
