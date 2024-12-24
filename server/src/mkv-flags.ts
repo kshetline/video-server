@@ -101,13 +101,19 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
     for (let i = 1; i <= audio?.length || 0; ++i) {
       const track = audio[i - 1];
       const tp = track.properties;
+      const media = tp.media;
       const lang = getLanguage(tp);
       const language = code2Name[lang];
-      const name = tp.track_name || '';
+      let name = tp.track_name || '';
+      const atmosInName = /\bAtmos\b/i.test(name) && /\b[57]\.1\b/.test(name);
+      let newName: string;
       const pl2 = /dolby pl(2|ii)/i.test(name);
+      const dolbySurround = /\bDolby Surround\b/.test(media?.Format_Settings_Mode);
+      const atmos = /\bJOC\b/i.test(media?.Format_AdditionalFeatures) || /\bAtmos\b/i.test(media?.Format_Commercial_IfAny);
       const codec = getCodec(track);
       const cCount = tp.audio_channels;
-      const channels = (cCount === 2 && pl2) ? 'Dolby PL2' : channelString(tp);
+      const channels = (cCount === 2 && pl2) ? 'Dolby PL2' : (cCount === 2 && dolbySurround) ? 'Dolby Surround' :
+        (atmos ? 'Atmos ' : '') + channelString(tp);
       let da = /\bda(\s+([0-9.]+|stereo|mono|atmos))?$/i.test(name);
       let audioDescr = `:${codec}: ${channels}`;
 
@@ -117,7 +123,19 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       if (language && (langCount > 1 || da))
         audioDescr = language + ' ' + audioDescr;
 
-      audioDescr = audioDescr.replace(/:/g, ''); // TODO: This doesn't appear to be used, but why isn't it flagged as unused?
+      // TODO: This doesn't appear to be used anymore, but why isn't it flagged as unused?
+      // This used to be for naming unnamed soundtracks. Might use again later.
+      audioDescr = audioDescr.replace(/:/g, '');
+
+      if (atmos && !atmosInName)
+        newName = name.replace(/\b([57]\.1\b)/, 'Atmos $1');
+      else if (!atmos && atmosInName)
+        newName = name.replace(/\bAtmos\b/i, '').replace(/\s{2,}/g, '').trim();
+
+      if (name !== newName) {
+        tp.track_name = name = newName;
+        editArgs.push('--edit', 'track:a' + i, '--set', 'name=' + name);
+      }
 
       if (!tp.flag_commentary && /commentary/i.test(name)) {
         editArgs.push('--edit', 'track:a' + i, '--set', 'flag-commentary=1');

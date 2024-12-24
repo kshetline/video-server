@@ -284,6 +284,10 @@ interface MediaTrack {
   DisplayAspectRatio?: string;
   Duration?: string;
   Encoded_Library?: string;
+  Format?: string;
+  Format_AdditionalFeatures?: string;
+  Format_Commercial_IfAny?: string;
+  Format_Settings_Mode?: string;
   HDR_Format?: string;
   HDR_Format_Compatibility?: string;
 }
