@@ -1,5 +1,5 @@
 import { Request, Response, Router } from 'express';
-import { existsAsync, isAdmin, jsonOrJsonp, noCache, safeLstat, webSocketSend } from './vs-util';
+import { existsAsync, getRemoteFileCount, isAdmin, jsonOrJsonp, noCache, safeLstat, webSocketSend } from './vs-util';
 import { mappedDurations, updateLibrary } from './library-router';
 import { asLines, clone, compareCaseInsensitive, forEach, isFunction, isNumber, isObject, isString, last, toBoolean, toInt } from '@tubular/util';
 import { readdir } from 'fs/promises';
@@ -8,12 +8,13 @@ import { join as pathJoin, sep } from 'path';
 import { ErrorMode, monitorProcess } from './process-util';
 import { spawn } from 'child_process';
 import { AudioTrack, MediaWrapper, MKVInfo, ProcessArgs, SubtitlesTrack, VideoStats, VideoTrack, VideoWalkOptions, VideoWalkOptionsPlus } from './shared-types';
-import { characterToProgress, comparator, sorter, toStreamPath } from './shared-utils';
+import { comparator, sorter, toStreamPath } from './shared-utils';
 import { examineAndUpdateMkvFlags } from './mkv-flags';
 import { sendStatus } from './app';
 import { createFallbackAudio, createStreaming, killStreamingProcesses } from './streaming';
 import { abs, max, min } from '@tubular/math';
 import { mkvValidate } from './mkvalidator';
+import { AsyncDatabase } from 'promised-sqlite3';
 
 export const router = Router();
 export let adminProcessing = false;
@@ -99,8 +100,16 @@ export async function walkVideoDirectory(
   options = Object.assign(clone(DEFAULT_VW_OPTIONS), options);
 
   (options as VideoWalkOptionsPlus).streamingDirectory = terminateDir(getValue('streamingDirectory'));
-  (options as VideoWalkOptionsPlus).videoDirectory = terminateDir(getValue('videoDirectory'));
+  (options as VideoWalkOptionsPlus).videoDirectory = terminateDir(dir);
   (options as VideoWalkOptionsPlus).db = getDb();
+
+  if (process.env.VS_ZIDOO_DB)
+    (options as VideoWalkOptionsPlus).zidooDb = await AsyncDatabase.open(process.env.VS_ZIDOO_DB);
+
+  if (options.reportProgress) {
+    (options as VideoWalkOptionsPlus).fileCount = 0;
+    (options as VideoWalkOptionsPlus).totalFileCount = await getRemoteFileCount('');
+  }
 
   if (options.checkStreaming === true)
     options.checkStreaming = getValue('videoDirectory') + '\t' + getValue('streamingDirectory');
@@ -112,6 +121,13 @@ export async function walkVideoDirectory(
     options.walkStopA = options.walkStop.split('/').map(s => s.toLowerCase());
 
   return await walkVideoDirectoryAux(dir, 0, options, callback);
+}
+
+async function skipOverFileCountForDirectories(dir: string, options: VideoWalkOptionsPlus): Promise<void> {
+  dir = dir.substring(options.videoDirectory.length);
+  options.fileCount += await getRemoteFileCount(dir);
+  updateProgress = options.fileCount / options.totalFileCount * 100;
+  webSocketSend({ type: 'videoStatsProgress', data: updateProgress });
 }
 
 async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoWalkOptionsPlus,
@@ -148,18 +164,31 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
 
     const path = pathJoin(dir, file);
     const stat = await safeLstat(path);
+    const isDir = stat?.isDirectory();
+
+    if (!isDir && options.reportProgress && /\.(iso|mkv)$/i.test(file)) {
+      updateProgress = ++options.fileCount / options.totalFileCount * 100;
+      webSocketSend({ type: 'videoStatsProgress', data: updateProgress });
+    }
 
     if (!stat || file.startsWith('.') || file.endsWith('~') || /~\.mkv$/i.test(file) || stat.isSymbolicLink()) {
       // Do nothing
     }
     else if (options.walkStartA?.length > depth &&
-             compareCaseInsensitive(file, options.walkStartA[depth]) < 0)
-      await callback(path, depth, options, { skip: true });
+             compareCaseInsensitive(file, options.walkStartA[depth]) < 0) {
+      if (isDir)
+        await skipOverFileCountForDirectories(path, options);
+    }
     else if (options.walkStopA?.length > depth &&
              compareCaseInsensitive(file, options.walkStopA[depth]) > 0 &&
              !file.toLowerCase().startsWith(options.walkStopA[depth])) {
+      if (depth === 0)
+        break;
+
       options.walkStartA = options.walkStartA.slice(0, depth);
-      await callback(path, depth, options, { skip: true });
+
+      if (isDir)
+        await skipOverFileCountForDirectories(path, options);
     }
     else if (stat.isDirectory()) {
       if (dontRecurse || options.directoryExclude && options.directoryExclude(path, file, depth))
@@ -484,8 +513,6 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
 
     await (async (): Promise<void> => {
       try {
-        let lastChar = '';
-        const vDir = terminateDir(getValue('videoDirectory'));
         stats = await walkVideoDirectory({
           canModify: options.canModify,
           checkStreaming: options.checkStreaming,
@@ -494,19 +521,13 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
           mkvFlags: options.mkvFlags,
           generateFallbackAudio: options.generateFallbackAudio,
           generateStreaming: options.generateStreaming,
+          reportProgress: true,
           walkStart: options.walkStart,
           walkStop: options.walkStop,
           validate: options.validate
         },
-          async (path: string, depth: number, options: VideoWalkOptionsPlus, info: VideoWalkInfo): Promise<void> => {
-            const startChar = path.charAt((info?.videoDirectory || vDir).length);
+          async (path: string, _depth: number, options: VideoWalkOptionsPlus, info: VideoWalkInfo): Promise<void> => {
             const isMkv = /\.mkv$/i.test(path);
-
-            if (depth === 1 && lastChar !== startChar) {
-              lastChar = startChar;
-              updateProgress = characterToProgress(startChar);
-              webSocketSend({ type: 'videoStatsProgress', data: startChar });
-            }
 
             if (info.skip)
               return;

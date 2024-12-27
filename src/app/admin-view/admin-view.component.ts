@@ -3,7 +3,6 @@ import { formatSecondsToDays, formatSize, webSocketMessagesEmitter } from '../vi
 import { HttpClient } from '@angular/common/http';
 import { ServerStatus, VideoStats } from '../../../server/src/shared-types';
 import { clone } from '@tubular/util';
-import { characterToProgress } from '../../../server/src/shared-utils';
 import { ConfirmationService } from 'primeng/api';
 import { repoll } from '../app.component';
 
@@ -61,7 +60,7 @@ export class AdminViewComponent implements OnInit {
           break;
 
         case 'videoStatsProgress':
-          this.updateProgress = characterToProgress(msg.data);
+          this.updateProgress = msg.data;
           break;
 
         case 'videoStats':

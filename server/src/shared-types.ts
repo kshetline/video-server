@@ -271,7 +271,7 @@ export interface UserSession {
   expiration: number;
 }
 
-interface MediaTrack {
+export interface MediaTrack {
   '@type': string;
   BitDepth?: string;
   Channels?: string;
@@ -290,6 +290,7 @@ interface MediaTrack {
   Format_Settings_Mode?: string;
   HDR_Format?: string;
   HDR_Format_Compatibility?: string;
+  Title?: string;
 }
 
 export interface MediaWrapper {
@@ -399,7 +400,9 @@ export interface VideoWalkOptions {
   generateStreaming?: boolean;
   getMetadata?: boolean;
   isStreamingResource?: (file: string) => boolean;
+  laxAudioRenaming?: boolean;
   mkvFlags?: boolean;
+  reportProgress?: boolean;
   reportStreamingToCallback?: boolean;
   skipExtras?: boolean;
   skipMovies?: boolean;
@@ -414,8 +417,11 @@ export interface VideoWalkOptions {
 
 export interface VideoWalkOptionsPlus extends VideoWalkOptions {
   db?: AsyncDatabase;
+  fileCount?: number;
   streamingDirectory?: string;
+  totalFileCount?: number;
   videoDirectory?: string;
+  zidooDb? : AsyncDatabase;
 }
 
 export interface PlaybackProgress {

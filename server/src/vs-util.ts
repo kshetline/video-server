@@ -5,10 +5,12 @@ import paths from 'path';
 import { LibraryItem } from './shared-types';
 import { hashTitle } from './shared-utils';
 import { WebSocketServer } from 'ws';
-import { isObject, isString } from '@tubular/util';
+import { isObject, isString, toNumber } from '@tubular/util';
 import { getDb } from './settings';
 import { setEncodeProgress } from './admin-router';
 import { cacheDir, thumbnailDir } from './shared-values';
+import { spawn } from 'child_process';
+import { linuxEscape } from './process-util';
 
 const guestFilter = new Set(process.env.VS_GUEST_FILTER ? process.env.VS_GUEST_FILTER.split(';') : []);
 const demoFilter = new Set(process.env.VS_DEMO_FILTER ? process.env.VS_DEMO_FILTER.split(';') : []);
@@ -222,4 +224,26 @@ export async function watched(timeOrVideo: number | string, durationOrUser?: num
 
 export function getIp(req: Request): string {
   return req.ip || req.socket?.remoteAddress || (req as any).connection?.remoteAddress || (req as any).connection?.socket?.remoteAddress;
+}
+
+export async function getRemoteFileCount(dir: string): Promise<number> {
+  const ssh = spawn('ssh', [process.env.VS_VIDEO_SOURCE_SSH]);
+
+  ssh.stdin.write(`find ${linuxEscape(paths.join(process.env.VS_VIDEO_SOURCE_ROOT, dir))} -name "*.mkv" -o -name "*.iso" | wc -l\n`);
+  ssh.stdin.write('exit\n');
+  ssh.stdin.end();
+
+  return new Promise<number>((resolve, _reject) => {
+    ssh.stdout.on('data', data => resolve(toNumber(data.toString())));
+
+    ssh.stderr.on('error', err => {
+      console.error(err);
+      resolve(0);
+    });
+
+    ssh.on('error', err => {
+      console.error(err);
+      resolve(0);
+    });
+  });
 }
