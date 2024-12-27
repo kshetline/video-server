@@ -5,7 +5,7 @@ import paths from 'path';
 import { LibraryItem } from './shared-types';
 import { hashTitle } from './shared-utils';
 import { WebSocketServer } from 'ws';
-import { isObject, isString, toNumber } from '@tubular/util';
+import { asLines, isObject, isString } from '@tubular/util';
 import { getDb } from './settings';
 import { setEncodeProgress } from './admin-router';
 import { cacheDir, thumbnailDir } from './shared-values';
@@ -229,12 +229,18 @@ export function getIp(req: Request): string {
 export async function getRemoteFileCount(dir: string): Promise<number> {
   const ssh = spawn('ssh', [process.env.VS_VIDEO_SOURCE_SSH]);
 
-  ssh.stdin.write(`find ${linuxEscape(paths.join(process.env.VS_VIDEO_SOURCE_ROOT, dir))} -name "*.mkv" -o -name "*.iso" | wc -l\n`);
+  ssh.stdin.write(`find ${linuxEscape(paths.join(process.env.VS_VIDEO_SOURCE_ROOT, dir))} -name "*.mkv" -o -name "*.iso" | sort\n`);
   ssh.stdin.write('exit\n');
   ssh.stdin.end();
 
   return new Promise<number>((resolve, _reject) => {
-    ssh.stdout.on('data', data => resolve(toNumber(data.toString())));
+    let content = '';
+
+    ssh.stdout.on('data', data => content += data.toString());
+
+    ssh.on('close', () => {
+      resolve(asLines(content).length);
+    });
 
     ssh.stderr.on('error', err => {
       console.error(err);

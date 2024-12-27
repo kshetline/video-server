@@ -171,7 +171,8 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       }
 
       if (newName && options.laxAudioRenaming !== false &&
-          (language + ' ' + newName === name || newName.replace(/\bDolby PL2$/, 'AAC Stereo') === name))
+          (language + ' ' + newName === name || newName.replace(/\bDolby PL2$/, 'AAC Stereo') === name ||
+           newName.replace(/^AC-3\b/, 'Surround') === name))
         newName = undefined;
 
       if (newName && name !== newName) {
