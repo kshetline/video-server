@@ -1,5 +1,5 @@
 import { Request, Response, Router } from 'express';
-import { existsAsync, getRemoteFileCount, isAdmin, jsonOrJsonp, noCache, safeLstat, webSocketSend } from './vs-util';
+import { existsAsync, getRemoteFileCounts, isAdmin, jsonOrJsonp, noCache, safeLstat, webSocketSend } from './vs-util';
 import { mappedDurations, updateLibrary } from './library-router';
 import { asLines, clone, compareCaseInsensitive, forEach, isFunction, isNumber, isObject, isString, last, toBoolean, toInt } from '@tubular/util';
 import { readdir } from 'fs/promises';
@@ -108,7 +108,8 @@ export async function walkVideoDirectory(
 
   if (options.reportProgress) {
     (options as VideoWalkOptionsPlus).fileCount = 0;
-    (options as VideoWalkOptionsPlus).totalFileCount = await getRemoteFileCount('');
+    (options as VideoWalkOptionsPlus).countsByPath = await getRemoteFileCounts();
+    (options as VideoWalkOptionsPlus).totalFileCount = (options as VideoWalkOptionsPlus).countsByPath.get('/') || 0;
   }
 
   if (options.checkStreaming === true)
@@ -124,8 +125,8 @@ export async function walkVideoDirectory(
 }
 
 async function skipOverFileCountForDirectories(dir: string, options: VideoWalkOptionsPlus): Promise<void> {
-  dir = dir.substring(options.videoDirectory.length);
-  options.fileCount += await getRemoteFileCount(dir);
+  dir = dir.substring(options.videoDirectory.length - 1);
+  options.fileCount += options.countsByPath.get(dir) ?? 1;
   updateProgress = options.fileCount / options.totalFileCount * 100;
   webSocketSend({ type: 'videoStatsProgress', data: updateProgress });
 }

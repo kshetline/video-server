@@ -416,6 +416,7 @@ export interface VideoWalkOptions {
 }
 
 export interface VideoWalkOptionsPlus extends VideoWalkOptions {
+  countsByPath?: Map<string, number>;
   db?: AsyncDatabase;
   fileCount?: number;
   streamingDirectory?: string;

@@ -226,30 +226,41 @@ export function getIp(req: Request): string {
   return req.ip || req.socket?.remoteAddress || (req as any).connection?.remoteAddress || (req as any).connection?.socket?.remoteAddress;
 }
 
-export async function getRemoteFileCount(dir: string): Promise<number> {
+export async function getRemoteFileCounts(): Promise<Map<string, number>> {
   const ssh = spawn('ssh', [process.env.VS_VIDEO_SOURCE_SSH]);
+  const root = process.env.VS_VIDEO_SOURCE_ROOT;
 
-  ssh.stdin.write(`find ${linuxEscape(paths.join(process.env.VS_VIDEO_SOURCE_ROOT, dir))} -name "*.mkv" -o -name "*.iso" | sort\n`);
+  ssh.stdin.write(`find ${linuxEscape(root)} -name "*.mkv" -o -name "*.iso" | sort\n`);
   ssh.stdin.write('exit\n');
   ssh.stdin.end();
 
-  return new Promise<number>((resolve, _reject) => {
+  return new Promise<Map<string, number>>((resolve, _reject) => {
     let content = '';
 
     ssh.stdout.on('data', data => content += data.toString());
 
     ssh.on('close', () => {
-      resolve(asLines(content).length);
+      const countsByPath: Map<string, number> = new Map();
+      const files = asLines(content.normalize()).map(p => p.substring(root.length));
+
+      for (let path of files) {
+        while (path && path !== '/') {
+          path = paths.dirname(path);
+          countsByPath.set(path, (countsByPath.get(path) || 0) + 1);
+        }
+      }
+
+      resolve(countsByPath);
     });
 
     ssh.stderr.on('error', err => {
       console.error(err);
-      resolve(0);
+      resolve(null);
     });
 
     ssh.on('error', err => {
       console.error(err);
-      resolve(0);
+      resolve(null);
     });
   });
 }
