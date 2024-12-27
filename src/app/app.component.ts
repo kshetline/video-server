@@ -101,6 +101,8 @@ export class AppComponent implements AfterViewInit, OnInit {
     fetch('/assets/tiny_clear.png').finally();
 
     webSocketMessagesEmitter().subscribe(msg => {
+      this.lastStatusTime = processMillis();
+
       switch (msg.type) {
         case 'idUpdate':
           this.updateItem(msg.data, false);

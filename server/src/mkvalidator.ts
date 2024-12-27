@@ -1,8 +1,8 @@
 import { basename } from 'path';
-import { makePlainASCII } from '@tubular/util';
+import { makePlainASCII, processMillis } from '@tubular/util';
 import { ErrorMode, monitorProcess, ProcessInterrupt } from './process-util';
 import { spawn } from 'child_process';
-import { safeLstat, safeUnlink } from './vs-util';
+import { safeLstat, safeUnlink, webSocketSend } from './vs-util';
 import { stopPending } from './admin-router';
 import { VideoWalkOptionsPlus } from './shared-types';
 import { abs } from '@tubular/math';
@@ -27,9 +27,19 @@ export async function mkvValidate(path: string, options: VideoWalkOptionsPlus): 
       linkName = makePlainASCII(basename(path), true);
       await monitorProcess(spawn('ln', ['-s', path, linkName]));
 
+      let lastFeedback = 0;
+      let dots = '';
       const result = (await monitorProcess(spawn('mkvalidator', [linkName]), () => {
         if (stopPending)
           throw new ProcessInterrupt();
+
+        const now = processMillis();
+
+        if (now > lastFeedback + 250) {
+          lastFeedback = now;
+          dots = dots.length < 40 ? dots + '.' : '.';
+          webSocketSend({ type: 'video-progress', data: dots });
+        }
       }, ErrorMode.COLLECT_ERROR_STREAM)).replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n+/g, '\n')
         .replace(/^(\.|\s)+$/gm, '').trim();
 
