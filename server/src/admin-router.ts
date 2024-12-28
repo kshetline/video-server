@@ -479,6 +479,8 @@ interface UpdateOptions {
   generateFallbackAudio?: boolean;
   generateStreaming?: boolean;
   mkvFlags?: boolean;
+  mkvFlagsDryRun?: boolean,
+  mkvFlagsUpdateBackups?: boolean,
   skipExtras?: boolean;
   skipMovies?: boolean;
   skipTV?: boolean;
@@ -520,6 +522,7 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
           earliest: options.earliest,
           getMetadata: options.mkvFlags || options.generateFallbackAudio || options.generateStreaming,
           mkvFlags: options.mkvFlags,
+          mkvFlagsDryRun: options.mkvFlagsDryRun,
           generateFallbackAudio: options.generateFallbackAudio,
           generateStreaming: options.generateStreaming,
           reportProgress: true,
@@ -607,6 +610,8 @@ router.post('/process', async (req, res) => {
       earliest: req.body.earliest,
       fallback: toBoolean(req.body.generateFallbackAudio, null, true),
       mkvFlags: toBoolean(req.body.mkvFlags, null, true),
+      mkvFlagsDryRun: toBoolean(req.body.mkvFlagsDryRun, null, true),
+      mkvFlagsUpdateBackups: toBoolean(req.body.mkvFlagsUpdateBackups, null, true),
       skipExtras: toBoolean(req.body.skipExtras, null, true),
       skipMovies: toBoolean(req.body.skipMovies, null, true),
       skipTv: toBoolean(req.body.skipTV, null, true),

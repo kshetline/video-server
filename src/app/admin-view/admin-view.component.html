@@ -116,7 +116,13 @@
       <p-checkbox [(ngModel)]="options.skipExtras" [binary]="true" label="Skip extras"></p-checkbox>
     </div>
     <p-checkbox [(ngModel)]="options.generateFallbackAudio" [binary]="true" label="Generate fallback audio"></p-checkbox>
-    <p-checkbox [(ngModel)]="options.mkvFlags" [binary]="true" label="Update MKV flags"></p-checkbox>
+    <div class="flag-options">
+      <p-checkbox [(ngModel)]="options.mkvFlags" [binary]="true" label="Update MKV flags"></p-checkbox>
+      <p-checkbox [(ngModel)]="options.mkvFlagsUpdateBackups" [binary]="true" label="Update Backups"
+                  [disabled]="!options.mkvFlags"></p-checkbox>
+      <p-checkbox [(ngModel)]="options.mkvFlagsDryRun" [binary]="true" label="Dry Run"
+                  [disabled]="!options.mkvFlags"></p-checkbox>
+    </div>
     <p-checkbox [(ngModel)]="options.generateStreaming" [binary]="true" label="Generate streaming files"></p-checkbox>
     <p-checkbox [(ngModel)]="options.validate" [binary]="true" label="MKV validate"></p-checkbox>
   </div>

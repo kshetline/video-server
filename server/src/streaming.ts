@@ -221,11 +221,11 @@ async function has2kVersion(path: string): Promise<boolean> {
   if ((await existsAsync(alt1)) || (await existsAsync(alt2)) || (await existsAsync(alt3)))
     return true;
 
-  const $ = /^(.*)\(\d*#4K([^)]*)\)$/.exec(file);
+  const $ = /^(.*)\(\d*#(.*)\b4K\b([^)]*)\)$/.exec(file);
 
   if ($) {
     let files = (await readdir(dir)).sort(comparator);
-    const match = new RegExp('^' + regexEscape($[1]) + '\\(\\d*#2K' + regexEscape($[2]) + '\\)\\.mkv$');
+    const match = new RegExp('^' + regexEscape($[1]) + '\\(\\d*#' + regexEscape($[2]) + '2K' + regexEscape($[3]) + '\\)\\.mkv$');
 
     for (const sib of files) {
       if (sib !== basename(path) && match.test(sib))

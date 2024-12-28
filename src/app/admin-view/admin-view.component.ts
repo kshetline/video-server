@@ -96,6 +96,8 @@ export class AdminViewComponent implements OnInit {
         generateFallbackAudio: pa.fallback,
         generateStreaming: pa.streaming,
         mkvFlags: pa.mkvFlags,
+        mkvFlagsDryRun: pa.mkvFlagsDryRun,
+        mkvFlagsUpdateBackups: pa.mkvFlagsUpdateBackups,
         skipExtras: pa.skipExtras,
         skipMovies: pa.skipMovies,
         skipTv: pa.skipTv,

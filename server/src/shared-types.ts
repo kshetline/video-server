@@ -8,6 +8,8 @@ export interface ProcessArgs {
   earliest: string;
   fallback: boolean;
   mkvFlags: boolean;
+  mkvFlagsDryRun: boolean;
+  mkvFlagsUpdateBackups: boolean;
   skipExtras: boolean;
   skipMovies: boolean;
   skipTv: boolean;
@@ -402,6 +404,8 @@ export interface VideoWalkOptions {
   isStreamingResource?: (file: string) => boolean;
   laxAudioRenaming?: boolean;
   mkvFlags?: boolean;
+  mkvFlagsDryRun?: boolean,
+  mkvFlagsUpdateBackups?: boolean,
   reportProgress?: boolean;
   reportStreamingToCallback?: boolean;
   skipExtras?: boolean;

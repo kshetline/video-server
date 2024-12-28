@@ -120,7 +120,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       const lang = getLanguage(tp);
       const language = code2Name[lang];
       let name = tp.track_name || '';
-      const codecInName = (/\b(AAC|AC-3|DTS-HD MA|DTS-HD HRA|DD EX|E-AC3|MP3|TrueHD)\b/.exec(name) || [])[1];
+      const codecInName = (/\b(AAC|AC-3|DTS-HD MA|DTS-HD HRA|DTS-MA|DTS-HD|DTS|DD EX|E-AC3|MP3|TrueHD)\b/.exec(name) || [])[1];
       const atmosInName = /\bAtmos\b/i.test(name) && /\b[57]\.1\b/.test(name);
       let newName: string;
       const cCount = tp.audio_channels;
@@ -289,7 +289,9 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
         lastPath = path;
 
         if (editArgs.length > 1) {
-          await monitorProcess(spawn('mkvpropedit', editArgs), null, ErrorMode.FAIL_ON_ANY_ERROR);
+          if (!options.mkvFlagsDryRun)
+            await monitorProcess(spawn('mkvpropedit', editArgs), null, ErrorMode.FAIL_ON_ANY_ERROR);
+
           console.log('mkvpropedit ' + editArgs.map(arg => linuxEscape(arg)).join(' '));
 
           if (changedNames.length > 0)
@@ -299,13 +301,15 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
 
       info.wasModified = true;
 
-      if (options.canModify && stats && backups.length) {
+      if (options.canModify && options.mkvFlagsUpdateBackups && stats && backups.length) {
         const newStats = await safeLstat(path);
 
         if (newStats) {
           // Bump modification time to make rsync time match work better.
           newDate = new Date(ceil(max(newStats.mtime.getTime(), newDate.getTime()), 1000));
-          await utimes(path, newDate, newDate);
+
+          if (!options.mkvFlagsDryRun)
+            await utimes(path, newDate, newDate);
 
           for (const dir of backups) {
             const backPath = join(dir, path.substring(options.videoDirectory.length));
@@ -315,7 +319,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
               editArgs[0] = backPath;
               lastPath = backPath;
 
-              if (editArgs.length > 1)
+              if (editArgs.length > 1 && !options.mkvFlagsDryRun)
                 await monitorProcess(spawn('mkvpropedit', editArgs), null, ErrorMode.FAIL_ON_ANY_ERROR);
 
               await utimes(backPath, newDate, newDate);
