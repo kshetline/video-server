@@ -715,13 +715,13 @@ function fixVideoFlagsAndEncoding(items: LibraryItem[]): void {
   }
 }
 
-function findMatchingUri(items: LibraryItem[], uri: string, parent?: LibraryItem): LibraryItem {
+function findMatchingUriAux(items: LibraryItem[], uri: string, parent?: LibraryItem, lax = false): LibraryItem {
   for (const item of items) {
     if (item.isAlias)
       continue;
     else if (parent && item.uri && paths.dirname(item.uri) === uri)
       return parent;
-    else if (item.data?.length > 0 && item.collectionId !== -2) {
+    else if (item.data?.length > 0 && (lax || item.collectionId !== -2)) {
       let match = findMatchingUri(item.data, uri, item);
 
       if (match) {
@@ -740,6 +740,10 @@ function findMatchingUri(items: LibraryItem[], uri: string, parent?: LibraryItem
   }
 
   return null;
+}
+
+function findMatchingUri(items: LibraryItem[], uri: string, parent?: LibraryItem): LibraryItem {
+  return findMatchingUriAux(items, uri, parent) ?? findMatchingUriAux(items, uri, parent, true);
 }
 
 function matchAliases(aliases: Alias[], changeInfo = false): LibraryItem[] {
