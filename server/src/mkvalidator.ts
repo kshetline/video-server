@@ -3,11 +3,11 @@ import { makePlainASCII, processMillis } from '@tubular/util';
 import { ErrorMode, monitorProcess, ProcessInterrupt } from './process-util';
 import { spawn } from 'child_process';
 import { safeLstat, safeUnlink, webSocketSend } from './vs-util';
-import { stopPending } from './admin-router';
+import { stopPending, VideoWalkInfo } from './admin-router';
 import { VideoWalkOptionsPlus } from './shared-types';
 import { abs } from '@tubular/math';
 
-export async function mkvValidate(path: string, options: VideoWalkOptionsPlus): Promise<boolean> {
+export async function mkvValidate(path: string, options: VideoWalkOptionsPlus, info: VideoWalkInfo): Promise<boolean> {
   let linkName = '';
   let error: string = null;
   const db = options.db;
@@ -50,8 +50,9 @@ export async function mkvValidate(path: string, options: VideoWalkOptionsPlus): 
         const warnCount = (result.match(/^WRN[0-9A-F]{3}:/gm) || []).length;
         const $0C2Count = (result.match(/^WRN0C2:/gm) || []).length;
         const $861Count = (result.match(/^WRN861:/gm) || []).length;
+        const threeD = info.video && info.video[0]?.properties?.stereo_mode;
 
-        if (errCount > 0 || $861Count > 0 || $0C2Count > 25 || warnCount - $0C2Count > 5) {
+        if (errCount > 0 || $861Count > 0 || ($0C2Count > 25 && !threeD) || warnCount - $0C2Count > 5) {
           console.log(result);
           error = result;
         }

@@ -1,14 +1,14 @@
 import { Request, Response, Router } from 'express';
 import { existsAsync, getRemoteFileCounts, isAdmin, jsonOrJsonp, noCache, safeLstat, webSocketSend } from './vs-util';
 import { mappedDurations, updateLibrary } from './library-router';
-import { asLines, clone, compareCaseInsensitive, forEach, isFunction, isNumber, isObject, isString, last, toBoolean, toInt } from '@tubular/util';
+import { asLines, clone, forEach, isFunction, isNumber, isObject, isString, last, toBoolean, toInt } from '@tubular/util';
 import { readdir } from 'fs/promises';
 import { getDb, getValue, setValue } from './settings';
 import { join as pathJoin, sep } from 'path';
 import { ErrorMode, monitorProcess } from './process-util';
 import { spawn } from 'child_process';
 import { AudioTrack, MediaWrapper, MKVInfo, ProcessArgs, SubtitlesTrack, VideoStats, VideoTrack, VideoWalkOptions, VideoWalkOptionsPlus } from './shared-types';
-import { comparator, sorter, toStreamPath } from './shared-utils';
+import { comparator, compareCaseInsensitiveIntl, sorter, toStreamPath } from './shared-utils';
 import { examineAndUpdateMkvFlags } from './mkv-flags';
 import { sendStatus } from './app';
 import { createFallbackAudio, createStreaming, killStreamingProcesses } from './streaming';
@@ -176,12 +176,12 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
       // Do nothing
     }
     else if (options.walkStartA?.length > depth &&
-             compareCaseInsensitive(file, options.walkStartA[depth]) < 0) {
+             compareCaseInsensitiveIntl(file, options.walkStartA[depth]) < 0) {
       if (isDir)
         await skipOverFileCountForDirectories(path, options);
     }
     else if (options.walkStopA?.length > depth &&
-             compareCaseInsensitive(file, options.walkStopA[depth]) > 0 &&
+             compareCaseInsensitiveIntl(file, options.walkStopA[depth]) > 0 &&
              !file.toLowerCase().startsWith(options.walkStopA[depth])) {
       if (depth === 0)
         break;
@@ -531,7 +531,7 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
           validate: options.validate
         },
           async (path: string, _depth: number, options: VideoWalkOptionsPlus, info: VideoWalkInfo): Promise<void> => {
-            const isMkv = /\.mkv$/i.test(path);
+            const isMkv = !!/\.mkv$/i.test(path);
 
             if (info.skip)
               return;
@@ -549,7 +549,7 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
               await createStreaming(path, options, info);
 
             if (options.validate && isMkv)
-              await mkvValidate(path, options);
+              await mkvValidate(path, options, info);
           });
 
         if ((options.generateStreaming || options.checkStreaming) && !options.walkStart && !options.walkStart) {

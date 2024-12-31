@@ -211,34 +211,36 @@ async function checkAndFixBadDuration(path: string, progress: Progress | VideoPr
   }
 }
 
-async function has2kVersion(path: string): Promise<boolean> {
+async function has2k2dVersion(path: string, threeD: boolean): Promise<boolean> {
   const dir = dirname(path);
-  const file = basename(path, '.mkv').replace(/\s*\(4K\)$/, '').trim();
-  const alt1 = join(dir, file + ' (2K).mkv');
-  const alt2 = join(dir, '2K', file + '.mkv');
-  const alt3 = join(dir, '2K', file + ' (2K).mkv');
+  const altType = threeD ? '2D' : '2K';
+  const file = basename(path, '.mkv').replace(/\s*\((3D|4K)\)$/, '').trim();
+  const altFile = `${file} (${altType}).mkv`;
+  const alt1 = join(dir, altFile);
+  const alt2 = join(dir, altType, file + '.mkv');
+  const alt3 = join(dir, altType, altFile);
 
   if ((await existsAsync(alt1)) || (await existsAsync(alt2)) || (await existsAsync(alt3)))
     return true;
 
-  const $ = /^(.*)\(\d*#(.*)\b4K\b([^)]*)\)$/.exec(file);
+  const $ = /^(.*)\(\d*#(.*)\b(3D|4K)\b([^)]*)\)$/.exec(file);
 
   if ($) {
     let files = (await readdir(dir)).sort(comparator);
-    const match = new RegExp('^' + regexEscape($[1]) + '\\(\\d*#' + regexEscape($[2]) + '2K' + regexEscape($[3]) + '\\)\\.mkv$');
+    const matcher = new RegExp('^' + regexEscape($[1]) + '\\(\\d*#' + regexEscape($[2]) + altType + regexEscape($[4]) + '\\)\\.mkv$');
 
     for (const sib of files) {
-      if (sib !== basename(path) && match.test(sib))
+      if (sib !== basename(path) && matcher.test(sib))
         return true;
     }
 
-    const dir2k = join(dir, '2K');
+    const dirAlt = join(dir, altType);
 
-    if (await existsAsync(dir2k)) {
-      files = (await readdir(dir2k)).sort(comparator);
+    if (await existsAsync(dirAlt)) {
+      files = (await readdir(dirAlt)).sort(comparator);
 
       for (const sib of files) {
-        if (match.test(sib))
+        if (matcher.test(sib))
           return true;
       }
     }
@@ -385,8 +387,10 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
   const [w, h] = (video?.properties.pixel_dimensions || '1x1').split('x').map(d => toInt(d));
   const [wd, hd] = (video?.properties.display_dimensions || '1x1').split('x').map(d => toInt(d));
   const aspect = wd / hd;
+  const threeD = !!video?.properties.stereo_mode;
+  const fourK = h > 1100 || w > 1940;
 
-  if ((h > 1100 && (await has2kVersion(path)) && !path.includes('(extended edition) (4K)')) || video?.properties.stereo_mode)
+  if (((threeD || fourK) && (await has2k2dVersion(path, threeD)) && !path.includes('(extended edition) (4K)')))
     return false;
 
   const hasDesktopVideo = await existsAsync(mpdPath) || await existsAsync(avPath);

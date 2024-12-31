@@ -29,7 +29,7 @@ export const router = Router();
 
 const SEASON_EPISODE = /\bS(\d{1,2})E(\d{1,3})\b/i;
 const SPECIAL_EPISODE = /-M(\d\d?)-/;
-const DAY = 86_400_000;
+const WEEK = 86_400_000 * 7;
 
 const DIRECTORS = /\(.*\bDirector['’]s\b/i;
 const FINAL = /\(.*\bFinal\b/i;
@@ -1165,13 +1165,13 @@ export function initLibrary(): void {
 
   const age = stats ? +Date.now() - +stats.mtime : 0;
 
-  if (!stats || age > DAY)
+  if (!stats || age > WEEK)
     updateLibrary().finally();
   else
     unref(pendingUpdate = setTimeout(() => {
       pendingUpdate = undefined;
       updateLibrary().finally();
-    }, DAY - age));
+    }, WEEK - age));
 
   monitorPlayer();
 }

@@ -305,6 +305,10 @@ function sortForm(s: string): string {
 
 export const comparator = new Intl.Collator('en', { caseFirst: 'upper' }).compare;
 
+export function compareCaseInsensitiveIntl(a: string, b: string): number {
+  return comparator(a.toLocaleLowerCase('en'), b.toLocaleLowerCase('en'));
+}
+
 export function sorter(a: string, b: string): number {
   return comparator(sortForm(a), sortForm(b));
 }
