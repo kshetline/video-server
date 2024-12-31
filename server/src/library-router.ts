@@ -347,7 +347,7 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
 
       for (let i = 0; i < item.data.length; ++i) {
         if (isTvShow(item))
-          uri = paths.dirname(item.data[i]?.data[0]?.data[0]?.uri);
+          uri = paths.dirname(item.data[i]?.data[0]?.data[0]?.uri); // TODO: Undefined value error thrown here?
         else if (isTvSeason(item))
           uri = item.data[i]?.data[0]?.uri;
         else

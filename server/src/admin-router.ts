@@ -629,6 +629,8 @@ router.post('/process', async (req, res) => {
       generateFallbackAudio: processArgs.fallback,
       generateStreaming: processArgs.streaming,
       mkvFlags: processArgs.mkvFlags,
+      mkvFlagsDryRun: processArgs.mkvFlagsDryRun,
+      mkvFlagsUpdateBackups: processArgs.mkvFlagsUpdateBackups,
       skipExtras: toBoolean(req.body.skipExtras, null, true),
       skipMovies: toBoolean(req.body.skipMovies, null, true),
       skipTV: toBoolean(req.body.skipTV, null, true),
