@@ -20,13 +20,14 @@ async function getImage(imageType: string, apiPath: string, req: Request, res: R
   const uri = (req.query.uri as string)?.replace(/^\//, '');
   const id = req.query.id;
   const profile = (imageType === 'profile');
+  const forThumbnail = !!(req.query.w && req.query.h);
   let id2 = req.query.id2;
   let fullSize: Buffer;
   let imagePath: string;
   let newFile = false;
   let profileName: string;
   let profileExt: string;
-  let isJson = false;
+  let isErrorMessage = false;
 
   function sendImageError(buf: Buffer): void {
     const msg = JSON.parse(buf.toString());
@@ -64,33 +65,36 @@ async function getImage(imageType: string, apiPath: string, req: Request, res: R
         fullSize = await requestBinary(url);
       }
       catch {
-        fullSize = TRANSPARENT_PIXEL;
+        fullSize = Buffer.from(JSON.stringify({ status: 500, msg: 'Zidoo image request failed' }));
       }
 
-      isJson = (fullSize.length < 200 && isValidJson(fullSize.toString()));
+      isErrorMessage = (fullSize.length < 200 && isValidJson(fullSize.toString()));
 
-      if (isJson) {
+      if (isErrorMessage) {
         if (id2) {
           newFile = true;
           await writeFile(imagePath, '', 'binary');
           id2 = undefined;
-          continue;
         }
-        else if (imageType === 'backdrop')
-          fullSize = TRANSPARENT_PIXEL;
-        else {
+        else if (imageType === 'backdrop') {
+          res.setHeader('Content-Type', 'image/png');
+          res.send(TRANSPARENT_PIXEL);
+          return;
+        }
+        else if (!forThumbnail) {
           sendImageError(fullSize);
           return;
         }
       }
-
-      newFile = true;
-      await writeFile(imagePath, fullSize, 'binary');
-      break;
+      else {
+        newFile = true;
+        await writeFile(imagePath, fullSize, 'binary');
+        break;
+      }
     }
   }
 
-  if (!req.query.w || !req.query.h) {
+  if (!forThumbnail) {
     if (!newFile)
       touch(imagePath, false).finally(); // Track recency of cache usage
 
@@ -105,12 +109,21 @@ async function getImage(imageType: string, apiPath: string, req: Request, res: R
       paths.join(thumbnailDir, imageType, `${req.query.id}-${req.query.cs}-${req.query.w}-${req.query.h}.jpg`);
 
   if (!await existsAsync(thumbnailPath)) {
-    if (isJson)
+    if (isErrorMessage)
       sendImageError(fullSize);
-    else
-      Jimp.read((fullSize || imagePath) as any).then(image =>
+    else {
+      try {
+        const image = await Jimp.read((fullSize || imagePath) as any);
+
         image.resize(toInt(req.query.w), toInt(req.query.h)).quality(80).write(thumbnailPath,
-          () => res.sendFile(thumbnailPath)));
+            () => res.sendFile(thumbnailPath));
+      }
+      catch (e) {
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'text/plain');
+        res.send(e.message);
+      }
+    }
   }
   else {
     touch(thumbnailPath, false).finally(); // Track recency of cache usage
