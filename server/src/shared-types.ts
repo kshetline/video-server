@@ -414,9 +414,9 @@ export interface VideoWalkOptions {
   updateExtraMetadata?: boolean;
   validate?: boolean;
   walkStart?: string;
-  walkStartA?: string[];
+  walkStartArray?: string[];
   walkStop?: string;
-  walkStopA?: string[];
+  walkStopArray?: string[];
 }
 
 export interface VideoWalkOptionsPlus extends VideoWalkOptions {

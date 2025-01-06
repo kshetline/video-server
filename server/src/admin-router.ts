@@ -116,10 +116,10 @@ export async function walkVideoDirectory(
     options.checkStreaming = getValue('videoDirectory') + '\t' + getValue('streamingDirectory');
 
   if (options.walkStart)
-    options.walkStartA = options.walkStart.split('/').map(s => s.toLowerCase());
+    options.walkStartArray = options.walkStart.split('/').map(s => s.toLowerCase());
 
   if (options.walkStop)
-    options.walkStopA = options.walkStop.split('/').map(s => s.toLowerCase());
+    options.walkStopArray = options.walkStop.split('/').map(s => s.toLowerCase());
 
   return await walkVideoDirectoryAux(dir, 0, options, callback);
 }
@@ -166,6 +166,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
     const path = pathJoin(dir, file);
     const stat = await safeLstat(path);
     const isDir = stat?.isDirectory();
+    let comp = -1;
 
     if (!isDir && options.reportProgress && /\.(iso|mkv)$/i.test(file)) {
       updateProgress = ++options.fileCount / options.totalFileCount * 100;
@@ -175,260 +176,266 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
     if (!stat || file.startsWith('.') || file.endsWith('~') || /~\.mkv$/i.test(file) || stat.isSymbolicLink()) {
       // Do nothing
     }
-    else if (options.walkStartA?.length > depth &&
-             compareCaseInsensitiveIntl(file, options.walkStartA[depth]) < 0) {
+    else if (options.walkStartArray?.length > depth &&
+             compareCaseInsensitiveIntl(file, options.walkStartArray[depth]) < 0) {
       if (isDir)
         await skipOverFileCountForDirectories(path, options);
     }
-    else if (options.walkStopA?.length > depth &&
-             compareCaseInsensitiveIntl(file, options.walkStopA[depth]) > 0 &&
-             !file.toLowerCase().startsWith(options.walkStopA[depth])) {
-      if (depth === 0)
-        break;
-
-      options.walkStartA = options.walkStartA.slice(0, depth);
-
-      if (isDir)
-        await skipOverFileCountForDirectories(path, options);
-    }
-    else if (stat.isDirectory()) {
-      if (dontRecurse || options.directoryExclude && options.directoryExclude(path, file, depth))
-        continue;
-
-      const consolidateStats = (subStats: VideoStats): void => forEach(stats as any, (key, value) => {
-        const counterpart = (subStats as any)[key];
-
-        if (isNumber(value))
-          (stats as any)[key] += (subStats as any)[key];
-        else if (value instanceof Set)
-          (counterpart as Set<string>).forEach(s => (value as Set<string>).add(s));
-        else if (value instanceof Map)
-          (counterpart as Map<string, number>).forEach((value2, key2) =>
-            value.set(key2, max(value2 as number, value.get(key2) as number || 0))
-          );
-      });
-      const subStats = await walkVideoDirectoryAux(path, depth + 1, options, callback);
-
-      if (stopPending)
-        break;
-
-      consolidateStats(subStats);
-
-      if (isString(options.checkStreaming)) {
-        const baseDirs = options.checkStreaming.split('\t');
-        const streamingDir = pathJoin(baseDirs[1], path.substring(baseDirs[0].length));
-
-        if (await existsAsync(streamingDir)) {
-          const subStats = await walkVideoDirectoryAux(streamingDir, depth + 1, options, callback, true);
-
-          consolidateStats(subStats);
-        }
-      }
-    }
-    else if (/\.tmp\./i.test(file)) {
-      // Do nothing
-    }
-    else if (options.isStreamingResource && options.isStreamingResource(file)) {
-      stats.streamingFileBytes += stat.size;
-      ++stats.streamingFileCount;
-
-      if (options.reportStreamingToCallback)
-        await callback(path, depth);
-    }
-    else if (/\.(mkv|iso)$/i.test(file)) {
-      ++stats.videoCount;
-
-      const info: VideoWalkInfo = {};
-      let iso = false;
-
-      if (/\.iso$/i.test(file)) {
-        iso = true;
-
-        try {
-          const content = asLines((await monitorProcess(spawn('7z', ['l', '-slt', path]))));
-
-          if (content.find(entry => entry === 'Path = VIDEO_TS'))
-            ++stats.dvdIsoCount;
-          else
-            ++stats.isoCount;
-        }
-        catch {
-          ++stats.isoCount;
-        }
-      }
-
-      if (/[\\/](-Extras-|.*Bonus Disc.*)[\\/]/i.test(path)) {
-        info.isExtra = true;
-        stats.extrasBytes += stat.size;
-        ++stats.extrasCount;
-      }
-      else if (/§/.test(path) && !/[\\/]Movies[\\/]/.test(path) || /- S\d\dE\d\d -/.test(file)) {
-        info.isTV = true;
-        stats.tvBytes += stat.size;
-        ++stats.tvEpisodesRaw;
-      }
-      else {
-        info.isMovie = true;
-        stats.movieBytes += stat.size;
-        ++stats.movieCountRaw;
-      }
-
-      if (info.isExtra && options.skipExtras || info.isMovie && options.skipMovies || info.isTV && options.skipTV) {
-        ++stats.skippedForType;
-        info.skip = true;
-      }
-      else if (options.earliest && +stat.mtime < +options.earliest) {
-        ++stats.skippedForAge;
-        info.skip = true;
-      }
-
-      try {
-        if (!iso && options.getMetadata && !info.skip) {
-          const mkvJson = (await monitorProcess(spawn('mkvmerge', ['-J', path])))
-          // uid values exceed available numeric precision. Turn into strings instead.
-            .replace(/("uid":\s+)(\d+)/g, '$1"$2"');
-
-          info.mkvInfo = JSON.parse(mkvJson) as MKVInfo;
-          info.video = info.mkvInfo.tracks.filter(t => t.type === 'video') as VideoTrack[];
-          info.audio = info.mkvInfo.tracks.filter(t => t.type === 'audio') as AudioTrack[];
-          info.subtitles = info.mkvInfo.tracks.filter(t => t.type === 'subtitles') as SubtitlesTrack[];
-
-          const mediaJson = await monitorProcess(spawn('mediainfo', [path, '--Output=JSON']));
-          const mediaTracks = (JSON.parse(mediaJson || '{}') as MediaWrapper).media?.track || [];
-          const typeIndices = {} as Record<string, number>;
-
-          for (const track of mediaTracks) {
-            const type = track['@type'].toLowerCase();
-            const index = (typeIndices[type] ?? -1) + 1;
-            const mkvSet = (type === 'video' ? info.video : type === 'audio' ? info.audio : []);
-
-            typeIndices[type] = index;
-
-            if (mkvSet[index]?.properties)
-              mkvSet[index].properties.media = track;
-          }
-
-          const duration = info.mkvInfo.container.properties.duration / 1E9;
-          const step = min(600, duration / 5);
-          let [w, h] = (info.video[0]?.properties?.pixel_dimensions || '1x1').split('x').map(d => toInt(d));
-
-          if (w > 1880 || h > 1000) {
-            const db = (options as VideoWalkOptionsPlus).db;
-            const key = path.substring(options.videoDirectory.length).normalize();
-            const row = await db.get<any>('SELECT * FROM aspects WHERE key = ?', key);
-
-            if (row && row.mdate === stat.mtimeMs) {
-              info.video[0].properties.aspect = row.aspect;
-            }
-            else {
-              [w, h] = (info.video[0]?.properties?.display_dimensions || '1x1').split('x').map(d => toInt(d));
-              let newAspect = w / h;
-              let sizeInfo = '';
-
-              w = h = 0;
-
-              if (abs(newAspect - 1.78) < 0.03) {
-                for (let i = 1; i <= 4; ++i) {
-                  sizeInfo += (await monitorProcess(spawn('ffmpeg',
-                    ['-t', '5', '-ss', (step * i).toString(), '-i', path, '-vf', 'cropdetect,metadata=mode=print',
-                     '-f', 'null', '-']), null, ErrorMode.COLLECT_ERROR_STREAM));
-                }
-
-                for (const line of asLines(sizeInfo)) {
-                  const $ = /\bcropdetect\.([wh])=(\d+)/.exec(line);
-
-                  if ($ && $[1] === 'w')
-                    w = max(w, toInt($[2]));
-                  else if ($ && $[1] === 'h')
-                    h = max(h, toInt($[2]));
-                }
-
-                if (w === 0 || h === 0)
-                  newAspect = null;
-                else
-                  newAspect = w / h;
-              }
-              else
-                newAspect = null;
-
-              await db.run('INSERT OR REPLACE INTO aspects (key, mdate, aspect) VALUES (?, ?, ?)', key, stat.mtimeMs, newAspect);
-            }
-          }
-        }
-
-        const baseTitle = file.replace(/( ~)?\.mkv$/i, '');
-        let title = baseTitle;
-
-        if (info.isMovie || info.isTV) {
-          title = baseTitle.replace(/\s*\(.*?[a-z].*?\)/gi, '').replace(/^\d{1,2} - /, '').replace(/ - /g, ': ')
-            .replace(/：/g, ':').replace(/？/g, '?').trim().replace(/(.+), (A|An|The)$/, '$2 $1');
-
-          if (info.isMovie) {
-            title = title.replace(/-S\d\dE\d\d-|-M\d-/, ': ');
-            (stats.movieTitles as Set<string>).add(title);
-          }
-          else {
-            (stats.tvEpisodeTitles as Set<string>).add(title);
-
-            let $: RegExpExecArray;
-            let seriesTitle = last(path.replace(/^\w:/, '').split(/[/\\]/).filter(s => s.includes('§')).map(s => s.trim()
-              .replace(/^\d+\s*-\s*/, '')
-              .replace(/§.*$/, '')
-              .replace(/\s+-\s+\d\d\s+-\s+/, ': ')
-              .replace(/\s+-\s+/, ': ')
-              .replace(/\s*\(.*?[a-z].*?\)/gi, '').trim()
-              .replace(/(.+), (A|An|The)$/, '$2 $1')));
-
-            if (!seriesTitle && ($ = /(.*?): S\d\dE\d\d:/.exec(title)))
-              seriesTitle = $[1];
-
-            if (seriesTitle)
-              (stats.tvShowTitles as Set<string>).add(seriesTitle);
-          }
-        }
-
-        title = title.normalize();
-
-        const uri = ('/' + path.substring(options.videoDirectory.length)).replace(/\\/g, '/').replace(/^\/\//, '/');
-
-        if (mappedDurations.has(uri)) {
-          const lastDuration = stats.durations.get(title) || 0;
-
-          stats.durations.set(title, max(lastDuration, mappedDurations.get(uri)));
-        }
-
-        if (!iso && options.checkStreaming && !dontRecurse && !/[-_(](4K|3D)\)/.test(baseTitle)) {
-          title = toStreamPath(baseTitle);
-
-          const sDir = pathJoin(options.streamingDirectory, dir.substring(options.videoDirectory.length));
-          const stream1 = pathJoin(sDir, title + '.mpd');
-          const stream2 = pathJoin(sDir, title + '.av.webm');
-          const stream3 = pathJoin(sDir, '2K', title + '.mpd');
-          const stream4 = pathJoin(sDir, '2K', title + '.av.webm');
-
-          info.title = title = title.replace(/\s*\((\d*)#([-_.a-z0-9]+)\)/i, '');
-
-          if (!await existsAsync(stream1) && !await existsAsync(stream2) && !await existsAsync(stream3) &&
-              !await existsAsync(stream4)) {
-            (stats.unstreamedTitles as Set<string>).add(title);
-          }
-        }
-
-        info.streamingDirectory = options.streamingDirectory;
-        info.videoDirectory = options.videoDirectory;
-        await callback(path, depth, options, info);
-
-        if (info.createdStreaming)
-          (stats.unstreamedTitles as Set<string>).delete(info.title);
-      }
-      catch (e) {
-        if (e !== null)
-          console.error('Error while processing %s:', path, e);
-      }
+    else if (!options.walkStartArray && options.walkStopArray?.length > depth &&
+             (depth === 0 || options.walkStopArray[depth - 1] === null) &&
+             (options.walkStopArray[depth] === null ||
+               ((comp = compareCaseInsensitiveIntl(file, options.walkStopArray[depth])) > 0 &&
+                 !file.toLowerCase().startsWith(options.walkStopArray[depth])))) {
+      options.walkStopArray[depth] = null;
+      break;
     }
     else {
-      stats.miscFileBytes += stat.size;
-      ++stats.miscFileCount;
+      if (comp >= 0)
+        options.walkStopArray[depth] = null;
+
+      if (isDir) {
+        if (dontRecurse || options.directoryExclude && options.directoryExclude(path, file, depth))
+          continue;
+
+        const consolidateStats = (subStats: VideoStats): void => forEach(stats as any, (key, value) => {
+          const counterpart = (subStats as any)[key];
+
+          if (isNumber(value))
+            (stats as any)[key] += (subStats as any)[key];
+          else if (value instanceof Set)
+            (counterpart as Set<string>).forEach(s => (value as Set<string>).add(s));
+          else if (value instanceof Map)
+            (counterpart as Map<string, number>).forEach((value2, key2) =>
+              value.set(key2, max(value2 as number, value.get(key2) as number || 0))
+            );
+        });
+        const subStats = await walkVideoDirectoryAux(path, depth + 1, options, callback);
+
+        if (stopPending)
+          break;
+
+        consolidateStats(subStats);
+
+        if (isString(options.checkStreaming)) {
+          const baseDirs = options.checkStreaming.split('\t');
+          const streamingDir = pathJoin(baseDirs[1], path.substring(baseDirs[0].length));
+
+          if (await existsAsync(streamingDir)) {
+            const subStats = await walkVideoDirectoryAux(streamingDir, depth + 1, options, callback, true);
+
+            consolidateStats(subStats);
+          }
+        }
+      }
+      else {
+        options.walkStartArray = undefined;
+
+        if (/\.tmp\./i.test(file)) {
+          // Do nothing
+        }
+        else if (options.isStreamingResource && options.isStreamingResource(file)) {
+          stats.streamingFileBytes += stat.size;
+          ++stats.streamingFileCount;
+
+          if (options.reportStreamingToCallback)
+            await callback(path, depth);
+        }
+        else if (/\.(mkv|iso)$/i.test(file)) {
+          ++stats.videoCount;
+
+          const info: VideoWalkInfo = {};
+          let iso = false;
+
+          if (/\.iso$/i.test(file)) {
+            iso = true;
+
+            try {
+              const content = asLines((await monitorProcess(spawn('7z', ['l', '-slt', path]))));
+
+              if (content.find(entry => entry === 'Path = VIDEO_TS'))
+                ++stats.dvdIsoCount;
+              else
+                ++stats.isoCount;
+            }
+            catch {
+              ++stats.isoCount;
+            }
+          }
+
+          if (/[\\/](-Extras-|.*Bonus Disc.*)[\\/]/i.test(path)) {
+            info.isExtra = true;
+            stats.extrasBytes += stat.size;
+            ++stats.extrasCount;
+          }
+          else if (/§/.test(path) && !/[\\/]Movies[\\/]/.test(path) || /- S\d\dE\d\d -/.test(file)) {
+            info.isTV = true;
+            stats.tvBytes += stat.size;
+            ++stats.tvEpisodesRaw;
+          }
+          else {
+            info.isMovie = true;
+            stats.movieBytes += stat.size;
+            ++stats.movieCountRaw;
+          }
+
+          if (info.isExtra && options.skipExtras || info.isMovie && options.skipMovies || info.isTV && options.skipTV) {
+            ++stats.skippedForType;
+            info.skip = true;
+          }
+          else if (options.earliest && +stat.mtime < +options.earliest) {
+            ++stats.skippedForAge;
+            info.skip = true;
+          }
+
+          try {
+            if (!iso && options.getMetadata && !info.skip) {
+              const mkvJson = (await monitorProcess(spawn('mkvmerge', ['-J', path])))
+              // uid values exceed available numeric precision. Turn into strings instead.
+                .replace(/("uid":\s+)(\d+)/g, '$1"$2"');
+
+              info.mkvInfo = JSON.parse(mkvJson) as MKVInfo;
+              info.video = info.mkvInfo.tracks.filter(t => t.type === 'video') as VideoTrack[];
+              info.audio = info.mkvInfo.tracks.filter(t => t.type === 'audio') as AudioTrack[];
+              info.subtitles = info.mkvInfo.tracks.filter(t => t.type === 'subtitles') as SubtitlesTrack[];
+
+              const mediaJson = await monitorProcess(spawn('mediainfo', [path, '--Output=JSON']));
+              const mediaTracks = (JSON.parse(mediaJson || '{}') as MediaWrapper).media?.track || [];
+              const typeIndices = {} as Record<string, number>;
+
+              for (const track of mediaTracks) {
+                const type = track['@type'].toLowerCase();
+                const index = (typeIndices[type] ?? -1) + 1;
+                const mkvSet = (type === 'video' ? info.video : type === 'audio' ? info.audio : []);
+
+                typeIndices[type] = index;
+
+                if (mkvSet[index]?.properties)
+                  mkvSet[index].properties.media = track;
+              }
+
+              const duration = info.mkvInfo.container.properties.duration / 1E9;
+              const step = min(600, duration / 5);
+              let [w, h] = (info.video[0]?.properties?.pixel_dimensions || '1x1').split('x').map(d => toInt(d));
+
+              if (w > 1880 || h > 1000) {
+                const db = (options as VideoWalkOptionsPlus).db;
+                const key = path.substring(options.videoDirectory.length).normalize();
+                const row = await db.get<any>('SELECT * FROM aspects WHERE key = ?', key);
+
+                if (row && row.mdate === stat.mtimeMs) {
+                  info.video[0].properties.aspect = row.aspect;
+                }
+                else {
+                  [w, h] = (info.video[0]?.properties?.display_dimensions || '1x1').split('x').map(d => toInt(d));
+                  let newAspect = w / h;
+                  let sizeInfo = '';
+
+                  w = h = 0;
+
+                  if (abs(newAspect - 1.78) < 0.03) {
+                    for (let i = 1; i <= 4; ++i) {
+                      sizeInfo += (await monitorProcess(spawn('ffmpeg',
+                        ['-t', '5', '-ss', (step * i).toString(), '-i', path, '-vf', 'cropdetect,metadata=mode=print',
+                         '-f', 'null', '-']), null, ErrorMode.COLLECT_ERROR_STREAM));
+                    }
+
+                    for (const line of asLines(sizeInfo)) {
+                      const $ = /\bcropdetect\.([wh])=(\d+)/.exec(line);
+
+                      if ($ && $[1] === 'w')
+                        w = max(w, toInt($[2]));
+                      else if ($ && $[1] === 'h')
+                        h = max(h, toInt($[2]));
+                    }
+
+                    if (w === 0 || h === 0)
+                      newAspect = null;
+                    else
+                      newAspect = w / h;
+                  }
+                  else
+                    newAspect = null;
+
+                  await db.run('INSERT OR REPLACE INTO aspects (key, mdate, aspect) VALUES (?, ?, ?)', key, stat.mtimeMs, newAspect);
+                }
+              }
+            }
+
+            const baseTitle = file.replace(/( ~)?\.mkv$/i, '');
+            let title = baseTitle;
+
+            if (info.isMovie || info.isTV) {
+              title = baseTitle.replace(/\s*\(.*?[a-z].*?\)/gi, '').replace(/^\d{1,2} - /, '').replace(/ - /g, ': ')
+                .replace(/：/g, ':').replace(/？/g, '?').trim().replace(/(.+), (A|An|The)$/, '$2 $1');
+
+              if (info.isMovie) {
+                title = title.replace(/-S\d\dE\d\d-|-M\d-/, ': ');
+                (stats.movieTitles as Set<string>).add(title);
+              }
+              else {
+                (stats.tvEpisodeTitles as Set<string>).add(title);
+
+                let $: RegExpExecArray;
+                let seriesTitle = last(path.replace(/^\w:/, '').split(/[/\\]/).filter(s => s.includes('§')).map(s => s.trim()
+                  .replace(/^\d+\s*-\s*/, '')
+                  .replace(/§.*$/, '')
+                  .replace(/\s+-\s+\d\d\s+-\s+/, ': ')
+                  .replace(/\s+-\s+/, ': ')
+                  .replace(/\s*\(.*?[a-z].*?\)/gi, '').trim()
+                  .replace(/(.+), (A|An|The)$/, '$2 $1')));
+
+                if (!seriesTitle && ($ = /(.*?): S\d\dE\d\d:/.exec(title)))
+                  seriesTitle = $[1];
+
+                if (seriesTitle)
+                  (stats.tvShowTitles as Set<string>).add(seriesTitle);
+              }
+            }
+
+            title = title.normalize();
+
+            const uri = ('/' + path.substring(options.videoDirectory.length)).replace(/\\/g, '/').replace(/^\/\//, '/');
+
+            if (mappedDurations.has(uri)) {
+              const lastDuration = stats.durations.get(title) || 0;
+
+              stats.durations.set(title, max(lastDuration, mappedDurations.get(uri)));
+            }
+
+            if (!iso && options.checkStreaming && !dontRecurse && !/[-_(](4K|3D)\)/.test(baseTitle)) {
+              title = toStreamPath(baseTitle);
+
+              const sDir = pathJoin(options.streamingDirectory, dir.substring(options.videoDirectory.length));
+              const stream1 = pathJoin(sDir, title + '.mpd');
+              const stream2 = pathJoin(sDir, title + '.av.webm');
+              const stream3 = pathJoin(sDir, '2K', title + '.mpd');
+              const stream4 = pathJoin(sDir, '2K', title + '.av.webm');
+
+              info.title = title = title.replace(/\s*\((\d*)#([-_.a-z0-9]+)\)/i, '');
+
+              if (!await existsAsync(stream1) && !await existsAsync(stream2) && !await existsAsync(stream3) &&
+                  !await existsAsync(stream4)) {
+                (stats.unstreamedTitles as Set<string>).add(title);
+              }
+            }
+
+            info.streamingDirectory = options.streamingDirectory;
+            info.videoDirectory = options.videoDirectory;
+            await callback(path, depth, options, info);
+
+            if (info.createdStreaming)
+              (stats.unstreamedTitles as Set<string>).delete(info.title);
+          }
+          catch (e) {
+            if (e !== null)
+              console.error('Error while processing %s:', path, e);
+          }
+        }
+        else {
+          stats.miscFileBytes += stat.size;
+          ++stats.miscFileCount;
+        }
+      }
     }
   }
 
