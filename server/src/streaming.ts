@@ -425,7 +425,8 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
   const audioIndex = audio ? info.audio.findIndex(a => a === audio) : -1;
   let audioPath: string;
 
-  if (path.includes('Star Trek - 01 - The Original Series')) // Surround tracks from these videos mix down terribly to stereo for some odd reason.
+  // Surround tracks from these videos mix down terribly to stereo for some odd reason.
+  if (/Star Trek\b.*\bThe Original Series/i.test(path))
     audio = audios.find(a => a.codec === 'AAC' && a.properties.audio_channels <= 2) ||
       audios.find(a => a.properties.audio_channels <= 2) || audio;
 
