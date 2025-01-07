@@ -89,3 +89,34 @@
 .show-busy {
   cursor: wait;
 }
+
+.info-icon {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  border-radius: 50%;
+  background-color: #00AAFF;
+  color: white;
+  height: 1em;
+  justify-content: center;
+  width: 1em;
+
+  i {
+    font-size: 0.8em;
+  }
+}
+
+.unstreamed-list {
+  background-color: white;
+  color: black;
+  left: 50%;
+  max-height: 90%;
+  max-width: 800px;
+  overflow: scroll;
+  padding: 1em;
+  position: fixed;
+  transform: translate(-50%, -50%);
+  top: 50%;
+  width: 90%;
+  z-index: 1;
+}

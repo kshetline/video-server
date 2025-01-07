@@ -26,6 +26,7 @@ export class AdminViewComponent implements OnInit {
   lastStatus: ServerStatus;
   setEarliest = false;
   showRefreshDialog = false;
+  showUnstreamed = false;
   stopPending = false;
   updateProgress = -1;
   videoStats: VideoStats;
@@ -76,6 +77,30 @@ export class AdminViewComponent implements OnInit {
       this.updateProcessSettings();
       repoll();
     });
+
+    document.body.addEventListener('click', evt => {
+      if (this.showUnstreamed) {
+        const list = document.getElementById('unstreamed-list');
+        let target = evt.target;
+
+        while (target) {
+          if (target === list)
+            return;
+          else
+            target = (target as HTMLElement).parentElement;
+        }
+
+        this.showUnstreamed = false;
+        evt.stopPropagation();
+      }
+    }, true);
+
+    document.body.addEventListener('keydown', evt => {
+      if (this.showUnstreamed && evt.key === 'Escape') {
+        this.showUnstreamed = false;
+        evt.stopPropagation();
+      }
+    }, true);
   }
 
   refresh(quick = false): void {

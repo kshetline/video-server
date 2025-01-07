@@ -7,7 +7,7 @@ import { stopPending, VideoWalkInfo } from './admin-router';
 import { VideoWalkOptionsPlus } from './shared-types';
 import { abs } from '@tubular/math';
 
-export async function mkvValidate(path: string, options: VideoWalkOptionsPlus, info: VideoWalkInfo): Promise<boolean> {
+export async function mkvValidate(path: string, options: VideoWalkOptionsPlus, _info: VideoWalkInfo): Promise<boolean> {
   let linkName = '';
   let error: string = null;
   const db = options.db;
@@ -45,14 +45,13 @@ export async function mkvValidate(path: string, options: VideoWalkOptionsPlus, i
 
       const allCount = (result.match(/^(ERR|WRN)[0-9A-F]{3}:/gm) || []).length;
 
-      if (allCount > 12 || /^ERR[0-9A-F]{3}:/m.test(result) || /^WRN(?!(0B8|0C0|0D0|0E7|103))[0-9A-F]{3}:/m.test(result)) {
+      if (allCount > 12 || /^ERR[0-9A-F]{3}:/m.test(result) || /^WRN(?!(0B8|0C0|0C2|0D0|0E7|103))[0-9A-F]{3}:/m.test(result)) {
         const errCount = (result.match(/^ERR[0-9A-F]{3}:/gm) || []).length;
         const warnCount = (result.match(/^WRN[0-9A-F]{3}:/gm) || []).length;
         const $0C2Count = (result.match(/^WRN0C2:/gm) || []).length;
         const $861Count = (result.match(/^WRN861:/gm) || []).length;
-        const threeD = info.video && info.video[0]?.properties?.stereo_mode;
 
-        if (errCount > 0 || $861Count > 0 || ($0C2Count > 25 && !threeD) || warnCount - $0C2Count > 5) {
+        if (errCount > 0 || $861Count > 0 || warnCount - $0C2Count > 5) {
           console.log(result);
           error = result;
         }

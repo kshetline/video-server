@@ -1,4 +1,4 @@
-<div class="go-back-panel" [class.show-busy]="stopPending">
+<div class="go-back-panel" [class.show-busy]="stopPending" (keyup.escape)="showUnstreamed = false">
   <p-button label="Back" icon="pi pi-chevron-left" (click)="goBack.emit()"/>
   <p-button icon="pi pi-stop" styleClass="p-button-rounded p-button-danger" (click)="sendStop()"
     [disabled]="!status?.processing || stopPending"></p-button>
@@ -72,6 +72,9 @@
     <tr>
       <th>Unstreamed video count</th>
       <td>{{videoStats?.videoCount ? $any(videoStats.unstreamedTitles)?.length : ''}}</td>
+      <td *ngIf="$any(videoStats?.unstreamedTitles)?.length"><div class="info-icon" (click)="showUnstreamed = true">
+        <i class="pi pi-info-circle"></i>
+      </div></td>
     </tr>
     <tr>
       <th>Streaming storage usage</th>
@@ -134,6 +137,11 @@
             (click)="!status?.processing && runProcess()"/>
   <div>{{currentFile}}<span style="opacity: 0; user-select: none">：</span></div>
   <div class="mono">{{currentFile ? encodeProgress : ''}}</div>
+</div>
+<div *ngIf="showUnstreamed" class="unstreamed-list" id="unstreamed-list">
+  <div *ngFor="let title of ($any(videoStats?.unstreamedTitles) || [])">
+    {{title}}
+  </div>
 </div>
 <p-dialog header="Header" [(visible)]="showRefreshDialog" [style]="{ width: 'min(35em, calc(100vw - 4em))' }">
   <ng-template pTemplate="header">
