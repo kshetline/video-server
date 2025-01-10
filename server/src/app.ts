@@ -39,7 +39,7 @@ for (let i = 2; i < process.argv.length; ++i) {
 
 import { execSync } from 'child_process';
 import cookieParser from 'cookie-parser';
-import express, { Express, Response } from 'express';
+import express, { Express, Request, Response } from 'express';
 import * as http from 'http';
 import * as https from 'https';
 import { WebSocketServer } from 'ws';
@@ -56,12 +56,12 @@ import {
 import { router as imageRouter } from './image-router';
 import { router as streamingRouter } from './streaming-router';
 import { adminProcessing, currentFile, currentOp, encodeProgress, processArgs, router as adminRouter, statsInProgress, stopPending, updateProgress } from './admin-router';
-import { LibraryItem, LibraryStatus, ServerStatus, User, UserSession } from './shared-types';
+import { LibraryItem, LibraryStatus, PlayStatus, ServerStatus, User, UserSession } from './shared-types';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { isFile, toStreamPath } from './shared-utils';
+import { isFile, sleep, toStreamPath } from './shared-utils';
 import { readdir } from 'fs/promises';
-import { requestText } from 'by-request';
+import { requestJson, requestText } from 'by-request';
 import { closeSettings, openSettings, users } from './settings';
 import { doZidooDbMaintenance } from './zidoo-db-maintenance';
 import { cacheDir } from './shared-values';
@@ -624,33 +624,65 @@ function getApp(): Express {
       res.json(process.env.VS_PLAYERS.split('#').filter((_s, i) => i % 2 === 1));
   });
 
+  function getHost(req: Request): string {
+    let host = process.env.VS_ZIDOO_CONNECT;
+
+    if (req.query.player != null && process.env.VS_PLAYERS) {
+      const players = process.env.VS_PLAYERS.split('#').filter((_s, i) => i % 2 === 0);
+
+      host = players[toInt(req.query.player)] || host;
+    }
+
+    return host;
+  }
+
+  async function getPlayStatus(host: string): Promise<PlayStatus> {
+    const url = `${host}ZidooVideoPlay/getPlayStatus`;
+
+    try {
+      return await requestJson(url);
+    }
+    catch {}
+
+    return null;
+  }
+
   theApp.get('/api/play', async (req, res) => {
     noCache(res);
 
     if (!isAdmin(req))
       res.sendStatus(403);
     else {
-      let host = process.env.VS_ZIDOO_CONNECT;
-
-      if (req.query.player != null && process.env.VS_PLAYERS) {
-        const players = process.env.VS_PLAYERS.split('#').filter((_s, i) => i % 2 === 0);
-
-        host = players[toInt(req.query.player)] || host;
-      }
-
+      const host = getHost(req);
       const mainPlayer = (req.query.player == null || toInt(req.query.player) === 0);
+      const id = toInt(req.query.id);
       let uri = req.query.uri as string;
 
       if (uri && !uri.startsWith('/'))
         uri = '/' + uri;
+      else if (!uri && id)
+        uri = findUriByAggregationId(id);
 
-      if (!mainPlayer && !uri)
-        uri = findUriByAggregationId(toInt(req.query.id));
+      const status = await getPlayStatus(host);
+
+      if (uri) {
+        uri = process.env.VS_ZIDOO_SOURCE_ROOT + uri;
+
+        if (status?.video?.path === uri) {
+          res.send('"Already playing"');
+          return;
+        }
+      }
+
+      if (status?.status === 200 && status.video?.path) {
+        await requestJson(`${host}ZidooControlCenter/RemoteControl/sendkey?key=Key.MediaStop`);
+        await sleep(500);
+      }
 
       if (mainPlayer || uri) {
-        const url = uri ?
-          `${host}ZidooFileControl/openFile?videoplaymode=0&path=${encodeForUri(process.env.VS_ZIDOO_SOURCE_ROOT + uri)}` :
-          `${host}Poster/v2/playVideo?id=${req.query.id}&type=0`;
+        const url = mainPlayer && id ?
+          `${host}Poster/v2/playVideo?id=${id}&type=0` :
+          `${host}ZidooFileControl/openFile?videoplaymode=0&path=${encodeForUri(uri)}`;
 
         try {
           res.send(await requestText(url));
@@ -662,6 +694,68 @@ function getApp(): Express {
       else
         res.sendStatus(404);
     }
+  });
+
+  theApp.get('/api/setTracks', async (req, res) => {
+    noCache(res);
+
+    if (!isAdmin(req)) {
+      res.sendStatus(403);
+      return;
+    }
+
+    const host = getHost(req);
+    let ready = false;
+
+    for (let i = 0; i < 100; ++i) {
+      const status = await getPlayStatus(host);
+
+      if (status.status === 200 && status.video?.path) {
+        ready = true;
+        break;
+      }
+
+      await sleep(100);
+    }
+
+    if (!ready) {
+      res.sendStatus(424);
+      return;
+    }
+
+    const audioIndex = toInt(req.query.audio, -1);
+    const subtitleIndex = toInt(req.query.subtitle, -1);
+    let url: string;
+    let response = '';
+
+    if (audioIndex >= 0) {
+      url = `${host}ZidooVideoPlay/setAudio?index=${audioIndex}`;
+
+      try {
+        response = await requestText(url);
+
+        if (subtitleIndex >= 0)
+          await sleep(250);
+      }
+      catch {
+        res.sendStatus(404);
+        return;
+      }
+    }
+
+    if (subtitleIndex >= 0) {
+      url = `${host}ZidooVideoPlay/setSubtitle?index=${subtitleIndex}`;
+
+      try {
+        response = await requestText(url);
+      }
+      catch {
+        res.sendStatus(404);
+        return;
+      }
+    }
+
+    res.send(response);
   });
 
   // Unmatched routes

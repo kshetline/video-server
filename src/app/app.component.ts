@@ -446,7 +446,7 @@ export class AppComponent implements AfterViewInit, OnInit {
   private receiveStatus(status: ServerStatus, broadcast = false): void {
     const finished = status.ready && (!this.status || !this.status.ready);
 
-    status.localAccess = status.localAccess ?? this.status.localAccess;
+    status.localAccess = !!(status.localAccess ?? this.status?.localAccess);
     this.status = status;
     this.lastStatusTime = processMillis();
 

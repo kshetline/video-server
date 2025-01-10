@@ -1,8 +1,9 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { LibraryItem, Track } from '../../../server/src/shared-types';
-import { MenuItem } from 'primeng/api';
+import { MenuItem, MessageService } from 'primeng/api';
 import { HttpClient } from '@angular/common/http';
 import { toInt } from '@tubular/util';
+import { max } from '@tubular/math';
 
 const languageNames = new Intl.DisplayNames(['en'], { type: 'language' });
 
@@ -27,14 +28,14 @@ export class PlayOptionsComponent implements OnInit {
 
   audio: Track[] = [];
   audioChoices: MenuItem[] = [];
-  audioIndex = '1';
+  audioIndex = '0';
   playerIndex = '0';
   players: MenuItem[] = [];
   subtitle: Track[] = [];
   subtitleChoices: MenuItem[] = [];
   subtitleIndex = '0';
 
-  constructor(private httpClient: HttpClient) {}
+  constructor(private httpClient: HttpClient, private messageService: MessageService) {}
 
   @Input() get video(): LibraryItem { return this._video; }
   set video(value: LibraryItem) {
@@ -43,14 +44,14 @@ export class PlayOptionsComponent implements OnInit {
       this.audio = value?.audio || [];
       this.subtitle = value?.subtitle || [];
 
-      this.audioChoices = this.audio.map((a, i) => ({ label: a.name, id: (i + 1).toString() }));
+      this.audioChoices = this.audio.map((a, i) => ({ label: a.name, id: i.toString() }));
       this.subtitleChoices = this.subtitle.map((a, i) => ({ label: subtitleName(a.name), id: (i + 1).toString() }));
       this.subtitleChoices.splice(0, 0, { label: 'None', id: '0' });
-      this.audioIndex = '1';
+      this.audioIndex = '0';
       this.subtitleIndex = '0';
 
       if (value) {
-        this.audioIndex = (this.audio.findIndex(a => a.isDefault) + 1).toString();
+        this.audioIndex = max(this.audio.findIndex(a => a.isDefault), 0).toString();
         this.audioChanged();
       }
     }
@@ -69,7 +70,7 @@ export class PlayOptionsComponent implements OnInit {
   }
 
   audioChanged(): void {
-    const index = toInt(this.audioIndex) - 1;
+    const index = toInt(this.audioIndex);
     const audio = this.audio[index];
     let subIndex = 0;
 
@@ -79,9 +80,22 @@ export class PlayOptionsComponent implements OnInit {
     this.subtitleIndex = subIndex.toString();
   }
 
+  private showError(err: any): void {
+    this.messageService.add({
+      severity: 'error', summary: 'Play Options Error',
+      detail: err.toString(), sticky: true
+    });
+  }
+
   playOnMediaPlayer(): void {
     this.httpClient.get(`/api/play?id=${this.video?.aggregationId}&player=${this.playerIndex}`).subscribe({
-      complete: () => this.close.emit()
+      next: () => {
+        this.httpClient.get(`/api/setTracks?player=${this.playerIndex}&audio=${this.audioIndex}&subtitle=${this.subtitleIndex}`).subscribe({
+          next: () => this.close.emit(),
+          error: (err) => this.showError(err)
+        });
+      },
+      error: (err) => this.showError(err)
     });
   }
 }
