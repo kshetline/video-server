@@ -79,7 +79,9 @@ export class PlayOptionsComponent implements OnInit {
     this.subtitleIndex = subIndex.toString();
   }
 
-  playOnMediaPlayer(player: number): void {
-    this.httpClient.get(`/api/play?id=${this.video?.aggregationId}&player=${player}`).subscribe();
+  playOnMediaPlayer(): void {
+    this.httpClient.get(`/api/play?id=${this.video?.aggregationId}&player=${this.playerIndex}`).subscribe({
+      complete: () => this.close.emit()
+    });
   }
 }
