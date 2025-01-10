@@ -49,3 +49,35 @@ p-dropdown {
   justify-self: stretch;
   width: calc(min(90vw - 100px, 700px, 20em));
 }
+
+.busy-wrapper {
+  position: relative;
+
+  &.busy {
+    cursor: wait;
+    pointer-events: none;
+  }
+
+  p-button {
+    width: 100%;
+  }
+
+  &.busy p-button {
+    opacity: 0.5;
+  }
+
+  i {
+    display: none;
+  }
+
+  &.busy i {
+    color: white;
+    display: block;
+    font-size: 1.5em;
+    left: calc(50% - 0.5em);
+    position: absolute;
+    top: calc(50% - 0.5em);
+    -webkit-text-stroke-color: black;
+    -webkit-text-stroke-width: 1px;
+  }
+}

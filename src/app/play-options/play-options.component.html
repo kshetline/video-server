@@ -1,16 +1,25 @@
 <div class="title">Zidoo Play Options</div>
 
-<label>Player</label>
-<p-dropdown class="w-fill" [options]="players" optionValue="id" [(ngModel)]="playerIndex"></p-dropdown>
+<ng-container *ngIf="players.length > 1">
+  <label>Player</label>
+  <p-dropdown class="w-fill" [options]="players" optionValue="id" [(ngModel)]="playerIndex"></p-dropdown>
+</ng-container>
 
-<label>Audio</label>
-<p-dropdown class="w-fill" [options]="audioChoices" optionValue="id" [(ngModel)]="audioIndex"
+<ng-container *ngIf="audioChoices.length > 1">
+  <label>Audio</label>
+  <p-dropdown class="w-fill" [options]="audioChoices" optionValue="id" [(ngModel)]="audioIndex"
             (onChange)="audioChanged()"></p-dropdown>
+</ng-container>
 
-<label>Subtitles</label>
-<p-dropdown class="w-fill" [options]="subtitleChoices" optionValue="id" [(ngModel)]="subtitleIndex"></p-dropdown>
+<ng-container *ngIf="subtitleChoices.length > 1">
+  <label>Subtitles</label>
+  <p-dropdown class="w-fill" [options]="subtitleChoices" optionValue="id" [(ngModel)]="subtitleIndex"></p-dropdown>
+</ng-container>
 
 <div class="buttons"><div>
   <p-button class="w-fill" styleClass="p-button-rounded p-button-secondary" label="Cancel" (click)="close.emit()"></p-button>
-  <p-button class="w-fill" styleClass="p-button-rounded" label="Play" (click)="playOnMediaPlayer()"></p-button>
+  <div class="busy-wrapper" [class.busy]="busy">
+    <p-button class="w-fill" styleClass="p-button-rounded" label="Play" (click)="!busy && playOnMediaPlayer()"></p-button>
+    <i class="pi pi-spin pi-sync"></i>
+  </div>
 </div></div>

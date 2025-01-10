@@ -640,7 +640,18 @@ function getApp(): Express {
     const url = `${host}ZidooVideoPlay/getPlayStatus`;
 
     try {
-      return await requestJson(url);
+      let status: PlayStatus;
+
+      for (let i = 0; i < 3; ++i) {
+        status = await requestJson(url);
+
+        if (status.status !== 804) // Strange 'bad URL' error condition, even though the URL is fine and will work if tried again
+          break;
+
+        await sleep(100);
+      }
+
+      return status;
     }
     catch {}
 
@@ -710,12 +721,12 @@ function getApp(): Express {
     for (let i = 0; i < 100; ++i) {
       const status = await getPlayStatus(host);
 
-      if (status.status === 200 && status.video?.path) {
+      if (status?.status === 200 && status?.video?.path) {
         ready = true;
         break;
       }
 
-      await sleep(100);
+      await sleep(500);
     }
 
     if (!ready) {

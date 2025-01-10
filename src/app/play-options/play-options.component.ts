@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { LibraryItem, Track } from '../../../server/src/shared-types';
 import { MenuItem, MessageService } from 'primeng/api';
 import { HttpClient } from '@angular/common/http';
-import { toInt } from '@tubular/util';
+import { isObject, isString, isValidJson, toInt } from '@tubular/util';
 import { max } from '@tubular/math';
 
 const languageNames = new Intl.DisplayNames(['en'], { type: 'language' });
@@ -18,24 +18,54 @@ function subtitleName(name: string): string {
   return name;
 }
 
+function errorText(err: any): string {
+  if (isString(err)) {
+    if (isValidJson(err))
+      err = JSON.parse(err);
+    else
+      return err;
+  }
+
+  if (isObject(err) && err.msg)
+    return err.msg;
+
+  return err ? err.toString() : 'unknown error';
+}
+
 @Component({
   selector: 'app-play-options',
   templateUrl: './play-options.component.html',
   styleUrls: ['./play-options.component.scss']
 })
 export class PlayOptionsComponent implements OnInit {
+  private static lastPlayers: MenuItem[] = [];
+
+  private _closed = false;
   private _video: LibraryItem;
 
   audio: Track[] = [];
   audioChoices: MenuItem[] = [];
   audioIndex = '0';
+  busy = false;
   playerIndex = '0';
   players: MenuItem[] = [];
   subtitle: Track[] = [];
   subtitleChoices: MenuItem[] = [];
   subtitleIndex = '0';
 
-  constructor(private httpClient: HttpClient, private messageService: MessageService) {}
+  constructor(private httpClient: HttpClient, private messageService: MessageService) {
+    this.players = PlayOptionsComponent.lastPlayers;
+  }
+
+  private get closed(): boolean { return this._closed; }
+  private set closed(value: boolean) {
+    if (value && !this._closed) {
+      this.busy = false;
+      this.close.emit();
+    }
+
+    this._closed = !!value;
+  }
 
   @Input() get video(): LibraryItem { return this._video; }
   set video(value: LibraryItem) {
@@ -66,6 +96,9 @@ export class PlayOptionsComponent implements OnInit {
         label: name,
         id: i.toString()
       }));
+
+      if (this.players.length > 1)
+        PlayOptionsComponent.lastPlayers = this.players;
     });
   }
 
@@ -81,17 +114,22 @@ export class PlayOptionsComponent implements OnInit {
   }
 
   private showError(err: any): void {
-    this.messageService.add({
-      severity: 'error', summary: 'Play Options Error',
-      detail: err.toString(), sticky: true
-    });
+    this.busy = false;
+
+    if (!this.closed) {
+      this.messageService.add({
+        severity: 'error', summary: 'Play Options Error',
+        detail: errorText(err), sticky: true
+      });
+    }
   }
 
   playOnMediaPlayer(): void {
+    this.busy = true;
     this.httpClient.get(`/api/play?id=${this.video?.aggregationId}&player=${this.playerIndex}`).subscribe({
       next: () => {
         this.httpClient.get(`/api/setTracks?player=${this.playerIndex}&audio=${this.audioIndex}&subtitle=${this.subtitleIndex}`).subscribe({
-          next: () => this.close.emit(),
+          next: () => this.closed = true,
           error: (err) => this.showError(err)
         });
       },
