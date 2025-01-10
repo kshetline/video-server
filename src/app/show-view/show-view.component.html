@@ -92,7 +92,7 @@
           <button *ngIf="!localAccess()" pButton type="button" label="Play" icon="pi pi-play" class="p-button-sm"
                   [disabled]="!this.streamUri" (click)="play()"></button>
           <p-splitButton *ngIf="localAccess()" label="Play" icon="pi pi-play" class="p-button-sm"
-                  [model]="players" [class.dim]="!streamUri" (onClick)="play()"></p-splitButton>
+                  [model]="playOptions" [class.dim]="!streamUri" (onClick)="play()"></p-splitButton>
           <button #btn pButton type="button" label="Download" icon="pi pi-download"
                   [disabled]="!video?.uri" class="p-button-sm" (click)="startDownload(btn)"></button>
           <a [href]="downloadLink()"><div>{{startOfPath()}}</div><div>{{endOfPath()}}</div></a>
@@ -101,5 +101,6 @@
     </div>
   </div>
 </div>
+<app-play-options *ngIf="video && showPlayOptions" [video]="video" (close)="showPlayOptions = false"></app-play-options>
 <app-dash-player [src]="playSrc" (onClose)="closePlayer()" [class.active]="!!playSrc"></app-dash-player>
 <p-toast position="top-center"></p-toast>

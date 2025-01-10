@@ -79,6 +79,14 @@ p-treeSelect .p-tree {
   }
 }
 
+p-button.w-fill > .p-button {
+  width: 100%;
+}
+
+p-dropdown.w-fill > .p-dropdown {
+  width: 100%;
+}
+
 .playback-progress {
   background-color: #00F;
   height: 4px;

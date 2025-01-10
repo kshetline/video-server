@@ -1,0 +1,16 @@
+<div class="title">Zidoo Play Options</div>
+
+<label>Player</label>
+<p-dropdown class="w-fill" [options]="players" optionValue="id" [(ngModel)]="playerIndex"></p-dropdown>
+
+<label>Audio</label>
+<p-dropdown class="w-fill" [options]="audioChoices" optionValue="id" [(ngModel)]="audioIndex"
+            (onChange)="audioChanged()"></p-dropdown>
+
+<label>Subtitles</label>
+<p-dropdown class="w-fill" [options]="subtitleChoices" optionValue="id" [(ngModel)]="subtitleIndex"></p-dropdown>
+
+<div class="buttons"><div>
+  <p-button class="w-fill" styleClass="p-button-rounded p-button-secondary" label="Cancel" (click)="close.emit()"></p-button>
+  <p-button class="w-fill" styleClass="p-button-rounded" label="Play"></p-button>
+</div></div>

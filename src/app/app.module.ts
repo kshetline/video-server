@@ -33,6 +33,7 @@ import { StatusInterceptor } from './status.service';
 import { AdminViewComponent } from './admin-view/admin-view.component';
 import { WatchedIndicatorComponent } from './watched-indicator/watched-indicator.component';
 import { LongPressDirective } from './long-press.directive';
+import { PlayOptionsComponent } from './play-options/play-options.component';
 
 @NgModule({
   declarations: [
@@ -46,7 +47,8 @@ import { LongPressDirective } from './long-press.directive';
     PosterViewComponent,
     RatingComponent,
     ShowViewComponent,
-    WatchedIndicatorComponent
+    WatchedIndicatorComponent,
+    PlayOptionsComponent
   ],
   imports: [
     BrowserAnimationsModule,

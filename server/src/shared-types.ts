@@ -41,6 +41,10 @@ export interface ServerStatus {
 export interface Track {
   channels?: string;
   codec?: string;
+  isCommentary?: boolean;
+  isDefault?: boolean;
+  isForced?: boolean;
+  isolatedMusic?: boolean;
   language?: string;
   name?: string;
 }
@@ -104,6 +108,7 @@ export interface LibraryItem {
   isHD?: boolean;
   isHdr?: boolean;
   isLink?: boolean;
+  isolatedMusic?: boolean;
   isSD?: boolean;
   isTV?: boolean;
   isTvMovie?: boolean;

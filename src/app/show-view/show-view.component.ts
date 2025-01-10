@@ -47,10 +47,11 @@ export class ShowViewComponent implements OnInit {
   faderOpacity = '0';
   identicalThumbnail = false;
   people: Person[] = [];
-  players: MenuItem[] = [];
+  playOptions: MenuItem[] = [{ label: 'Zidoo play options...', command: () => this.showPlayOptions = true }];
   roleId = -1;
   selection: LibraryItem;
   showCast = false;
+  showPlayOptions = false;
   streamUri: string;
   thumbnail: string;
   thumbnailNaturalWidth = 0;
@@ -69,14 +70,6 @@ export class ShowViewComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.httpClient.get<string[]>('/api/players').subscribe(players => {
-      this.players = [];
-      players.forEach((name, i) => this.players.push({
-        label: `Play: ${name}`,
-        command: () => this.playOnMediaPlayer(i)
-      }));
-    });
-
     webSocketMessagesEmitter().subscribe(msg => {
       switch (msg.type) {
         case 'idUpdate2':
@@ -118,6 +111,7 @@ export class ShowViewComponent implements OnInit {
       this.backgroundChangeInProgress = false;
       this.pendingBackgroundIndex = -1;
       this.checkedForStream.clear();
+      this.showPlayOptions = false;
 
       if (!value)
         return;
@@ -436,10 +430,6 @@ export class ShowViewComponent implements OnInit {
       this.playSrc = { item: this.video, stream: this.streamUri };
   }
 
-  playOnMediaPlayer(player: number): void {
-    this.httpClient.get(`/api/play?id=${this.video?.aggregationId}&player=${player}`).subscribe();
-  }
-
   closePlayer(): void {
     this.playSrc = undefined;
     this.getPlaybackInfo();
@@ -461,7 +451,7 @@ export class ShowViewComponent implements OnInit {
   }
 
   localAccess(): boolean {
-    return this.players.length > 0 && this.auth.getSession()?.role === 'admin' && StatusInterceptor.localAccess;
+    return this.auth.getSession()?.role === 'admin' && StatusInterceptor.localAccess;
   }
 
   private checkPendingBackgroundChange(): void {

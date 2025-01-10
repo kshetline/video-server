@@ -435,18 +435,32 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
               break;
             case 'Audio':
               t.channels = channelString(track);
+              t.isDefault = toBoolean(track.Default);
               item.audio = item.audio ?? [];
               item.audio.push(t);
 
-              if (/commentary/i.test(track.Title))
+              if (/\bcommentary\b/i.test(track.Title)) {
+                t.isCommentary = true;
                 item.commentaryAudio = true;
+              }
+
+              if (/\b(music only|isolated music|isolated score)\b/i.test(track.Title)) {
+                t.isolatedMusic = true;
+                item.isolatedMusic = true;
+              }
+
               break;
+
             case 'Text':
+              t.isDefault = toBoolean(track.Default);
+              t.isForced = toBoolean(track.Forced);
               item.subtitle = item.subtitle ?? [];
               item.subtitle.push(t);
 
-              if (/commentary/i.test(track.Title))
+              if (/\bcommentary\b/i.test(track.Title)) {
+                t.isCommentary = true;
                 item.commentaryText = true;
+              }
 
               if (track.Default === 'Yes' || track.Forced === 'Yes')
                 item.defaultSubtitles = true;
