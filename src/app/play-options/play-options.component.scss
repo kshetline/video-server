@@ -4,7 +4,7 @@
   color: black;
   column-gap: 1em;
   display: grid;
-  grid-template-columns: auto auto;
+  grid-template-columns: auto auto auto;
   left: 50%;
   max-height: 90%;
   max-width: calc(min(90vw, 800px));
@@ -18,7 +18,7 @@
 
 .title, .buttons {
   grid-column-start: 1;
-  grid-column-end: span 2;
+  grid-column-end: span 3;
 }
 
 .title {
@@ -45,9 +45,30 @@ label {
   justify-self: end;
 }
 
+.adornment {
+  align-items: center;
+  display: grid;
+  gap: 0.25em;
+  grid-template-columns: auto auto;
+
+  span {
+    font-size: 1.4em;
+  }
+}
+
+.forced {
+  color: #B05;
+}
+
 p-dropdown {
   justify-self: stretch;
-  width: calc(min(90vw - 100px, 700px, 20em));
+  width: calc(min(90vw - 145px, 655px, 20em));
+}
+
+@media screen and (max-width: 500px) {
+  p-dropdown {
+    width: calc(min(90vw - 144px, 452px, 17em));
+  }
 }
 
 .busy-wrapper {

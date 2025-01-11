@@ -47,6 +47,8 @@ export interface Track {
   isolatedMusic?: boolean;
   language?: string;
   name?: string;
+  sdh?: boolean;
+  visualDescription?: boolean;
 }
 
 export interface VideoInfo {
@@ -126,6 +128,7 @@ export interface LibraryItem {
   releaseDate?: string;
   resolution?: string;
   sampleUri?: string;
+  sdh?: boolean;
   season?: number;
   seasonCount?: number;
   shadowUri?: string;
@@ -138,6 +141,7 @@ export interface LibraryItem {
   uri?: string;
   video?: Track[];
   videoinfo?: VideoInfo;
+  visualDescription?: boolean;
   voteAverage?: number;
   watched?: boolean;
   watchedByUser?: boolean;

@@ -51,13 +51,17 @@ export class PlayOptionsComponent implements OnInit {
 
   audio: Track[] = [];
   audioChoices: MenuItem[] = [];
+  audioLangs = new Set<string>();
   audioIndex = '0';
   busy = false;
   canChoose = false;
+  defaultLang = 'en';
+  forcedSubs = new Set<string>();
   playerIndex = '0';
   players: MenuItem[] = [];
   subtitle: Track[] = [];
   subtitleChoices: MenuItem[] = [];
+  subtitleLangs = new Set<string>();
   subtitleIndex = '0';
   usePlayerDefaults = true;
 
@@ -85,16 +89,24 @@ export class PlayOptionsComponent implements OnInit {
       this.audio = value?.audio || [];
       this.subtitle = value?.subtitle || [];
 
-      this.audioChoices = this.audio.map((a, i) => ({ label: a.name, id: i.toString() }));
-      this.subtitleChoices = this.subtitle.map((a, i) => ({ label: subtitleName(a.name), id: (i + 1).toString() }));
-      this.subtitleChoices.splice(0, 0, { label: 'None', id: '0' });
       this.audioIndex = '0';
+      this.audioLangs.clear();
+      this.defaultLang = 'en';
       this.subtitleIndex = '0';
+      this.subtitleLangs.clear();
+      this.forcedSubs.clear();
       this.canChoose = false;
 
       if (value) {
+        this.audioChoices = this.audio.map((a, i) => ({ label: a.name, id: i.toString() }));
+        this.audio.forEach(a => this.audioLangs.add(a.language));
+        this.subtitleChoices = this.subtitle.map((a, i) => ({ label: subtitleName(a.name), id: (i + 1).toString() }));
+        this.subtitleChoices.splice(0, 0, { label: 'None', id: '0' });
+        this.subtitle.forEach(s => this.subtitleLangs.add(s.language));
+        this.subtitle.filter(s => s.isForced).forEach(s => this.forcedSubs.add(s.language));
         this.canChoose = (this.audio.length > 1 || this.subtitle.length > 0);
         this.audioIndex = max(this.audio.findIndex(a => a.isDefault), 0).toString();
+        this.defaultLang = this.audioLangs[this.audioIndex]?.language || 'en';
         this.audioChanged();
       }
     }

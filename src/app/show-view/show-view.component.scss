@@ -433,11 +433,11 @@
       }
 
       .poster {
-        height: calc(100dvh - 32em);
+        height: calc(100dvh - 34em);
         width: auto;
 
         img {
-          height: calc(100dvh - 32em) !important;
+          height: calc(100dvh - 34em) !important;
           position: static !important;
           width: auto !important;
         }
@@ -498,7 +498,7 @@
           }
 
           .tab {
-            height: 9.3em;
+            height: 11.5em;
           }
         }
       }
@@ -530,7 +530,7 @@
       }
 
       .tab {
-        height: 9.3em;
+        height: 11.5em;
       }
     }
   }

@@ -444,6 +444,11 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
                 item.commentaryAudio = true;
               }
 
+              if (/\bDA\b/.test(track.Title)) {
+                t.visualDescription = true;
+                item.visualDescription = true;
+              }
+
               if (/\b(music only|isolated music|isolated score)\b/i.test(track.Title)) {
                 t.isolatedMusic = true;
                 item.isolatedMusic = true;
@@ -460,6 +465,11 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
               if (/\bcommentary\b/i.test(track.Title)) {
                 t.isCommentary = true;
                 item.commentaryText = true;
+              }
+
+              if (/\b(SDH|\[CC])\b/.test(track.Title)) {
+                t.sdh = true;
+                item.sdh = true;
               }
 
               if (track.Default === 'Yes' || track.Forced === 'Yes')
