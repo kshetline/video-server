@@ -638,11 +638,12 @@ function getApp(): Express {
 
   async function getPlayStatus(host: string): Promise<PlayStatus> {
     const url = `${host}ZidooVideoPlay/getPlayStatus`;
+    const start = processMillis();
 
     try {
       let status: PlayStatus;
 
-      for (let i = 0; i < 3; ++i) {
+      for (let i = 0; i < 3 && processMillis() < start + 30000; ++i) {
         status = await requestJson(url);
 
         if (status.status !== 804) // Strange 'bad URL' error condition, even though the URL is fine and will work if tried again
@@ -680,7 +681,7 @@ function getApp(): Express {
         uri = process.env.VS_ZIDOO_SOURCE_ROOT + uri;
 
         if (status?.video?.path === uri) {
-          res.send('"Already playing"');
+          res.send(JSON.stringify({ alreadyPlaying: true }));
           return;
         }
       }
@@ -716,10 +717,12 @@ function getApp(): Express {
     }
 
     const host = getHost(req);
+    const start = processMillis();
     let ready = false;
+    let status: PlayStatus;
 
-    for (let i = 0; i < 100; ++i) {
-      const status = await getPlayStatus(host);
+    for (let i = 0; i < 100 && processMillis() < start + 30000; ++i) {
+      status = await getPlayStatus(host);
 
       if (status?.status === 200 && status?.video?.path) {
         ready = true;
@@ -731,6 +734,13 @@ function getApp(): Express {
 
     if (!ready) {
       res.sendStatus(424);
+      return;
+    }
+
+    // Are we close to the playback position that means the player is likely to present
+    // a restart/continue dialog that will block track choices from being made?
+    if (!toBoolean(req.query.ignorePlaying, false, true) && status?.video?.currentPosition > 58000) {
+      res.send(JSON.stringify({ inProgress: true }));
       return;
     }
 

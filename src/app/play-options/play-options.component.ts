@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { LibraryItem, Track } from '../../../server/src/shared-types';
-import { MenuItem, MessageService } from 'primeng/api';
+import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { HttpClient } from '@angular/common/http';
 import { isObject, isString, isValidJson, toInt } from '@tubular/util';
 import { max } from '@tubular/math';
@@ -26,10 +26,16 @@ function errorText(err: any): string {
       return err;
   }
 
-  if (isObject(err) && err.msg)
-    return err.msg;
+  if (isObject(err)) {
+    if (err.message || err.msg)
+      return err.message || err.msg;
+    else if (err.status && err.statusText)
+      return `${err.status}: ${err.statusText}`;
+  }
 
-  return err ? err.toString() : 'unknown error';
+  err = err?.toString();
+
+  return err && err !== '[object Object]' ? err : 'unknown error';
 }
 
 @Component({
@@ -47,20 +53,25 @@ export class PlayOptionsComponent implements OnInit {
   audioChoices: MenuItem[] = [];
   audioIndex = '0';
   busy = false;
+  canChoose = false;
   playerIndex = '0';
   players: MenuItem[] = [];
   subtitle: Track[] = [];
   subtitleChoices: MenuItem[] = [];
   subtitleIndex = '0';
+  usePlayerDefaults = true;
 
-  constructor(private httpClient: HttpClient, private messageService: MessageService) {
+  constructor(private httpClient: HttpClient,
+              private messageService: MessageService,
+              private confirmationService: ConfirmationService) {
     this.players = PlayOptionsComponent.lastPlayers;
   }
 
-  private get closed(): boolean { return this._closed; }
-  private set closed(value: boolean) {
+  get closed(): boolean { return this._closed; }
+  set closed(value: boolean) {
     if (value && !this._closed) {
       this.busy = false;
+      this.messageService.clear();
       this.close.emit();
     }
 
@@ -79,8 +90,10 @@ export class PlayOptionsComponent implements OnInit {
       this.subtitleChoices.splice(0, 0, { label: 'None', id: '0' });
       this.audioIndex = '0';
       this.subtitleIndex = '0';
+      this.canChoose = false;
 
       if (value) {
+        this.canChoose = (this.audio.length > 1 || this.subtitle.length > 0);
         this.audioIndex = max(this.audio.findIndex(a => a.isDefault), 0).toString();
         this.audioChanged();
       }
@@ -107,7 +120,7 @@ export class PlayOptionsComponent implements OnInit {
     const audio = this.audio[index];
     let subIndex = 0;
 
-    if (!audio.isCommentary && !audio.isolatedMusic)
+    if (!audio.isolatedMusic)
       subIndex = this.subtitle.findIndex(s => s.isForced && s.language === audio.language) + 1;
 
     this.subtitleIndex = subIndex.toString();
@@ -125,13 +138,52 @@ export class PlayOptionsComponent implements OnInit {
   }
 
   playOnMediaPlayer(): void {
+    let alreadyPlaying = false;
+    const makeTrackSelections = (): void => {
+      let url = `/api/setTracks?player=${this.playerIndex}`;
+
+      if (this.audio.length > 1)
+        url += `&audio=${this.audioIndex}`;
+
+      if (this.subtitle.length > 0)
+        url += `&subtitle=${this.subtitleIndex}`;
+
+      if (alreadyPlaying)
+        url += '&ignorePlaying';
+
+      this.httpClient.get(url).subscribe({
+        next: (response: any) => {
+          if (response?.status && response.status !== 200)
+            this.showError(response);
+          else if (response?.inProgress && !alreadyPlaying) {
+            alreadyPlaying = true;
+            this.confirmationService.confirm({
+              message: 'Do you want to resend your audio/subtitle selections which may have been blocked?',
+              header: 'Possible Restart/Continue Prompt Delay',
+              icon: 'pi pi-exclamation-triangle',
+              accept: () => makeTrackSelections(),
+              reject: () => this.closed = true
+            });
+          }
+          else
+            this.closed = true;
+        },
+        error: (err) => this.showError(err)
+      });
+    };
+
+    this.messageService.clear();
     this.busy = true;
     this.httpClient.get(`/api/play?id=${this.video?.aggregationId}&player=${this.playerIndex}`).subscribe({
-      next: () => {
-        this.httpClient.get(`/api/setTracks?player=${this.playerIndex}&audio=${this.audioIndex}&subtitle=${this.subtitleIndex}`).subscribe({
-          next: () => this.closed = true,
-          error: (err) => this.showError(err)
-        });
+      next: (response: any) => {
+        if (response?.status && response.status !== 200)
+          this.showError(response);
+        else if (this.canChoose && !this.usePlayerDefaults) {
+          alreadyPlaying = !!response?.alreadyPlaying;
+          makeTrackSelections();
+        }
+        else
+          this.closed = true;
       },
       error: (err) => this.showError(err)
     });

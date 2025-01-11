@@ -315,7 +315,7 @@ export class ShowViewComponent implements OnInit {
   }
 
   hasAirDate(): boolean {
-    return this.selection.airDate && isTvSeason(this.show) && !this.hasYear();
+    return this.selection?.airDate && isTvSeason(this.show) && !this.hasYear();
   }
 
   getDuration(): string {
