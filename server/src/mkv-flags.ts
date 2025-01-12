@@ -1,5 +1,5 @@
 import { VideoWalkInfo } from './admin-router';
-import { AudioTrackProperties, GeneralTrack, GeneralTrackProperties, MediaTrack, MediaWrapper, VideoWalkOptionsPlus } from './shared-types';
+import { AudioTrackProperties, GeneralTrack, GeneralTrackProperties, MediaInfo, MediaTrack, VideoWalkOptionsPlus } from './shared-types';
 import { code2Name, lang3to2 } from './lang';
 import { toBoolean, toInt } from '@tubular/util';
 import { ErrorMode, linuxEscape, monitorProcess } from './process-util';
@@ -90,7 +90,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
     const row = await options.zidooDb.get<any>('SELECT * FROM VIDEO_INFO WHERE URI = ?', key);
 
     if (row?.MEDIA_JSON)
-      oldAudio = (JSON.parse(row.MEDIA_JSON) as MediaWrapper).media.track.filter(t => t['@type'] === 'Audio');
+      oldAudio = (JSON.parse(row.MEDIA_JSON) as MediaInfo).media.track.filter(t => t['@type'] === 'Audio');
   }
 
   if (audio?.length > 0) {

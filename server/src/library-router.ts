@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import {
-  LibraryItem, LibraryStatus, MediaInfo, MediaInfoTrack, PlaybackProgress, PlayStatus, ShowInfo, Track,
+  LibraryItem, LibraryStatus, MediaInfo, MediaTrack, PlaybackProgress, PlayStatus, ShowInfo, Track,
   VideoLibrary, VType
 } from './shared-types';
 import {
@@ -99,7 +99,7 @@ function formatAspectRatioNumber(ratio: number): string {
     return '';
 }
 
-function formatAspectRatio(track: MediaInfoTrack): string {
+function formatAspectRatio(track: MediaTrack): string {
   if (!track)
     return '';
 
@@ -117,7 +117,7 @@ function formatAspectRatio(track: MediaInfoTrack): string {
   return formatAspectRatioNumber(ratio);
 }
 
-function formatResolution(track: MediaInfoTrack): string {
+function formatResolution(track: MediaTrack): string {
   if (!track)
     return '';
 
@@ -134,7 +134,7 @@ function formatResolution(track: MediaInfoTrack): string {
     return 'SD';
 }
 
-function channelString(track: MediaInfoTrack): string {
+function channelString(track: MediaTrack): string {
   if (/\bAtmos\b/i.exec(track.Title || ''))
     return 'Atmos';
 
@@ -162,7 +162,7 @@ function channelString(track: MediaInfoTrack): string {
     return (channels - 1) + '.1';
 }
 
-function getCodec(track: MediaInfoTrack): string {
+function getCodec(track: MediaTrack): string {
   if (!track)
     return '';
 

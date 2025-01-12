@@ -162,37 +162,49 @@ export interface VideoLibrary {
   array?: LibraryItem[];
 }
 
-export interface MediaInfoTrack {
+export interface MediaTrack {
   '@type': string;
   extra?: {
     NumberOfDynamicObjects: string;
   };
-  VideoCount: string;
   AudioCount: string;
-  FrameRate: string;
-  Title: string;
-  Movie: string;
+  BitDepth: string;
+  ChannelLayout: string;
+  ChannelLayout_Original?: string;
+  ChannelPositions?: string;
+  ChannelPositions_Original?: string;
+  Channels: string;
+  CodecID: string;
+  Default: string;
+  Delay?: string;
+  DisplayAspectRatio: string;
+  Duration?: string;
+  Encoded_Library_Name: string;
+  Forced: string;
   Format: string;
   Format_AdditionalFeatures?: string;
   Format_Commercial_IfAny?: string;
+  Format_Settings_Mode?: string;
+  FrameRate: string;
   HDR_Format: string;
   HDR_Format_Compatibility: string;
-  CodecID: string;
-  Width: string;
   Height: string;
-  DisplayAspectRatio: string;
-  BitDepth: string;
-  Encoded_Library_Name: string;
   Language: string;
-  Default: string;
-  Forced: string;
-  Channels: string;
-  ChannelLayout: string;
+  Movie: string;
+  Title: string;
+  VideoCount: string;
+  Width: string;
+
+  // ffprobe augmentation
+  comment?: boolean;
+  hearing_impaired?: boolean;
+  original?: boolean;
+  visual_impaired?: boolean;
 }
 
 export interface MediaInfo {
   media: {
-    track: MediaInfoTrack[];
+    track: MediaTrack[];
   };
 }
 
@@ -280,35 +292,6 @@ export interface UserSession {
   name: string;
   role: string;
   expiration: number;
-}
-
-export interface MediaTrack {
-  '@type': string;
-  BitDepth?: string;
-  Channels?: string;
-  Channels_Original?: string;
-  ChannelPositions?: string;
-  ChannelPositions_Original?: string;
-  ChannelLayout?: string;
-  ChannelLayout_Original?: string;
-  CodecID?: string;
-  Delay?: string;
-  DisplayAspectRatio?: string;
-  Duration?: string;
-  Encoded_Library?: string;
-  Format?: string;
-  Format_AdditionalFeatures?: string;
-  Format_Commercial_IfAny?: string;
-  Format_Settings_Mode?: string;
-  HDR_Format?: string;
-  HDR_Format_Compatibility?: string;
-  Title?: string;
-}
-
-export interface MediaWrapper {
-  media: {
-    track: MediaTrack[];
-  }
 }
 
 export interface GeneralTrackProperties {

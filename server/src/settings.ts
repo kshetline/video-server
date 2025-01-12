@@ -1,7 +1,7 @@
 import { AsyncDatabase } from 'promised-sqlite3';
 import os from 'os';
 import { toNumber } from '@tubular/util';
-import { MediaWrapper, User } from './shared-types';
+import { MediaInfo, User } from './shared-types';
 import crypto from 'crypto';
 import { safeLstat } from './vs-util';
 import { monitorProcess } from './process-util';
@@ -131,7 +131,7 @@ export function setValue(key: string, value: string | number): void {
   db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', key, value).finally();
 }
 
-export async function getMediainfo(path: string): Promise<MediaWrapper> {
+export async function getMediainfo(path: string): Promise<MediaInfo> {
   const stat = await safeLstat(path);
   const mdate = stat?.mtimeMs || 0;
   const key = path.substring(process.env.VS_VIDEO_SOURCE.length).replace(/^([^/])/, '/$1').normalize();
