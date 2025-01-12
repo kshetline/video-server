@@ -198,7 +198,7 @@ export class PlayOptionsComponent implements OnInit {
           this.showError(response);
         else if (this.canChoose && !this.usePlayerDefaults) {
           alreadyPlaying = !!response?.alreadyPlaying;
-          makeTrackSelections();
+          setTimeout(() => makeTrackSelections(), 250);
         }
         else
           this.closed = true;
