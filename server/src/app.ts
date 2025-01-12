@@ -62,7 +62,7 @@ import crypto from 'crypto';
 import { isFile, sleep, toStreamPath } from './shared-utils';
 import { readdir } from 'fs/promises';
 import { requestJson, requestText } from 'by-request';
-import { closeSettings, openSettings, users } from './settings';
+import { closeSettings, getDb, openSettings, users } from './settings';
 import { doZidooDbMaintenance } from './zidoo-db-maintenance';
 import { cacheDir } from './shared-values';
 
@@ -448,7 +448,10 @@ function getApp(): Express {
 
   theApp.post('/api/login', async (req, res) => {
     const username = req.body.user?.toString();
-    const pwd = req.body.pwd?.toString();
+    const pwd = req.body.pwd?.toString() || '';
+    const db = getDb();
+    const ip = getIp(req);
+    const time = new Date().toISOString();
 
     for (const user of users) {
       if (user.name === username) {
@@ -464,6 +467,7 @@ function getApp(): Express {
 
           if (hashed === user.hash) {
             sendJwt(user, res);
+            await db.run('INSERT INTO logins (user, time, ip) VALUES (?, ?, ?)', username, time, ip);
             return;
           }
         }
@@ -473,6 +477,8 @@ function getApp(): Express {
       }
     }
 
+    await db.run('INSERT INTO logins (user, time, ip, bad_pw) VALUES (?, ?, ?, ?)',
+      username, time, ip, pwd);
     res.status(403).end();
   });
 

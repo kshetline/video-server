@@ -57,6 +57,15 @@ export async function openSettings(): Promise<void> {
       PRIMARY KEY("user", "video")
     )`);
 
+  await db.exec(
+   `CREATE TABLE IF NOT EXISTS "logins" (
+      "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+      "user" TEXT NOT NULL,
+      "time" TEXT NOT NULL,
+      "ip" TEXT NOT NULL,
+      "bad_pw" TEXT
+    )`);
+
   await db.each('SELECT * FROM settings', undefined, (row: any) =>
     settings[row.key] = row.value
   );
