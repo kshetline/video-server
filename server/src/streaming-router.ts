@@ -2,11 +2,9 @@ import { Router } from 'express';
 import paths from 'path';
 import { existsAsync, isDemo, jsonOrJsonp, username, watched, webSocketSend } from './vs-util';
 import { LibraryItem, PlaybackProgress } from './shared-types';
-import { getDb } from './settings';
+import { getDb, getMediainfo } from './settings';
 import { findId } from './library-router';
 import { hashUri, isFile, setWatched } from './shared-utils';
-import { monitorProcess } from './process-util';
-import { spawn } from 'child_process';
 import { toNumber } from '@tubular/util';
 
 export const router = Router();
@@ -107,7 +105,7 @@ router.get('/get-delay/*', async (req, res) => {
 
   if (await existsAsync(filePath)) {
     try {
-      const mediaJson = JSON.parse(await monitorProcess(spawn('mediainfo', [filePath, '--Output=JSON'])));
+      const mediaJson = await getMediainfo(filePath);
       const delay = toNumber((mediaJson.media?.track || [])[1]?.Delay);
 
       if (delay) {

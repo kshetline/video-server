@@ -3,7 +3,7 @@ import { ChildProcess } from 'child_process';
 import { basename, dirname, join } from 'path';
 import { closeSync, mkdirSync, openSync } from 'fs';
 import { mkdtemp, readdir, readFile, rename, symlink, writeFile } from 'fs/promises';
-import { MediaWrapper, VideoWalkOptionsPlus } from './shared-types';
+import { VideoWalkOptionsPlus } from './shared-types';
 import { existsAsync, safeUnlink, webSocketSend } from './vs-util';
 import { abs, floor, min, round } from '@tubular/math';
 import { ErrorMode, monitorProcess, ProcessInterrupt, spawn } from './process-util';
@@ -11,6 +11,7 @@ import { stopPending, VideoWalkInfo } from './admin-router';
 import { comparator, toStreamPath } from './shared-utils';
 import * as os from 'os';
 import { lang2to3 } from './lang';
+import { getMediainfo } from './settings';
 
 interface Progress {
   duration?: number;
@@ -187,10 +188,9 @@ function formatTime(nanos: number): string {
 }
 
 async function checkAndFixBadDuration(path: string, progress: Progress | VideoProgress, name?: string): Promise<void> {
-  const mediaJson = await monitorProcess(spawn('mediainfo', [path, '--Output=JSON']));
-  const mediaInfo = (JSON.parse(mediaJson || '{}') as MediaWrapper);
+  const mediainfo = await getMediainfo(path);
 
-  if (toNumber(mediaInfo.media.track[0].Duration) > 86400) {
+  if (toNumber(mediainfo.media.track[0].Duration) > 86400) {
     if (name)
       videoProgress('#', 0, name, true, progress as VideoProgress);
     else

@@ -1,8 +1,11 @@
 import { AsyncDatabase } from 'promised-sqlite3';
 import os from 'os';
 import { toNumber } from '@tubular/util';
-import { User } from './shared-types';
+import { MediaWrapper, User } from './shared-types';
 import crypto from 'crypto';
+import { safeLstat } from './vs-util';
+import { monitorProcess } from './process-util';
+import { spawn } from 'child_process';
 
 let db: AsyncDatabase;
 
@@ -66,6 +69,14 @@ export async function openSettings(): Promise<void> {
       "bad_pw" TEXT
     )`);
 
+  await db.exec(
+   `CREATE TABLE IF NOT EXISTS "mediainfo" (
+      "key" TEXT NOT NULL UNIQUE,
+      "mdate" REAL NOT NULL,
+      "json" TEXT,
+      PRIMARY KEY ("key")
+    )`);
+
   await db.each('SELECT * FROM settings', undefined, (row: any) =>
     settings[row.key] = row.value
   );
@@ -118,4 +129,21 @@ export function getNumber(key: string): number {
 export function setValue(key: string, value: string | number): void {
   settings[key] = value?.toString();
   db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', key, value).finally();
+}
+
+export async function getMediainfo(path: string): Promise<MediaWrapper> {
+  const stat = await safeLstat(path);
+  const mdate = stat?.mtimeMs || 0;
+  const key = path.substring(process.env.VS_VIDEO_SOURCE.length).replace(/^([^/])/, '/$1').normalize();
+  const row = await db.get<any>('SELECT * FROM mediainfo WHERE key = ?', key);
+  let json: string;
+
+  if (row && row.mdate === mdate)
+    json = row.json;
+  else {
+    json = await monitorProcess(spawn('mediainfo', [path, '--Output=JSON']));
+    await db.run('INSERT OR REPLACE INTO mediainfo (key, mdate, json) VALUES (?, ?, ?)', key, mdate, json);
+  }
+
+  return JSON.parse(json);
 }

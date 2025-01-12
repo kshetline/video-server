@@ -1,13 +1,13 @@
 import { Request, Response, Router } from 'express';
 import { existsAsync, getRemoteFileCounts, isAdmin, jsonOrJsonp, noCache, safeLstat, webSocketSend } from './vs-util';
 import { mappedDurations, updateLibrary } from './library-router';
-import { asLines, clone, forEach, isFunction, isNumber, isObject, isString, last, toBoolean, toInt } from '@tubular/util';
+import { asLines, clone, forEach, isFunction, isNumber, isObject, isString, last, toBoolean, toInt, toNumber } from '@tubular/util';
 import { readdir } from 'fs/promises';
-import { getDb, getValue, setValue } from './settings';
+import { getDb, getMediainfo, getValue, setValue } from './settings';
 import { join as pathJoin, sep } from 'path';
 import { ErrorMode, monitorProcess } from './process-util';
 import { spawn } from 'child_process';
-import { AudioTrack, MediaWrapper, MKVInfo, ProcessArgs, SubtitlesTrack, VideoStats, VideoTrack, VideoWalkOptions, VideoWalkOptionsPlus } from './shared-types';
+import { AudioTrack, MKVInfo, ProcessArgs, SubtitlesTrack, VideoStats, VideoTrack, VideoWalkOptions, VideoWalkOptionsPlus } from './shared-types';
 import { comparator, compareCaseInsensitiveIntl, sorter, toStreamPath } from './shared-utils';
 import { examineAndUpdateMkvFlags } from './mkv-flags';
 import { sendStatus } from './app';
@@ -103,8 +103,14 @@ export async function walkVideoDirectory(
   (options as VideoWalkOptionsPlus).videoDirectory = terminateDir(dir);
   (options as VideoWalkOptionsPlus).db = getDb();
 
-  if (process.env.VS_ZIDOO_DB)
-    (options as VideoWalkOptionsPlus).zidooDb = await AsyncDatabase.open(process.env.VS_ZIDOO_DB);
+  if (process.env.VS_ZIDOO_DB) {
+    try {
+      (options as VideoWalkOptionsPlus).zidooDb = await AsyncDatabase.open(process.env.VS_ZIDOO_DB);
+    }
+    catch (e) {
+      console.error('Zidoo DB not available:', e.message);
+    }
+  }
 
   if (options.reportProgress) {
     (options as VideoWalkOptionsPlus).fileCount = 0;
@@ -298,8 +304,8 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
               info.audio = info.mkvInfo.tracks.filter(t => t.type === 'audio') as AudioTrack[];
               info.subtitles = info.mkvInfo.tracks.filter(t => t.type === 'subtitles') as SubtitlesTrack[];
 
-              const mediaJson = await monitorProcess(spawn('mediainfo', [path, '--Output=JSON']));
-              const mediaTracks = (JSON.parse(mediaJson || '{}') as MediaWrapper).media?.track || [];
+              const mediaJson = await getMediainfo(path);
+              const mediaTracks = mediaJson.media?.track || [];
               const typeIndices = {} as Record<string, number>;
 
               for (const track of mediaTracks) {
@@ -363,6 +369,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
 
             const baseTitle = file.replace(/( ~)?\.mkv$/i, '');
             let title = baseTitle;
+            const uri = ('/' + path.substring(options.videoDirectory.length)).replace(/\\/g, '/').replace(/^\/\//, '/');
 
             if (info.isMovie || info.isTV) {
               title = baseTitle.replace(/\s*\(.*?[a-z].*?\)/gi, '').replace(/^\d{1,2} - /, '').replace(/ - /g, ': ')
@@ -391,10 +398,19 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
                   (stats.tvShowTitles as Set<string>).add(seriesTitle);
               }
             }
+            else if (info.isExtra)
+              title = uri;
 
             title = title.normalize();
 
-            const uri = ('/' + path.substring(options.videoDirectory.length)).replace(/\\/g, '/').replace(/^\/\//, '/');
+            if (!mappedDurations.has(uri)) {
+              const mediainfo = await getMediainfo(path);
+              const general = mediainfo?.media?.track?.find(t => t['@type'] === 'General');
+              const duration = toNumber(general?.Duration);
+
+              if (duration)
+                mappedDurations.set(uri, duration);
+            }
 
             if (mappedDurations.has(uri)) {
               const lastDuration = stats.durations.get(title) || 0;

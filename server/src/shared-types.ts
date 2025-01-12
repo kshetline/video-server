@@ -292,6 +292,7 @@ export interface MediaTrack {
   ChannelLayout?: string;
   ChannelLayout_Original?: string;
   CodecID?: string;
+  Delay?: string;
   DisplayAspectRatio?: string;
   Duration?: string;
   Encoded_Library?: string;

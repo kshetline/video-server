@@ -41,7 +41,7 @@ export async function doZidooDbMaintenance(): Promise<void> {
       for (const row of rows) {
         const path = paths.join(process.env.VS_VIDEO_SOURCE, row.uri);
 
-        try {
+        try { // TODO: Update to getMediainfo()?
           const mediaJson = JSON.stringify(JSON.parse(await monitorProcess(spawn('mediainfo', [path, '--Output=JSON']))), null, 4);
 
           await db.run('UPDATE VIDEO_INFO SET MEDIA_JSON = ? WHERE _id = ?', mediaJson, row.id);
