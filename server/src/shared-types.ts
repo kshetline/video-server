@@ -189,6 +189,7 @@ export interface MediaTrack {
   HDR_Format: string;
   HDR_Format_Compatibility: string;
   Height: string;
+  ID: string;
   Language: string;
   Movie: string;
   Title: string;
@@ -440,4 +441,16 @@ export interface PlayStatus {
     path: string;
     title: string;
   }
+}
+
+export interface FFProbeInfo {
+  streams: [{
+    index: number;
+    disposition: {
+      comment: number;
+      hearing_impaired: number;
+      original: number;
+      visual_impaired: number;
+    }
+  }]
 }

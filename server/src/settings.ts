@@ -1,7 +1,7 @@
 import { AsyncDatabase } from 'promised-sqlite3';
 import os from 'os';
 import { toNumber } from '@tubular/util';
-import { MediaInfo, User } from './shared-types';
+import { FFProbeInfo, MediaInfo, User } from './shared-types';
 import crypto from 'crypto';
 import { safeLstat } from './vs-util';
 import { monitorProcess } from './process-util';
@@ -131,19 +131,34 @@ export function setValue(key: string, value: string | number): void {
   db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', key, value).finally();
 }
 
-export async function getMediainfo(path: string): Promise<MediaInfo> {
+export async function getAugmentedMediaInfo(path: string): Promise<MediaInfo> {
   const stat = await safeLstat(path);
   const mdate = stat?.mtimeMs || 0;
   const key = path.substring(process.env.VS_VIDEO_SOURCE.length).replace(/^([^/])/, '/$1').normalize();
   const row = await db.get<any>('SELECT * FROM mediainfo WHERE key = ?', key);
-  let json: string;
+  let mediainfo: MediaInfo;
 
   if (row && row.mdate === mdate)
-    json = row.json;
+    mediainfo = JSON.parse(row.json);
   else {
-    json = await monitorProcess(spawn('mediainfo', [path, '--Output=JSON']));
-    await db.run('INSERT OR REPLACE INTO mediainfo (key, mdate, json) VALUES (?, ?, ?)', key, mdate, json);
+    mediainfo = JSON.parse(await monitorProcess(spawn('mediainfo', [path, '--Output=JSON'])));
+    const ffprobe = JSON.parse(await monitorProcess(spawn('ffprobe', ['-v', 'quiet', '-print_format', 'json',
+                                                                      '-show_streams', path]))) as FFProbeInfo;
+
+    for (const track of mediainfo?.media?.track || []) {
+      const match = ffprobe?.streams?.find(m => m.index === toNumber(track.ID) - 1);
+
+      if (match) {
+        track.comment = !!match.disposition?.comment;
+        track.hearing_impaired = !!match.disposition?.hearing_impaired;
+        track.original = !!match.disposition?.original;
+        track.visual_impaired = !!match.disposition?.visual_impaired;
+      }
+    }
+
+    await db.run('INSERT OR REPLACE INTO mediainfo (key, mdate, json) VALUES (?, ?, ?)', key, mdate,
+        JSON.stringify(mediainfo, null, 0));
   }
 
-  return JSON.parse(json);
+  return mediainfo;
 }

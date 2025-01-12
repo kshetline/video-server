@@ -3,7 +3,7 @@ import { existsAsync, getRemoteFileCounts, isAdmin, jsonOrJsonp, noCache, safeLs
 import { mappedDurations, updateLibrary } from './library-router';
 import { asLines, clone, forEach, isFunction, isNumber, isObject, isString, last, toBoolean, toInt, toNumber } from '@tubular/util';
 import { readdir } from 'fs/promises';
-import { getDb, getMediainfo, getValue, setValue } from './settings';
+import { getDb, getAugmentedMediaInfo, getValue, setValue } from './settings';
 import { join as pathJoin, sep } from 'path';
 import { ErrorMode, monitorProcess } from './process-util';
 import { spawn } from 'child_process';
@@ -304,7 +304,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
               info.audio = info.mkvInfo.tracks.filter(t => t.type === 'audio') as AudioTrack[];
               info.subtitles = info.mkvInfo.tracks.filter(t => t.type === 'subtitles') as SubtitlesTrack[];
 
-              const mediaJson = await getMediainfo(path);
+              const mediaJson = await getAugmentedMediaInfo(path);
               const mediaTracks = mediaJson.media?.track || [];
               const typeIndices = {} as Record<string, number>;
 
@@ -404,7 +404,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
             title = title.normalize();
 
             if (!mappedDurations.has(uri)) {
-              const mediainfo = await getMediainfo(path);
+              const mediainfo = await getAugmentedMediaInfo(path);
               const general = mediainfo?.media?.track?.find(t => t['@type'] === 'General');
               const duration = toNumber(general?.Duration);
 

@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import {
-  LibraryItem, LibraryStatus, MediaInfo, MediaTrack, PlaybackProgress, PlayStatus, ShowInfo, Track,
-  VideoLibrary, VType
+  LibraryItem, LibraryStatus, MediaTrack, PlaybackProgress, PlayStatus, ShowInfo, Track, VideoLibrary, VType
 } from './shared-types';
 import {
   clone, compareCaseSecondary, forEach, isNumber, isObject, processMillis, toBoolean, toInt, toNumber
@@ -22,7 +21,7 @@ import {
 } from './shared-utils';
 import { sendStatus } from './app';
 import { setStopPending, stopPending } from './admin-router';
-import { getDb } from './settings';
+import { getAugmentedMediaInfo, getDb } from './settings';
 import { cacheDir } from './shared-values';
 
 export const router = Router();
@@ -391,8 +390,9 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
 
     if (isFile(item)) {
       const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getVideoInfo?id=${item.aggregationId}`;
-      const data: { mediaJson: string, lastWatchTime: number, playPoint: number } = await requestJson(url);
-      const mediaInfo: MediaInfo = JSON.parse(data.mediaJson || 'null');
+      const data: { lastWatchTime: number, playPoint: number } = await requestJson(url);
+      const path = paths.join(process.env.VS_VIDEO_SOURCE, item.uri);
+      const mediaInfo = await getAugmentedMediaInfo(path);
 
       item.lastWatchTime = data.lastWatchTime;
       item.position = max(data.playPoint / 1000, -1);
@@ -439,12 +439,12 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
               item.audio = item.audio ?? [];
               item.audio.push(t);
 
-              if (/\bcommentary\b/i.test(track.Title)) {
+              if (track.comment) {
                 t.isCommentary = true;
                 item.commentaryAudio = true;
               }
 
-              if (/\bDA\b/.test(track.Title)) {
+              if (track.visual_impaired) {
                 t.visualDescription = true;
                 item.visualDescription = true;
               }
@@ -462,12 +462,12 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
               item.subtitle = item.subtitle ?? [];
               item.subtitle.push(t);
 
-              if (/\bcommentary\b/i.test(track.Title)) {
+              if (track.comment) {
                 t.isCommentary = true;
                 item.commentaryText = true;
               }
 
-              if (/\b(SDH|\[CC])\b/.test(track.Title)) {
+              if (track.hearing_impaired) {
                 t.sdh = true;
                 item.sdh = true;
               }

@@ -11,7 +11,7 @@ import { stopPending, VideoWalkInfo } from './admin-router';
 import { comparator, toStreamPath } from './shared-utils';
 import * as os from 'os';
 import { lang2to3 } from './lang';
-import { getMediainfo } from './settings';
+import { getAugmentedMediaInfo } from './settings';
 
 interface Progress {
   duration?: number;
@@ -188,7 +188,7 @@ function formatTime(nanos: number): string {
 }
 
 async function checkAndFixBadDuration(path: string, progress: Progress | VideoProgress, name?: string): Promise<void> {
-  const mediainfo = await getMediainfo(path);
+  const mediainfo = await getAugmentedMediaInfo(path);
 
   if (toNumber(mediainfo.media.track[0].Duration) > 86400) {
     if (name)
