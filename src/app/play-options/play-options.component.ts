@@ -4,6 +4,7 @@ import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { HttpClient } from '@angular/common/http';
 import { isObject, isString, isValidJson, toInt } from '@tubular/util';
 import { max } from '@tubular/math';
+import { AuthService } from '../auth.service';
 
 const languageNames = new Intl.DisplayNames(['en'], { type: 'language' });
 
@@ -66,6 +67,7 @@ export class PlayOptionsComponent implements OnInit {
   usePlayerDefaults = true;
 
   constructor(private httpClient: HttpClient,
+              public auth: AuthService,
               private messageService: MessageService,
               private confirmationService: ConfirmationService) {
     this.players = PlayOptionsComponent.lastPlayers;
@@ -136,6 +138,10 @@ export class PlayOptionsComponent implements OnInit {
       subIndex = this.subtitle.findIndex(s => s.isForced && s.language === audio.language) + 1;
 
     this.subtitleIndex = subIndex.toString();
+  }
+
+  demo(): boolean {
+    return this.auth.getSession()?.role === 'demo';
   }
 
   private showError(err: any): void {

@@ -454,6 +454,10 @@ export class ShowViewComponent implements OnInit {
     return this.auth.getSession()?.role === 'admin' && StatusInterceptor.localAccess;
   }
 
+  demo(): boolean {
+    return this.auth.getSession()?.role === 'demo';
+  }
+
   private checkPendingBackgroundChange(): void {
     setTimeout(() => {
       this.backgroundChangeInProgress = false;

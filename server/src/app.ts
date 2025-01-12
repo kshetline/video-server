@@ -618,7 +618,9 @@ function getApp(): Express {
   theApp.get('/api/players', async (req, res) => {
     noCache(res);
 
-    if (!isAdmin(req) || !process.env.VS_PLAYERS)
+    if (!isAdmin(req))
+      res.json(['Room 1', 'Room 2', 'Room 3']);
+    else if (!process.env.VS_PLAYERS)
       res.json([]);
     else
       res.json(process.env.VS_PLAYERS.split('#').filter((_s, i) => i % 2 === 1));
@@ -681,7 +683,7 @@ function getApp(): Express {
         uri = process.env.VS_ZIDOO_SOURCE_ROOT + uri;
 
         if (status?.video?.path === uri) {
-          res.send(JSON.stringify({ alreadyPlaying: true }));
+          res.json({ alreadyPlaying: true });
           return;
         }
       }
@@ -740,7 +742,7 @@ function getApp(): Express {
     // Are we close to the playback position that means the player is likely to present
     // a restart/continue dialog that will block track choices from being made?
     if (!toBoolean(req.query.ignorePlaying, false, true) && status?.video?.currentPosition > 58000) {
-      res.send(JSON.stringify({ inProgress: true }));
+      res.json({ inProgress: true });
       return;
     }
 

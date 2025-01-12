@@ -89,9 +89,9 @@
       </div>
       <div class="file-wrapper">
         <div class="file">
-          <button *ngIf="!localAccess()" pButton type="button" label="Play" icon="pi pi-play" class="p-button-sm"
+          <button *ngIf="!localAccess() && !demo()" pButton type="button" label="Play" icon="pi pi-play" class="p-button-sm"
                   [disabled]="!this.streamUri" (click)="play()"></button>
-          <p-splitButton *ngIf="localAccess()" label="Play" icon="pi pi-play" class="p-button-sm"
+          <p-splitButton *ngIf="localAccess() || demo()" label="Play" icon="pi pi-play" class="p-button-sm"
                   [model]="playOptions" [class.dim]="!streamUri" (onClick)="play()"></p-splitButton>
           <button #btn pButton type="button" label="Download" icon="pi pi-download"
                   [disabled]="!video?.uri" class="p-button-sm" (click)="startDownload(btn)"></button>
