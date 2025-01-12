@@ -5,6 +5,7 @@ import { Observable } from 'rxjs/internal/Observable';
 import { UserSession } from '../../server/src/shared-types';
 import { StatusInterceptor } from './status.service';
 import { broadcastMessage } from './video-ui-utils';
+import { shareReplay } from 'rxjs/internal/operators/shareReplay';
 
 @Injectable({
   providedIn: 'root'
@@ -27,7 +28,7 @@ export class AuthService {
   loginStatus = new EventEmitter<boolean>();
 
   login(user: string, pwd: string): Observable<any> {
-    const observable = this.http.post('/api/login', { user, pwd });
+    const observable = this.http.post('/api/login', { user, pwd }).pipe(shareReplay());
 
     observable.subscribe({
       next: (session: UserSession) => {
