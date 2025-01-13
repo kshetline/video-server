@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import { safeLstat } from './vs-util';
 import { monitorProcess } from './process-util';
 import { spawn } from 'child_process';
+import { abs } from '@tubular/math';
 
 let db: AsyncDatabase;
 
@@ -138,7 +139,7 @@ export async function getAugmentedMediaInfo(path: string): Promise<MediaInfo> {
   const row = await db.get<any>('SELECT * FROM mediainfo WHERE key = ?', key);
   let mediainfo: MediaInfo;
 
-  if (row && row.mdate === mdate)
+  if (row && abs(row.mdate - mdate) < 1)
     mediainfo = JSON.parse(row.json);
   else {
     mediainfo = JSON.parse(await monitorProcess(spawn('mediainfo', [path, '--Output=JSON'])));
@@ -157,7 +158,7 @@ export async function getAugmentedMediaInfo(path: string): Promise<MediaInfo> {
     }
 
     await db.run('INSERT OR REPLACE INTO mediainfo (key, mdate, json) VALUES (?, ?, ?)', key, mdate,
-        JSON.stringify(mediainfo, null, 0));
+        JSON.stringify(mediainfo));
   }
 
   return mediainfo;

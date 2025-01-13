@@ -328,7 +328,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
                 const key = path.substring(options.videoDirectory.length).normalize();
                 const row = await db.get<any>('SELECT * FROM aspects WHERE key = ?', key);
 
-                if (row && row.mdate === stat.mtimeMs) {
+                if (row && abs(row.mdate - stat.mtimeMs) < 1) {
                   info.video[0].properties.aspect = row.aspect;
                 }
                 else {
