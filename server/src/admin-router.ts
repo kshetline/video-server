@@ -36,7 +36,7 @@ export function setEncodeProgress(s: string): void {
 const DEFAULT_VW_OPTIONS: VideoWalkOptions = {
   checkStreaming: true,
   directoryExclude: (_path: string, dir: string, depth: number): boolean => {
-    return depth === 0 && dir === 'Home movies';
+    return depth === 0 && (dir === 'Home movies' || dir === '_MISC_');
   },
   isStreamingResource: (file: string): boolean => {
     return /\.(mp4|mpd|webm)$/.test(file);
@@ -268,7 +268,7 @@ async function walkVideoDirectoryAux(dir: string, depth: number, options: VideoW
             }
           }
 
-          if (/[\\/](-Extras-|.*Bonus Disc.*)[\\/]/i.test(path)) {
+          if (/[\\/](_Extras_|.*_Bonus\b.*)[\\/]/i.test(path)) {
             info.isExtra = true;
             stats.extrasBytes += stat.size;
             ++stats.extrasCount;

@@ -228,7 +228,7 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
         await getChildren(item.data, bonusDirs, directoryMap, depth + 1);
       }
     }
-    else if (!/-Extras-|Bonus Disc/i.exec(item.uri || '')) {
+    else if (!/_Extras_|Bonus Disc/i.exec(item.uri || '')) {
       if (item.uri) {
         let streamUriBase = toStreamPath(item.uri);
 
@@ -913,7 +913,7 @@ export async function updateLibrary(quick = false): Promise<void> {
 
   try {
     const url = process.env.VS_ZIDOO_CONNECT + 'Poster/v2/getFilterAggregations?type=0&start=0';
-    const bonusDirs = new Set(['-Extras-']);
+    const bonusDirs = new Set(['_Extras_']);
 
     pendingLibrary = await requestJson(url) as VideoLibrary;
     pendingLibrary.status = LibraryStatus.INITIALIZED;
