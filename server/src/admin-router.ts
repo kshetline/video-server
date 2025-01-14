@@ -33,6 +33,10 @@ export function setEncodeProgress(s: string): void {
   encodeProgress = s;
 }
 
+export function setUpdateProgress(progress: number): void {
+  updateProgress = progress;
+}
+
 const DEFAULT_VW_OPTIONS: VideoWalkOptions = {
   checkStreaming: true,
   directoryExclude: (_path: string, dir: string, depth: number): boolean => {

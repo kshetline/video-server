@@ -65,6 +65,7 @@ import { requestJson, requestText } from 'by-request';
 import { closeSettings, getDb, openSettings, users } from './settings';
 import { doZidooDbMaintenance } from './zidoo-db-maintenance';
 import { cacheDir } from './shared-values';
+import { max } from '@tubular/math';
 
 const debug = require('debug')('express:server');
 
@@ -329,7 +330,7 @@ export function sendStatus(): void {
       statusTimer = undefined;
       statusTime = 0;
       webSocketSend({ type: 'status', data: getStatus() });
-    }, 1000 + statusTime - processMillis());
+    }, max(1000 + statusTime - processMillis(), 0));
   }
 }
 

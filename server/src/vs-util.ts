@@ -244,9 +244,14 @@ export async function getRemoteFileCounts(): Promise<Map<string, number>> {
       const files = asLines(content.normalize()).map(p => p.substring(root.length));
 
       for (let path of files) {
+        const isExtra = /\/(_Extras_|_Bonus)\b/.test(path);
+
         while (path && path !== '/') {
           path = paths.dirname(path);
           countsByPath.set(path, (countsByPath.get(path) || 0) + 1);
+
+          if (path === '/' && !isExtra)
+            countsByPath.set('*', (countsByPath.get('*') || 0) + 1);
         }
       }
 

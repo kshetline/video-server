@@ -3,7 +3,7 @@ import {
   LibraryItem, LibraryStatus, MediaTrack, PlaybackProgress, PlayStatus, ShowInfo, Track, VideoLibrary, VType
 } from './shared-types';
 import {
-  clone, compareCaseSecondary, forEach, isNumber, isObject, processMillis, toBoolean, toInt, toNumber
+  clone, compareCaseSecondary, forEach, isNumber, isObject, isValidJson, processMillis, toBoolean, toInt, toNumber
 } from '@tubular/util';
 import { abs, floor, max, min } from '@tubular/math';
 import { requestJson } from 'by-request';
@@ -20,8 +20,8 @@ import {
   toStreamPath
 } from './shared-utils';
 import { sendStatus } from './app';
-import { setStopPending, stopPending } from './admin-router';
-import { getAugmentedMediaInfo, getDb } from './settings';
+import { setStopPending, setUpdateProgress, stopPending, updateProgress } from './admin-router';
+import { getAugmentedMediaInfo, getDb, getValue, setValue } from './settings';
 import { cacheDir } from './shared-values';
 
 export const router = Router();
@@ -187,6 +187,58 @@ function getCodec(track: MediaTrack): string {
   return codec;
 }
 
+interface LibraryUpdateStats {
+  fileCount: number;
+  nonExtras: number;
+  start: number;
+  t: number[];
+  steps: number[];
+  end: number;
+
+  time?: number;
+  percents?: number[];
+  perStep?: number[];
+  cumulativePercent?: number[];
+  newSteps?: number[];
+}
+
+let lastUpdateStats: LibraryUpdateStats = {
+  fileCount: 6300,
+  nonExtras: 3400,
+  start: 0,
+  t: [310, 105000, 297000, 529000, 613000],
+  steps: [1, 6284, 544, 544, 544],
+  end: 614000
+};
+
+function incrementProgress(phase: number): void {
+  const lus = lastUpdateStats;
+
+  if (!lus.time) {
+    lus.time = lus.end - lus.start;
+    lus.percents = [];
+    lus.perStep = [];
+    lus.cumulativePercent = [];
+    lus.newSteps = [];
+
+    for (let i = 0; i < lus.t.length; ++i) {
+      lus.percents[i] = (lus.t[i] - (lus.t[i - 1] || 0)) / lus.time * 100;
+      lus.perStep[i] = lus.percents[i] / lus.steps[i];
+      lus.cumulativePercent[i] = lus.percents[i] + (i === 0 ? 0 : lus.cumulativePercent[i - 1]);
+      lus.newSteps[i] = 0;
+    }
+  }
+
+  ++lus.newSteps[phase];
+
+  if (pendingLibrary)
+    pendingLibrary.progress = min(pendingLibrary.progress + lus.perStep[phase], lus.cumulativePercent[phase], 99.5);
+  else
+    setUpdateProgress(updateProgress + lus.perStep[phase]);
+
+  sendStatus();
+}
+
 const FIELDS_TO_KEEP = new Set(['id', 'parentId', 'collectionId', 'aggregationId', 'type', 'voteAverage', 'name',
   'is3d', 'is4k', 'isHdr', 'isFHD', 'is2k', 'isHD', 'year', 'duration', 'watched', 'data', 'uri', 'season',
   'episode', 'position']);
@@ -228,7 +280,7 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
         await getChildren(item.data, bonusDirs, directoryMap, depth + 1);
       }
     }
-    else if (!/_Extras_|Bonus Disc/i.exec(item.uri || '')) {
+    else if (!/\/(_Extras_|_Bonus)\b/i.exec(item.uri || '')) {
       if (item.uri) {
         let streamUriBase = toStreamPath(item.uri);
 
@@ -374,10 +426,8 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
         item.extras = Array.from(extras);
     }
 
-    if (items === pendingLibrary.array) {
-      pendingLibrary.progress = min(pendingLibrary.progress + 44 / 2.89 / pendingLibrary.total, 39.7);
-      sendStatus();
-    }
+    if (items === pendingLibrary.array)
+      incrementProgress(2);
   }
 }
 
@@ -482,10 +532,8 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
     else
       await getMediaInfo(item.data);
 
-    if (items === pendingLibrary.array) {
-      pendingLibrary.progress = min(pendingLibrary.progress + 110 / 2.89 / pendingLibrary.total, 77.8);
-      sendStatus();
-    }
+    if (items === pendingLibrary.array)
+      incrementProgress(3);
   }
 }
 
@@ -513,13 +561,6 @@ async function getDirectories(dir: string, bonusDirs: Set<string>, map: Map<stri
       else {
         pendingLibrary.mainFileCount += subCount;
       }
-
-      const specialDir = /[•§]/.test(path) || /§.*\bSeason 0?1\b/.test(path);
-
-      if (!isBonusDir && (specialDir && subCount === 0 || !specialDir && subCount > 0)) {
-        pendingLibrary.progress = min(pendingLibrary.progress + 71 / 2.89 / pendingLibrary.total, 24.5);
-        sendStatus();
-      }
     }
     else {
       if (!map.has(dir))
@@ -528,6 +569,7 @@ async function getDirectories(dir: string, bonusDirs: Set<string>, map: Map<stri
       if (/\.(mkv|iso)$/i.test(file)) {
         map.get(dir).push(file);
         ++count;
+        incrementProgress(1);
       }
     }
   }
@@ -675,10 +717,8 @@ async function getShowInfo(items: LibraryItem[], showInfos?: ShowInfo): Promise<
     else
       await getShowInfo(item.data);
 
-    if (items === pendingLibrary.array) {
-      pendingLibrary.progress = min(pendingLibrary.progress + 64 / 2.89 / pendingLibrary.total, 99.4);
-      sendStatus();
-    }
+    if (items === pendingLibrary.array)
+      incrementProgress(4);
   }
 }
 
@@ -836,6 +876,9 @@ function matchAliases(aliases: Alias[], changeInfo = false): LibraryItem[] {
 }
 
 async function addMappings(): Promise<void> {
+  if (stopPending)
+    return;
+
   const mappings = JSON.parse(await readFile(paths.join(vSource, 'mappings.json'), 'utf8')) as Mappings;
   const aliasedItems = matchAliases(mappings.aliases);
 
@@ -843,6 +886,9 @@ async function addMappings(): Promise<void> {
   nextId = 0.5;
 
   for (const collection of mappings.collections || []) {
+    if (stopPending)
+      return;
+
     const collectionItem: LibraryItem = {
       type: VType.COLLECTION,
       name: collection.name,
@@ -911,13 +957,24 @@ export async function updateLibrary(quick = false): Promise<void> {
   if (pendingLibrary)
     return;
 
+  const oldStats = getValue('libraryUpdateStats');
+
+  if (oldStats && isValidJson(oldStats))
+    lastUpdateStats = JSON.parse(oldStats);
+
+  const newUpdateStats = { start: processMillis(), t:[] } as LibraryUpdateStats;
+
+  setUpdateProgress(0);
+
   try {
     const url = process.env.VS_ZIDOO_CONNECT + 'Poster/v2/getFilterAggregations?type=0&start=0';
     const bonusDirs = new Set(['_Extras_']);
 
     pendingLibrary = await requestJson(url) as VideoLibrary;
+    incrementProgress(0);
+    newUpdateStats.t.push(processMillis() - newUpdateStats.start);
     pendingLibrary.status = LibraryStatus.INITIALIZED;
-    pendingLibrary.progress = 0;
+    pendingLibrary.progress = lastUpdateStats.cumulativePercent[0];
     pendingLibrary.mainFileCount = 0;
     pendingLibrary.bonusFileCount = 0;
     sendStatus();
@@ -936,18 +993,22 @@ export async function updateLibrary(quick = false): Promise<void> {
     }
     else {
       await getDirectories(vSource, bonusDirs, directoryMap);
-      pendingLibrary.progress = 24.5;
+      newUpdateStats.t.push(processMillis() - newUpdateStats.start);
+      pendingLibrary.progress = lastUpdateStats.cumulativePercent[1];
       sendStatus();
       pendingLibrary.status = LibraryStatus.BONUS_MATERIAL_LINKED;
       await getChildren(pendingLibrary.array, bonusDirs, directoryMap);
-      pendingLibrary.progress = 39.7;
+      newUpdateStats.t.push(processMillis() - newUpdateStats.start);
+      pendingLibrary.progress = lastUpdateStats.cumulativePercent[2];
       sendStatus();
       pendingLibrary.status = LibraryStatus.ALL_VIDEOS;
       await getMediaInfo(pendingLibrary.array);
-      pendingLibrary.progress = 77.8;
+      newUpdateStats.t.push(processMillis() - newUpdateStats.start);
+      pendingLibrary.progress = lastUpdateStats.cumulativePercent[3];
       sendStatus();
       pendingLibrary.status = LibraryStatus.MEDIA_DETAILS;
       await getShowInfo(pendingLibrary.array);
+      newUpdateStats.t.push(processMillis() - newUpdateStats.start);
     }
 
     await addMappings();
@@ -959,8 +1020,12 @@ export async function updateLibrary(quick = false): Promise<void> {
     pendingLibrary.status = LibraryStatus.DONE;
     pendingLibrary.lastUpdate = new Date().toISOString();
     pendingLibrary.progress = 100;
-    cachedLibrary = pendingLibrary;
-    mapDurations();
+
+    if (!stopPending) {
+      cachedLibrary = pendingLibrary;
+      mapDurations();
+    }
+
     sendStatus();
 
     stripBackLinks(cachedLibrary.array);
@@ -969,6 +1034,15 @@ export async function updateLibrary(quick = false): Promise<void> {
   }
   catch (e) {
     console.log('Mappings update failed:', e);
+    setStopPending(true);
+  }
+
+  if (!stopPending) {
+    newUpdateStats.end = processMillis();
+    newUpdateStats.fileCount = pendingLibrary.mainFileCount + pendingLibrary.bonusFileCount;
+    newUpdateStats.nonExtras = pendingLibrary.mainFileCount;
+    newUpdateStats.steps = lastUpdateStats.newSteps;
+    setValue('libraryUpdateStats', JSON.stringify(newUpdateStats));
   }
 
   pendingLibrary = undefined;
