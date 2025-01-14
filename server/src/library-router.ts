@@ -5,12 +5,12 @@ import {
 import {
   clone, compareCaseSecondary, forEach, isNumber, isObject, isValidJson, processMillis, toBoolean, toInt, toNumber
 } from '@tubular/util';
-import { abs, floor, max, min } from '@tubular/math';
+import { abs, ceil, floor, max, min } from '@tubular/math';
 import { requestJson } from 'by-request';
 import paths from 'path';
 import { readdir, readFile, writeFile } from 'fs/promises';
 import {
-  existsAsync, isAdmin, isDemo, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat,
+  existsAsync, getRemoteFileCounts, isAdmin, isDemo, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat,
   unref, username, webSocketSend
 } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
@@ -20,7 +20,7 @@ import {
   toStreamPath
 } from './shared-utils';
 import { sendStatus } from './app';
-import { setStopPending, setUpdateProgress, stopPending, updateProgress } from './admin-router';
+import { setStopPending, setUpdateProgress, stopPending } from './admin-router';
 import { getAugmentedMediaInfo, getDb, getValue, setValue } from './settings';
 import { cacheDir } from './shared-values';
 
@@ -210,6 +210,7 @@ let lastUpdateStats: LibraryUpdateStats = {
   steps: [1, 6284, 544, 544, 544],
   end: 614000
 };
+let currentFileCount = 6300;
 
 function incrementProgress(phase: number): void {
   const lus = lastUpdateStats;
@@ -220,6 +221,8 @@ function incrementProgress(phase: number): void {
     lus.perStep = [];
     lus.cumulativePercent = [];
     lus.newSteps = [];
+    lus.steps[1] = ceil(lus.steps[1] * currentFileCount / lus.fileCount);
+    lus.steps[2] = lus.steps[3] = lus.steps[4] = pendingLibrary.total;
 
     for (let i = 0; i < lus.t.length; ++i) {
       lus.percents[i] = (lus.t[i] - (lus.t[i - 1] || 0)) / lus.time * 100;
@@ -230,11 +233,7 @@ function incrementProgress(phase: number): void {
   }
 
   ++lus.newSteps[phase];
-
-  if (pendingLibrary)
-    pendingLibrary.progress = min(pendingLibrary.progress + lus.perStep[phase], lus.cumulativePercent[phase], 99.5);
-  else
-    setUpdateProgress(updateProgress + lus.perStep[phase]);
+  pendingLibrary.progress = min(pendingLibrary.progress + lus.perStep[phase], lus.cumulativePercent[phase], 99.5);
 
   sendStatus();
 }
@@ -398,7 +397,7 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
 
       for (let i = 0; i < item.data.length; ++i) {
         if (isTvShow(item))
-          uri = paths.dirname(item.data[i]?.data[0]?.data[0]?.uri); // TODO: Undefined value error thrown here?
+          uri = paths.dirname(item.data[i]?.data[0]?.data[0]?.uri);
         else if (isTvSeason(item))
           uri = item.data[i]?.data[0]?.uri;
         else
@@ -965,6 +964,7 @@ export async function updateLibrary(quick = false): Promise<void> {
   const newUpdateStats = { start: processMillis(), t:[] } as LibraryUpdateStats;
 
   setUpdateProgress(0);
+  currentFileCount = (await getRemoteFileCounts()).get('/');
 
   try {
     const url = process.env.VS_ZIDOO_CONNECT + 'Poster/v2/getFilterAggregations?type=0&start=0';
