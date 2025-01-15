@@ -369,7 +369,7 @@ function getApp(): Express {
     const token = (req.cookies as NodeJS.Dict<string>).vs_jwt;
     const userInfo = token?.split('.')[1];
 
-    if (/^\/(ab2g|ab2h|admin|app|apps|backup|blog|cgi-bin|cms|crm|laravel|lib|panel|password|phpunit|systembc|test|V2|workspace|ws|yii|zend)/.test(req.url)) {
+    if (/^\/(ab2g|ab2h|admin|app|apps|backup|blog|cgi-bin|cms|crm|laravel|lib|panel|password|phpunit|shell|systembc|test|V2|workspace|ws|yii|zend)/.test(req.url)) {
       const ip = getIp(req);
       const block = blockedIps.get(ip);
 
