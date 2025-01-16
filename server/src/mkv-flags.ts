@@ -10,6 +10,9 @@ import { abs, ceil, max } from '@tubular/math';
 import { utimes } from 'fs/promises';
 
 function getLanguage(props: GeneralTrackProperties): string {
+  if (!props)
+    return '';
+
   let lang = (props.language_ietf !== 'und' && props.language_ietf) || props.language || props.language_ietf;
 
   if (lang !== 'und' && lang?.length > 2)
@@ -100,7 +103,13 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
     let audioCommentaries = 0;
     let audioCommentaryIndex = 0;
 
-    primaryLang = getLanguage(defaultTrack.properties);
+    primaryLang = getLanguage(audio.find(t => t.properties.flag_original && t.properties.default_track)?.properties);
+
+    if (!primaryLang)
+      getLanguage(audio.find(t => t.properties.flag_original)?.properties);
+
+    if (!primaryLang)
+      primaryLang = getLanguage(defaultTrack.properties);
 
     for (const track of audio) {
       languages.add(getLanguage(track.properties));
