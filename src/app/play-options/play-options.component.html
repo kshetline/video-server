@@ -27,7 +27,7 @@
   <p-dropdown  [disabled]="usePlayerDefaults" class="w-fill" [options]="subtitleChoices" optionValue="id"
                [(ngModel)]="subtitleIndex"></p-dropdown>
   <div class="adornment">
-    <img *ngIf="video?.sdh" ngSrc="assets/sdh.svg" width=16 height=16 alt="SDH">
+    <img *ngIf="video?.sdh" src="assets/sdh.svg" width=16 height=16 alt="SDH">
     <i *ngIf="subtitleLangs.size > 2 - (subtitleLangs.has(defaultLang) ? 1 : 0)" class="pi pi-language"
        [class.forced]="forcedSubs.size > 0"></i>
     <i *ngIf="video?.commentaryText" class="pi pi-comments"></i>
