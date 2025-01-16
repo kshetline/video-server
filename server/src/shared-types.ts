@@ -41,6 +41,7 @@ export interface ServerStatus {
 export interface Track {
   channels?: string;
   codec?: string;
+  hdr?: string;
   isCommentary?: boolean;
   isDefault?: boolean;
   isForced?: boolean;
@@ -100,6 +101,7 @@ export interface LibraryItem {
   extras?: string[];
   frameRate?: number;
   genres?: string[];
+  hdr?: string;
   hide?: boolean;
   homepage?: string;
   is2k?: boolean;
@@ -108,7 +110,6 @@ export interface LibraryItem {
   isAlias?: boolean;
   isFHD?: boolean;
   isHD?: boolean;
-  isHdr?: boolean;
   isLink?: boolean;
   isolatedMusic?: boolean;
   isSD?: boolean;

@@ -28,7 +28,6 @@ interface Person {
 })
 export class ShowViewComponent implements OnInit {
   readonly getSeasonTitle = getSeasonTitle;
-  readonly iconBadge = (s: string): boolean => /^(AC|DS|TC)$/.test(s);
   readonly isTvSeason = isTvSeason;
 
   private backgroundMain = '';
@@ -478,7 +477,7 @@ export class ShowViewComponent implements OnInit {
     if (!v)
       return;
     else if (v.is4k)
-      b.push('4K');
+      b.push('4K-UHD');
     else if (v.is3d)
       b.push('3D');
     else if (v.is2k || v.isFHD)
@@ -492,8 +491,8 @@ export class ShowViewComponent implements OnInit {
     if ((v.video || [])[0]?.codec)
       b.push(v.video[0].codec.replace(/\s+.*$/, ''));
 
-    if (v.isHdr)
-      b.push('HDR');
+    if (v.hdr)
+      b.push(v.hdr);
 
     const codecs = new Set<string>();
 
@@ -511,7 +510,15 @@ export class ShowViewComponent implements OnInit {
       if (/^stereo$/i.test(chan) && /\bmono\b/i.test(a.name))
         chan = 'Mono';
 
-      if (codec) {
+      if (codec === 'TrueHD' && chan === 'Atmos' && !codecs.has('Atmos')) {
+        text = 'Atmos';
+        codecs.add(text);
+      }
+      else if ((codec === 'DTS-HD MA' || codec === 'DTS') && !codecs.has('DTS-HD')) { // TODO: Differentiate DTS and DTS-HD
+        text = 'DTS-HD';
+        codecs.add(text);
+      }
+      else if (codec) {
         if (!codecs.has(codec) && a.language === v.audio[0].language)
           text = codec + (chan && (i === 0 || /\bmono\b/i.test(chan) ? ' ' + chan : ''));
 

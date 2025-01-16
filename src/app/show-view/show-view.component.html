@@ -59,11 +59,20 @@
               <div *ngIf="anyOverview" class="overview"><div class="overview-content">{{selection.overview}}</div></div>
             </div>
             <div *ngIf="badges?.length > 0" class="badges">
-              <div *ngFor="let badge of badges" class="badge" [class.inverse]='iconBadge(badge)'>
-                <span *ngIf="!iconBadge(badge)">{{badge}}</span>
-                <i *ngIf="badge ==='DS'" class="pi pi-align-left"></i>
-                <span *ngIf="badge ==='AC'"><i class="pi pi-comments"></i><i class="pi pi-volume-up sup"></i></span>
-                <span *ngIf="badge ==='TC'"><i class="pi pi-comments"></i><i class="pi pi-align-left sup"></i></span>
+              <div *ngFor="let badge of badges" class="badge">
+                <ng-container [ngSwitch]="badge">
+                  <img *ngSwitchCase="'4K-UHD'" src="/assets/4K-UHD.svg" height=20 alt="4K-UHD">
+                  <img *ngSwitchCase="'DV'" src="/assets/DV.svg" height=20 alt="Dolby Vision">
+                  <img *ngSwitchCase="'HDR10+'" src="/assets/HDR10+.svg" height=20 alt="HDR10+">
+                  <img *ngSwitchCase="'HDR10'" src="/assets/HDR10.svg" height=14 alt="HDR10">
+                  <img *ngSwitchCase="'HDR'" src="/assets/HDR.svg" height=14 alt="HDR">
+                  <img *ngSwitchCase="'Atmos'" src="/assets/Atmos.svg" height=20 alt="Dolby Atmos">
+                  <img *ngSwitchCase="'DTS-HD'" src="/assets/DTS-HD.png" height=20 alt="DTS-HD">
+                  <i *ngSwitchCase="'DS'" class="pi pi-align-left"></i>
+                  <span *ngSwitchCase="'AC'"><i class="pi pi-comments"></i><i class="pi pi-volume-up sup"></i></span>
+                  <span *ngSwitchCase="'TC'"><i class="pi pi-comments"></i><i class="pi pi-align-left sup"></i></span>
+                  <span *ngSwitchDefault>{{badge}}</span>
+                </ng-container>
               </div>
             </div>
           </div>

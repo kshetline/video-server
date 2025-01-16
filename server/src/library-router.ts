@@ -239,7 +239,7 @@ function incrementProgress(phase: number): void {
 }
 
 const FIELDS_TO_KEEP = new Set(['id', 'parentId', 'collectionId', 'aggregationId', 'type', 'voteAverage', 'name',
-  'is3d', 'is4k', 'isHdr', 'isFHD', 'is2k', 'isHD', 'year', 'duration', 'watched', 'data', 'uri', 'season',
+  'is3d', 'is4k', 'hdr', 'isFHD', 'is2k', 'isHD', 'year', 'duration', 'watched', 'data', 'uri', 'season',
   'episode', 'position']);
 
 function filter(item: LibraryItem): void {
@@ -458,6 +458,21 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
 
           if (track.Format)
             t.codec = getCodec(track);
+
+          if (track.HDR_Format) {
+            const hf = track.HDR_Format + ';' + track.HDR_Format_Compatibility;
+
+            if (/\bDolby Vision\b/.test(hf))
+              t.hdr = 'DV';
+            else if (/\bHLG\b/.test(hf))
+              t.hdr = 'HLG';
+            else if (/\bHDR10\+/.test(hf))
+              t.hdr = 'HDR10+';
+            else if (/\bHDR10\b/.test(hf))
+              t.hdr = 'HDR10';
+            else
+              t.hdr = 'HDR';
+          }
 
           switch (track['@type']) {
             case 'General':
@@ -747,10 +762,10 @@ function fixVideoFlagsAndEncoding(items: LibraryItem[]): void {
       if (item.uri.endsWith('(2K).mkv') || item.uri.includes('/2K/'))
         item.resolution = 'FHD';
 
+      delete item.hdr;
       delete item.isHD;
       delete item.isFHD;
       delete item.is4k;
-      delete item.isHdr;
 
       switch (item.resolution) {
         case 'HD': item.isHD = true; break;
@@ -759,18 +774,23 @@ function fixVideoFlagsAndEncoding(items: LibraryItem[]): void {
         default: item.isSD = true; break;
       }
 
-      if (/\bHDR/.test((item.video || [])[0]?.codec || ''))
-        item.isHdr = true;
+      if ((item.video || [])[0]?.hdr)
+        item.hdr = item.video[0].hdr;
     }
     else {
       const data: any[] = item.data || [];
 
-      for (const flag of ['isSD', 'is3d', 'isHD', 'isFHD', 'is4k', 'isHdr']) {
+      for (const flag of ['isSD', 'is3d', 'isHD', 'isFHD', 'is4k']) {
         if (data.find(v => v[flag]))
           (item as any)[flag] = true;
         else
           delete (item as any)[flag];
       }
+
+      if (data.find(v => v.hdr))
+        item.hdr = data.find(v => v.hdr).hdr;
+      else
+        delete item.hdr;
 
       if (item.is3d || item.isHD || item.isFHD || item.is4k)
         delete item.isSD;

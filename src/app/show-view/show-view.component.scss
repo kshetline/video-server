@@ -243,27 +243,24 @@
               width: var(--overview-width);
 
               .badge {
-                background-color: white;
-                border: white 1.5px solid;
-                border-radius: 0.2em;
-                color: black;
-                padding: 0 0.4em;
+                align-items: center;
+                border: white 1.25px solid;
+                border-radius: 0.4em;
+                color: white;
+                display: flex;
+                font: bold 18px Arial, sans-serif;
+                height: 32px;
+                padding: 0.2em;
                 position: relative;
                 user-select: none;
                 white-space: nowrap;
 
-                &.inverse {
-                  background-color: black;
-                  border: none;
-                  color: white;
-                  padding: 0 0.2em;
-                }
-
                 .sup {
                   font-size: 0.67em;
+                  left: -0.1em;
                   padding-left: 0.25em;
                   position: relative;
-                  top: -1em;
+                  top: -0.5em;
                 }
               }
             }
