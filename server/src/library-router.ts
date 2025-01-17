@@ -247,7 +247,7 @@ function incrementProgress(phase: number): void {
 }
 
 const FIELDS_TO_KEEP = new Set(['id', 'parentId', 'collectionId', 'aggregationId', 'type', 'voteAverage', 'name',
-  'is3d', 'is4k', 'hdr', 'isFHD', 'is2k', 'isHD', 'year', 'duration', 'watched', 'data', 'uri', 'season',
+  'is3d', 'is4k', 'hdr', 'is2k', 'isHD', 'year', 'duration', 'watched', 'data', 'uri', 'season',
   'episode', 'position']);
 
 function filter(item: LibraryItem): void {
@@ -766,7 +766,7 @@ function fixVideoFlagsAndEncoding(items: LibraryItem[]): void {
   }
 
   for (const item of items) {
-    delete item.is2k;
+    delete item.isFHD;
 
     if (isFile(item)) {
       if (!item.is3d || item.uri.endsWith('(2D).mkv'))
@@ -777,12 +777,12 @@ function fixVideoFlagsAndEncoding(items: LibraryItem[]): void {
 
       delete item.hdr;
       delete item.isHD;
-      delete item.isFHD;
+      delete item.is2k;
       delete item.is4k;
 
       switch (item.resolution) {
         case 'HD': item.isHD = true; break;
-        case 'FHD': item.isFHD = true; break;
+        case 'FHD': item.is2k = true; break;
         case 'UHD': item.is4k = true; break;
         default: item.isSD = true; break;
       }
@@ -793,7 +793,7 @@ function fixVideoFlagsAndEncoding(items: LibraryItem[]): void {
     else {
       const data: any[] = item.data || [];
 
-      for (const flag of ['isSD', 'is3d', 'isHD', 'isFHD', 'is4k']) {
+      for (const flag of ['isSD', 'is3d', 'isHD', 'is2k', 'is4k']) {
         if (data.find(v => v[flag]))
           (item as any)[flag] = true;
         else

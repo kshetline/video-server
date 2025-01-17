@@ -137,7 +137,7 @@ export class ShowViewComponent implements OnInit {
           if (item.cut)
             cutSorts.set(item.cut, item.cutSort || 0);
 
-          count2k += (item.isFHD || item.is2k) && !item.is3d ? 1 : 0;
+          count2k += item.is2k && !item.is3d ? 1 : 0;
           count4k += item.is4k ? 1 : 0;
           count3d += item.is3d ? 1 : 0;
           countOSE += /Original Special Effects/i.test(item.uri) ? 1 : 0;
@@ -221,7 +221,7 @@ export class ShowViewComponent implements OnInit {
           cut += '-4K';
         else if (vc.is3d && count3d === max(cutSorts.size, 1) && (count2k > 0 || count4k > 0))
           cut += '-3D';
-        else if ((vc.isFHD || vc.is2k) && count2k === max(cutSorts.size, 1) && (count3d > 0 || count4k > 0))
+        else if (vc.is2k && count2k === max(cutSorts.size, 1) && (count3d > 0 || count4k > 0))
           cut += (count3d && !count4k ? '2D' : '2K');
 
         if (cut)
@@ -486,7 +486,7 @@ export class ShowViewComponent implements OnInit {
       b.push('4K-UHD');
     else if (v.is3d)
       b.push('3D');
-    else if (v.is2k || v.isFHD)
+    else if (v.is2k)
       b.push('2K');
     else if (v.isHD)
       b.push('720p');
