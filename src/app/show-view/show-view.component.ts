@@ -537,7 +537,8 @@ export class ShowViewComponent implements OnInit {
       }
       else if (codec) {
         if (!codecs.has(codec) && a.language === v.audio[0].language)
-          text = codec + (stereo ? '' : (chan && (i === 0 || /\bmono\b/i.test(chan) ? ' ' + chan : '')));
+          text = codec + (stereo ? '' : (chan && (i === 0 || /\bmono\b/i.test(chan) ?
+            (chan === 'Atmos' ? '\n' : ' ') + chan : '')));
 
         codecs.add(codec);
       }

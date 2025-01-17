@@ -167,7 +167,9 @@ function getCodec(track: MediaTrack): string {
 
   let codec = track.Format || '';
 
-  if (codec === 'DTS') {
+  if (codec === 'DTS XLL')
+    codec = 'DTS-X';
+  else if (codec === 'DTS') {
     if (track.Format_Commercial_IfAny?.includes('DTS:X') || /\bXLL X\b/.test(track.Format_AdditionalFeatures))
       codec = 'DTS-X';
     else if (/\bDTS-HD\b/.test(track.Format_Commercial_IfAny) || /\bXLL\b/.test(track.Format_AdditionalFeatures))
@@ -484,6 +486,7 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
             case 'General':
               item.title = track.Title || track.Movie;
               break;
+
             case 'Video':
               if (item.aspectRatioOverride)
                 item.aspectRatio = item.aspectRatioOverride;
@@ -506,6 +509,7 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
               item.video.push(t);
 
               break;
+
             case 'Audio':
               t.channels = channelString(track);
               t.isDefault = toBoolean(track.Default);

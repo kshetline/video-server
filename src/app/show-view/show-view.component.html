@@ -85,7 +85,7 @@
                   <span *ngSwitchCase="'DS'"><i class="pi pi-align-left"></i></span>
                   <span *ngSwitchCase="'AC'"><i class="pi pi-comments"></i><i class="pi pi-volume-up sup"></i></span>
                   <span *ngSwitchCase="'TC'"><i class="pi pi-comments"></i><i class="pi pi-align-left sup"></i></span>
-                  <span *ngSwitchDefault>{{badge}}</span>
+                  <span *ngSwitchDefault [style.font-size]="badge?.includes('\n') ? '0.6em' : 'inherited'">{{badge}}</span>
                 </ng-container>
               </div>
             </div>

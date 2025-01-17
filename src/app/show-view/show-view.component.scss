@@ -79,7 +79,7 @@
   .show-info-wrapper {
     display: flex;
     flex-direction: column;
-    justify-content: end;
+    justify-content: flex-end;
 
     .show-info {
       background-color: rgba(black, 60%);
@@ -250,10 +250,12 @@
                 display: flex;
                 font: bold 18px Arial, sans-serif;
                 height: 32px;
+                justify-content: center;
+                min-width: 36px;
                 padding: 0.2em;
                 position: relative;
                 user-select: none;
-                white-space: nowrap;
+                white-space: pre-line;
 
                 .badge-row {
                   display: flex;
@@ -502,8 +504,20 @@
         }
 
         .swappable-info {
-          .general-wrapper .general .text-wrapper {
-            height: 5.5em;
+          .general-wrapper .general {
+            .text-wrapper {
+              height: 5.5em;
+            }
+
+            .badges {
+              left: -16.6%;
+              transform: scale(0.75);
+              width: 133%;
+
+              img {
+                transform: scale(1);
+              }
+            }
           }
 
           .gallery-wrapper .gallery .person .image-frame {
@@ -534,8 +548,20 @@
     }
 
     .show-info-wrapper .show-info .swappable-info {
-      .general-wrapper .general .text-wrapper {
-        height: 5.5em;
+      .general-wrapper .general {
+        .text-wrapper {
+          height: 5.5em;
+        }
+
+        .badges {
+          left: -16.6%;
+          transform: scale(0.75);
+          width: 133%;
+
+          img {
+            transform: scale(1);
+          }
+        }
       }
 
       .gallery-wrapper .gallery .person .image-frame {
