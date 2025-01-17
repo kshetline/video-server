@@ -1285,7 +1285,8 @@ export function initLibrary(): void {
       addBackLinks(cachedLibrary.array);
       mapDurations();
     }
-    catch {
+    catch (e) {
+      console.log(e);
       stats = undefined;
     }
   }

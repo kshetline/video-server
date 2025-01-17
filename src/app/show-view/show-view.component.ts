@@ -42,7 +42,7 @@ export class ShowViewComponent implements OnInit {
   anyOverview = false;
   backgroundOverlay = '';
   badges: string[] = [];
-  badgeExtras: string[] = [];
+  badgeExtras: string[][] = [];
   categoryLabels: string[] = [];
   faderOpacity = '0';
   identicalThumbnail = false;
@@ -491,26 +491,26 @@ export class ShowViewComponent implements OnInit {
     else if (v.isHD)
       b.push('720p');
 
-    if (videoTrack.codec)
+    if (videoTrack?.codec)
       b.push(videoTrack.codec.replace(/\s+.*$/, ''));
 
     if (v.hdr)
       b.push(v.hdr);
 
-    if (v.aspectRatio)
-      b.push(v.aspectRatio);
-
     if (videoTrack?.frameRate) {
-      this.badgeExtras[b.length] = toMaxFixed(videoTrack.frameRate, 3);
+      this.badgeExtras[b.length] = toMaxFixed(videoTrack.frameRate, 3).split('.');
       b.push('FR');
     }
+
+    if (v.aspectRatio)
+      b.push(v.aspectRatio);
 
     for (let i = 0; i < v.audio?.length || 0; ++i) {
       const a = v.audio[i];
       let codec = a?.codec || '';
       let chan = a?.channels || '';
       const stereo = /\bstereo\b/i.test(chan);
-      let extra = '';
+      let extra: string[];
       let text: string;
 
       if (codec === 'DTS-HD MA')
@@ -527,24 +527,24 @@ export class ShowViewComponent implements OnInit {
         if (chan === 'Atmos')
           text = 'Atmos';
         else if (!stereo)
-          extra = chan;
+          extra = [chan];
       }
       else if (codec === 'DTS-HD' || codec === 'DTS-X') {
         text = codec;
 
         if (!stereo)
-          extra = chan;
+          extra = [chan];
       }
       else if (codec) {
         if (!codecs.has(codec) && a.language === v.audio[0].language)
-          text = codec + (chan && (i === 0 || /\bmono\b/i.test(chan) ? ' ' + chan : ''));
+          text = codec + (stereo ? '' : (chan && (i === 0 || /\bmono\b/i.test(chan) ? ' ' + chan : '')));
 
         codecs.add(codec);
       }
       else if (chan && i === 0)
         text = chan;
 
-      const combo = [text, extra].join();
+      const combo = [text, ...(extra ?? [])].join();
 
       if (text && text !== 'DD' && !combos.has(combo)) {
         this.badgeExtras[b.length] = extra;

@@ -59,7 +59,7 @@
               <div *ngIf="anyOverview" class="overview"><div class="overview-content">{{selection.overview}}</div></div>
             </div>
             <div *ngIf="badges?.length > 0" class="badges">
-              <div *ngFor="let badge of badges" class="badge">
+              <div *ngFor="let badge of badges; index as i" class="badge">
                 <ng-container [ngSwitch]="badge">
                   <img *ngSwitchCase="'4K-UHD'" src="/assets/4K-UHD.svg" height=20 alt="4K-UHD">
                   <img *ngSwitchCase="'DV'" src="/assets/DV.svg" height=20 alt="Dolby Vision">
@@ -67,8 +67,19 @@
                   <img *ngSwitchCase="'HDR10'" src="/assets/HDR10.svg" height=14 alt="HDR10">
                   <img *ngSwitchCase="'HDR'" src="/assets/HDR.svg" height=14 alt="HDR">
                   <img *ngSwitchCase="'Atmos'" src="/assets/Atmos.svg" height=20 alt="Dolby Atmos">
-                  <img *ngSwitchCase="'DTS-HD'" src="/assets/DTS-HD.png" height=20 alt="DTS-HD">
-                  <img *ngSwitchCase="'DTS-X'" src="/assets/DTS-X.png" height=20 alt="DTS-X">
+                  <div *ngSwitchCase="'DTS-HD'" class="badge-row">
+                    <img src="/assets/DTS-HD.png" height=20 alt="DTS-HD">
+                    <span *ngIf="badgeExtras[i][0]">{{ badgeExtras[i][0] }}</span>
+                  </div>
+                  <div *ngSwitchCase="'DTS-X'" class="badge-row">
+                    <img src="/assets/DTS-X.png" height=20 alt="DTS-X">
+                    <span *ngIf="badgeExtras[i]">{{ badgeExtras[i] }}</span>
+                  </div>
+                  <div *ngSwitchCase="'FR'" class='frame-rate'>
+                    <div>{{ badgeExtras[i][0] }}</div>
+                    <div class='hz'>HZ</div>
+                    <div *ngIf="badgeExtras[i][1]" class='frac'>.{{ badgeExtras[i][1] }}</div>
+                  </div>
                   <span *ngSwitchCase="'DS'"><i class="pi pi-align-left"></i></span>
                   <span *ngSwitchCase="'AC'"><i class="pi pi-comments"></i><i class="pi pi-volume-up sup"></i></span>
                   <span *ngSwitchCase="'TC'"><i class="pi pi-comments"></i><i class="pi pi-align-left sup"></i></span>
