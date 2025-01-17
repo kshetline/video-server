@@ -61,6 +61,8 @@
             <div *ngIf="badges?.length > 0" class="badges">
               <div *ngFor="let badge of badges; index as i" class="badge">
                 <ng-container [ngSwitch]="badge">
+                  <img *ngSwitchCase="'H.264'" src="/assets/H264.svg" height=28 alt="H.264 AVC">
+                  <img *ngSwitchCase="'H.265'" src="/assets/H265.svg" height=28 alt="H.265 HEVC">
                   <img *ngSwitchCase="'4K-UHD'" src="/assets/4K-UHD.svg" height=20 alt="4K-UHD">
                   <img *ngSwitchCase="'DV'" src="/assets/DV.svg" height=20 alt="Dolby Vision">
                   <img *ngSwitchCase="'HDR10+'" src="/assets/HDR10+.svg" height=20 alt="HDR10+">
