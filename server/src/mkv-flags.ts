@@ -27,8 +27,13 @@ function getCodec(track: GeneralTrack): string {
 
   let codec = track.codec || '';
 
-  if (codec === 'DTS-HD Master Audio')
-    codec = 'DTS-HD MA';
+  if (codec === 'DTS-HD Master Audio') {
+    if (track.properties?.media?.Format_Commercial_IfAny.includes('DTS:X') ||
+        /\bXLL X\b/.test(track.properties?.media?.Format_AdditionalFeatures))
+      codec = 'DTS-X';
+    else
+      codec = 'DTS-HD MA';
+  }
   else if (codec === 'DTS-HD High Resolution Audio')
     codec = 'DTS-HD HRA';
   else if (codec === 'AC-3 Dolby Surround EX')

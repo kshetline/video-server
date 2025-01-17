@@ -1,7 +1,7 @@
 import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
 import { LibraryItem, PlaybackProgress } from '../../../server/src/shared-types';
 import { areImagesSimilar, canPlayVP9, getImageParam, getSeasonTitle, setCssVariable, webSocketMessagesEmitter } from '../video-ui-utils';
-import { checksum53, compareCaseSecondary, encodeForUri, nfe } from '@tubular/util';
+import { checksum53, compareCaseSecondary, encodeForUri, nfe, toMaxFixed } from '@tubular/util';
 import { floor, max, round } from '@tubular/math';
 import { HttpClient } from '@angular/common/http';
 import { hashUri, isFile, isMovie, isTvSeason } from '../../../server/src/shared-utils';
@@ -42,6 +42,7 @@ export class ShowViewComponent implements OnInit {
   anyOverview = false;
   backgroundOverlay = '';
   badges: string[] = [];
+  badgeExtras: string[] = [];
   categoryLabels: string[] = [];
   faderOpacity = '0';
   identicalThumbnail = false;
@@ -473,6 +474,11 @@ export class ShowViewComponent implements OnInit {
   private updateBadges(): void {
     const b = this.badges = [];
     const v = this.video;
+    const videoTrack = (v.video || [])[0];
+    const codecs = new Set<string>();
+    const combos = new Set<string>();
+
+    this.badgeExtras = [];
 
     if (!v)
       return;
@@ -485,24 +491,31 @@ export class ShowViewComponent implements OnInit {
     else if (v.isHD)
       b.push('720p');
 
-    if (v.aspectRatio)
-      b.push(v.aspectRatio);
-
-    if ((v.video || [])[0]?.codec)
-      b.push(v.video[0].codec.replace(/\s+.*$/, ''));
+    if (videoTrack.codec)
+      b.push(videoTrack.codec.replace(/\s+.*$/, ''));
 
     if (v.hdr)
       b.push(v.hdr);
 
-    const codecs = new Set<string>();
+    if (v.aspectRatio)
+      b.push(v.aspectRatio);
+
+    if (videoTrack?.frameRate) {
+      this.badgeExtras[b.length] = toMaxFixed(videoTrack.frameRate, 3);
+      b.push('FR');
+    }
 
     for (let i = 0; i < v.audio?.length || 0; ++i) {
       const a = v.audio[i];
       let codec = a?.codec || '';
       let chan = a?.channels || '';
+      const stereo = /\bstereo\b/i.test(chan);
+      let extra = '';
       let text: string;
 
-      if (/\bmpeg\b/i.test(codec))
+      if (codec === 'DTS-HD MA')
+        codec = 'DTS-HD';
+      else if (/\bmpeg\b/i.test(codec))
         codec = 'MP3';
       else if (/^ac-?3$/i.test(codec))
         codec = 'DD';
@@ -510,13 +523,17 @@ export class ShowViewComponent implements OnInit {
       if (/^stereo$/i.test(chan) && /\bmono\b/i.test(a.name))
         chan = 'Mono';
 
-      if (codec === 'TrueHD' && chan === 'Atmos' && !codecs.has('Atmos')) {
-        text = 'Atmos';
-        codecs.add(text);
+      if (codec === 'TrueHD') {
+        if (chan === 'Atmos')
+          text = 'Atmos';
+        else if (!stereo)
+          extra = chan;
       }
-      else if ((codec === 'DTS-HD MA' || codec === 'DTS') && !codecs.has('DTS-HD')) { // TODO: Differentiate DTS and DTS-HD
-        text = 'DTS-HD';
-        codecs.add(text);
+      else if (codec === 'DTS-HD' || codec === 'DTS-X') {
+        text = codec;
+
+        if (!stereo)
+          extra = chan;
       }
       else if (codec) {
         if (!codecs.has(codec) && a.language === v.audio[0].language)
@@ -527,8 +544,13 @@ export class ShowViewComponent implements OnInit {
       else if (chan && i === 0)
         text = chan;
 
-      if (text && text !== 'DD')
+      const combo = [text, extra].join();
+
+      if (text && text !== 'DD' && !combos.has(combo)) {
+        this.badgeExtras[b.length] = extra;
         b.push(text);
+        combos.add(combo);
+      }
     }
 
     if (v.defaultSubtitles)

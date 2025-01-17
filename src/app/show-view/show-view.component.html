@@ -68,7 +68,8 @@
                   <img *ngSwitchCase="'HDR'" src="/assets/HDR.svg" height=14 alt="HDR">
                   <img *ngSwitchCase="'Atmos'" src="/assets/Atmos.svg" height=20 alt="Dolby Atmos">
                   <img *ngSwitchCase="'DTS-HD'" src="/assets/DTS-HD.png" height=20 alt="DTS-HD">
-                  <i *ngSwitchCase="'DS'" class="pi pi-align-left"></i>
+                  <img *ngSwitchCase="'DTS-X'" src="/assets/DTS-X.png" height=20 alt="DTS-X">
+                  <span *ngSwitchCase="'DS'"><i class="pi pi-align-left"></i></span>
                   <span *ngSwitchCase="'AC'"><i class="pi pi-comments"></i><i class="pi pi-volume-up sup"></i></span>
                   <span *ngSwitchCase="'TC'"><i class="pi pi-comments"></i><i class="pi pi-align-left sup"></i></span>
                   <span *ngSwitchDefault>{{badge}}</span>

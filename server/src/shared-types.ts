@@ -41,6 +41,7 @@ export interface ServerStatus {
 export interface Track {
   channels?: string;
   codec?: string;
+  frameRate?: number;
   hdr?: string;
   isCommentary?: boolean;
   isDefault?: boolean;

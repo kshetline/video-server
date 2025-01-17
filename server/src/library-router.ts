@@ -167,7 +167,13 @@ function getCodec(track: MediaTrack): string {
 
   let codec = track.Format || '';
 
-  if (track.CodecID === 'A_TRUEHD')
+  if (codec === 'DTS') {
+    if (track.Format_Commercial_IfAny?.includes('DTS:X') || /\bXLL X\b/.test(track.Format_AdditionalFeatures))
+      codec = 'DTS-X';
+    else if (/\bDTS-HD\b/.test(track.Format_Commercial_IfAny) || /\bXLL\b/.test(track.Format_AdditionalFeatures))
+      codec = 'DTS-HD';
+  }
+  else if (track.CodecID === 'A_TRUEHD')
     codec = 'TrueHD';
   else if (codec === 'E-AC-3')
     codec = 'E-AC3';
@@ -492,6 +498,9 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
 
                 item.resolution = formatResolution(track);
               }
+
+              if (track.FrameRate)
+                t.frameRate = toNumber(track.FrameRate);
 
               item.video = item.video ?? [];
               item.video.push(t);
