@@ -1406,14 +1406,14 @@ export async function updateCache(id: number): Promise<void> {
 
   if (!pendingLibUpdate) {
     try {
-      pendingLibUpdate = laxJsonParse((await readFile(libraryFile)).toString('utf8')) as VideoLibrary;
+      pendingLibUpdate = JSON.parse((await readFile(libraryFile)).toString('utf8')) as VideoLibrary;
     }
     catch {
       return;
     }
   }
 
-  if (!pendingLibUpdate.array)
+  if (!pendingLibUpdate?.array)
     return;
 
   function findTargetId(id: number, item?: LibraryItem): LibraryItem {
