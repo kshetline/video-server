@@ -307,12 +307,14 @@
           font-size: 0.8em;
           height: 14em;
           justify-content: center;
-          min-width: 25px;
+          width: 1.8em;
           padding: 0 0.2em;
           text-align: center;
           vertical-align: middle;
 
           span {
+            display: inline-block;
+            min-width: 15px;
             text-orientation: upright;
             writing-mode: vertical-lr;
           }
@@ -563,10 +565,14 @@
         }
 
         .badges {
-          bottom: -0.6em;
+          bottom: -0.28em;
           left: -16.6%;
           transform: scale(0.75);
           width: 133%;
+
+          &.bottom-adjust {
+            bottom: -0.6em;
+          }
 
           img {
             transform: scale(1);

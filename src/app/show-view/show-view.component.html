@@ -58,7 +58,8 @@
               <div *ngIf="isTvSeason(show)" class="episode-title">{{selection.name}}</div>
               <div *ngIf="anyOverview" class="overview"><div class="overview-content">{{selection.overview}}</div></div>
             </div>
-            <div *ngIf="badges?.length > 0" id="badges" class="badges" [class.foo]="badgeCheckIn()">
+            <div *ngIf="badges?.length > 0" id="badges" class="badges" [class.foo]="badgeCheckIn()"
+                 [class.bottom-adjust]="twoRowsOfBadges">
               <div *ngFor="let badge of badges; index as i" class="badge">
                 <ng-container [ngSwitch]="badge">
                   <img *ngSwitchCase="'H.264'" src="/assets/H264.svg" height=28 alt="H.264 AVC">

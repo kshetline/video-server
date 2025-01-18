@@ -1280,12 +1280,31 @@ function monitorPlayer(): void {
   }, 10000));
 }
 
+function laxJsonParse(s: string): any {
+  try {
+    return JSON.parse(s);
+  }
+  catch (e) {
+    console.error(e);
+
+    // Sometimes reading the library JSON fails because there's mysterious garbage beyond where the file
+    // contents should end. See if that can be clipped off for a successful parse.
+    const $ = /(error|syntax|token|unexpected).*position (\d+)/i.exec(e.message);
+
+    if ($) {
+      console.warn('Attempting to parse library file again.');
+      s = s.substring(0, toNumber($[2]));
+      return JSON.parse(s);
+    }
+  }
+}
+
 export function initLibrary(): void {
   let stats = existsSync(libraryFile) && lstatSync(libraryFile);
 
   if (stats) {
     try {
-      cachedLibrary = JSON.parse(readFileSync(libraryFile).toString('utf8'));
+      cachedLibrary = laxJsonParse(readFileSync(libraryFile).toString('utf8'));
       addBackLinks(cachedLibrary.array);
       mapDurations();
     }
@@ -1387,7 +1406,7 @@ export async function updateCache(id: number): Promise<void> {
 
   if (!pendingLibUpdate) {
     try {
-      pendingLibUpdate = JSON.parse((await readFile(libraryFile)).toString('utf8')) as VideoLibrary;
+      pendingLibUpdate = laxJsonParse((await readFile(libraryFile)).toString('utf8')) as VideoLibrary;
     }
     catch {
       return;
