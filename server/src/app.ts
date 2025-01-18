@@ -702,7 +702,7 @@ function getApp(): Express {
 
       if (mainPlayer || uri) {
         const url = mainPlayer && id ?
-          `${host}Poster/v2/playVideo?id=${id}&type=0` :
+          `${host}ZidooPoster/PlayVideo?id=${id}&type=0` :
           `${host}ZidooFileControl/openFile?videoplaymode=0&path=${encodeForUri(uri)}`;
 
         try {
