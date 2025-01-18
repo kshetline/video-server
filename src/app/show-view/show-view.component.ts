@@ -1,4 +1,4 @@
-import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
+import { AfterViewInit, Component, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { LibraryItem, PlaybackProgress } from '../../../server/src/shared-types';
 import { areImagesSimilar, canPlayVP9, getImageParam, getSeasonTitle, setCssVariable, webSocketMessagesEmitter } from '../video-ui-utils';
 import { checksum53, compareCaseSecondary, encodeForUri, nfe, toMaxFixed } from '@tubular/util';
@@ -26,12 +26,13 @@ interface Person {
   styleUrls: ['./show-view.component.scss'],
   providers: [MessageService]
 })
-export class ShowViewComponent implements OnInit {
+export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
   readonly getSeasonTitle = getSeasonTitle;
   readonly isTvSeason = isTvSeason;
 
   private backgroundMain = '';
   private backgroundChangeInProgress = false;
+  private badgeView: HTMLElement;
   private checkedForStream = new Set<number>();
   private choices: LibraryItem[] = [];
   private pendingBackgroundIndex = -1;
@@ -57,6 +58,7 @@ export class ShowViewComponent implements OnInit {
   thumbnailNaturalWidth = 0;
   thumbnailWidth = '0';
   transitionDuration = FADER_TRANSITION_DURATION;
+  twoRowsOfBadges = false;
   video: LibraryItem;
   videoCategory = 1;
   videoChoices: LibraryItem[][] = [];
@@ -78,6 +80,33 @@ export class ShowViewComponent implements OnInit {
           break;
       }
     });
+  }
+
+  private badgesAdjust = (): void => {
+    if (this.badgeView)
+      this.twoRowsOfBadges = this.badgeView.clientHeight > 40;
+  };
+
+  ngAfterViewInit(): void {
+    window.addEventListener('resize', this.badgesAdjust);
+  }
+
+  ngOnDestroy(): void {
+    window.removeEventListener('resize', this.badgesAdjust);
+  }
+
+  badgeCheckIn(): boolean {
+    const badgeView = document.getElementById('badges');
+
+    if (this.badgeView !== badgeView) {
+      console.log(badgeView);
+      this.badgeView = badgeView;
+
+      if (badgeView)
+        this.badgesAdjust();
+    }
+
+    return false;
   }
 
   @Input() get show(): LibraryItem { return this._show; }
@@ -222,7 +251,7 @@ export class ShowViewComponent implements OnInit {
         else if (vc.is3d && count3d === max(cutSorts.size, 1) && (count2k > 0 || count4k > 0))
           cut += '-3D';
         else if (vc.is2k && count2k === max(cutSorts.size, 1) && (count3d > 0 || count4k > 0))
-          cut += (count3d && !count4k ? '2D' : '2K');
+          cut += (count3d && !count4k ? '-2D' : '-2K');
 
         if (cut)
           return cut.replace(/^-/, '');
@@ -562,6 +591,8 @@ export class ShowViewComponent implements OnInit {
 
     if (v.commentaryText)
       b.push('TC');
+
+    setTimeout(this.badgesAdjust, 500);
   }
 
   getPlaybackInfo(): void {

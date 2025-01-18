@@ -53,12 +53,12 @@
       <div class="swappable-info">
         <div class="general-wrapper" [class.expand]="!showCast">
           <div class="general">
-            <div class="text-wrapper">
+            <div class="text-wrapper" [class.shrink]="twoRowsOfBadges">
               <div *ngIf="show.tagLine" class="tag-line">{{show.tagLine}}</div>
               <div *ngIf="isTvSeason(show)" class="episode-title">{{selection.name}}</div>
               <div *ngIf="anyOverview" class="overview"><div class="overview-content">{{selection.overview}}</div></div>
             </div>
-            <div *ngIf="badges?.length > 0" class="badges">
+            <div *ngIf="badges?.length > 0" id="badges" class="badges" [class.foo]="badgeCheckIn()">
               <div *ngFor="let badge of badges; index as i" class="badge">
                 <ng-container [ngSwitch]="badge">
                   <img *ngSwitchCase="'H.264'" src="/assets/H264.svg" height=28 alt="H.264 AVC">

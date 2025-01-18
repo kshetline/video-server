@@ -212,9 +212,13 @@
         .general-wrapper {
           .general {
             .text-wrapper {
-              height: 9.2em;
+              height: 7.95em;
               overflow-x: hidden;
               overflow-y: auto;
+
+              &.shrink {
+                height: 5.55em;
+              }
 
               .episode-title, .tag-line {
                 font-weight: bold;
@@ -506,7 +510,11 @@
         .swappable-info {
           .general-wrapper .general {
             .text-wrapper {
-              height: 5.5em;
+              height: 6.75em;
+            }
+
+            &.shrink {
+              height: 4.35em;
             }
 
             .badges {
@@ -555,7 +563,7 @@
         }
 
         .badges {
-          bottom: -0.25em;
+          bottom: -0.6em;
           left: -16.6%;
           transform: scale(0.75);
           width: 133%;
