@@ -1,5 +1,5 @@
 import { LibraryItem } from '../../server/src/shared-types';
-import { isString, stripDiacriticals_lc } from '@tubular/util';
+import { isString, stripDiacriticals_lc, toInt } from '@tubular/util';
 import { isCollection, isMovie, isTvSeason, isTvShow } from '../../server/src/shared-utils';
 import { fromEvent } from 'rxjs/internal/observable/fromEvent';
 import { debounceTime } from 'rxjs/internal/operators/debounceTime';
@@ -215,4 +215,20 @@ export function formatSecondsToDays(secs: number): string {
   secs -= minutes * 60;
 
   return `${days}d${hours.toString().padStart(2, '0')}h${minutes.toString().padStart(2, '0')}m${secs.toString().padStart(2, '0')}s`;
+}
+
+export function getChannelCount(s: string): number {
+  if (/mono/i.test(s))
+    return 1;
+  else if (/stereo/i.test(s))
+    return 2;
+  else if (/atmos/i.test(s))
+    return 8; // Not guaranteed to be 8 (7 + 1), but a good enough value for the purpose of this function.
+
+  const $ = /(\d+)(\.\d)?/.exec(s);
+
+  if ($)
+    return toInt($[1]) + toInt($[2].substring(1));
+  else
+    return 2;
 }

@@ -71,7 +71,7 @@
                   <img *ngSwitchCase="'HDR'" src="/assets/HDR.svg" height=14 alt="HDR">
                   <img *ngSwitchCase="'Atmos'" src="/assets/Atmos.svg" height=20 alt="Dolby Atmos">
                   <div *ngSwitchCase="'DD'" class="badge-col">
-                    <img src="/assets/DD.svg" [height]='(badgeExtras[i] || [])[0] ? 9 : 18' alt="Dolby Digital">
+                    <img src="/assets/DD.svg" [height]='(badgeExtras[i] || [])[0] ? 10 : 18' alt="Dolby Digital">
                     <span *ngIf="(badgeExtras[i] || [])[0]">{{ badgeExtras[i][0] }}</span>
                   </div>
                   <div *ngSwitchCase="'DTS'" class="badge-row">

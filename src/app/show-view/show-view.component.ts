@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { LibraryItem, PlaybackProgress } from '../../../server/src/shared-types';
-import { areImagesSimilar, canPlayVP9, getImageParam, getSeasonTitle, setCssVariable, webSocketMessagesEmitter } from '../video-ui-utils';
+import { areImagesSimilar, canPlayVP9, getChannelCount, getImageParam, getSeasonTitle, setCssVariable, webSocketMessagesEmitter } from '../video-ui-utils';
 import { checksum53, compareCaseSecondary, encodeForUri, nfe, toMaxFixed } from '@tubular/util';
 import { floor, max, round } from '@tubular/math';
 import { HttpClient } from '@angular/common/http';
@@ -504,7 +504,7 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
     const b = this.badges = [];
     const v = this.video;
     const videoTrack = (v.video || [])[0];
-    const codecs = new Set<string>();
+    const codecs = new Map<string, { index: number, count: number }>();
     const combos = new Set<string>();
 
     this.badgeExtras = [];
@@ -542,6 +542,7 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
       const a = v.audio[i];
       let codec = a?.codec || '';
       let chan = a?.channels || '';
+      const chanCount = getChannelCount(chan);
       const stereo = /\bstereo\b/i.test(chan);
       let extra: string[];
       let text: string;
@@ -568,20 +569,27 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
         if (!stereo)
           extra = [chan];
       }
-      else if (codec) {
-        if (!codecs.has(codec) && a.language === v.audio[0].language)
-          text = codec + (stereo ? '' : (chan && (i === 0 || /\bmono\b/i.test(chan) ? '\n' + chan : '')));
-
-        codecs.add(codec);
-      }
+      else if (codec)
+        text = codec + (stereo ? '' : (chan ? '\n' + chan : ''));
       else if (chan && i === 0)
         text = chan;
 
       const combo = [text, ...(extra ?? [])].join();
 
       if (text && !combos.has(combo)) {
-        this.badgeExtras[b.length] = extra;
-        b.push(text);
+        const prevUseOfCodec = codecs.get(codec);
+
+        if (!prevUseOfCodec) {
+          this.badgeExtras[b.length] = extra;
+          codecs.set(codec, { index: b.length, count: chanCount });
+          b.push(text);
+        }
+        else if (chanCount > prevUseOfCodec.count) {
+          this.badgeExtras[prevUseOfCodec.index] = extra;
+          codecs.set(codec, { index: prevUseOfCodec.index, count: chanCount });
+          b[prevUseOfCodec.index] = text;
+        }
+
         combos.add(combo);
       }
     }
