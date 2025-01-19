@@ -70,13 +70,21 @@
                   <img *ngSwitchCase="'HDR10'" src="/assets/HDR10.svg" height=14 alt="HDR10">
                   <img *ngSwitchCase="'HDR'" src="/assets/HDR.svg" height=14 alt="HDR">
                   <img *ngSwitchCase="'Atmos'" src="/assets/Atmos.svg" height=20 alt="Dolby Atmos">
+                  <div *ngSwitchCase="'DD'" class="badge-col">
+                    <img src="/assets/DD.svg" [height]='(badgeExtras[i] || [])[0] ? 9 : 18' alt="Dolby Digital">
+                    <span *ngIf="(badgeExtras[i] || [])[0]">{{ badgeExtras[i][0] }}</span>
+                  </div>
+                  <div *ngSwitchCase="'DTS'" class="badge-row">
+                    <img src="/assets/DTS.svg" class='DTS' height=18 alt="DTS">
+                    <span *ngIf="(badgeExtras[i] || [])[0]">{{ badgeExtras[i][0] }}</span>
+                  </div>
                   <div *ngSwitchCase="'DTS-HD'" class="badge-row">
                     <img src="/assets/DTS-HD.png" height=20 alt="DTS-HD">
-                    <span *ngIf="badgeExtras[i][0]">{{ badgeExtras[i][0] }}</span>
+                    <span *ngIf="(badgeExtras[i] || [])[0]">{{ badgeExtras[i][0] }}</span>
                   </div>
                   <div *ngSwitchCase="'DTS-X'" class="badge-row">
                     <img src="/assets/DTS-X.png" height=20 alt="DTS-X">
-                    <span *ngIf="badgeExtras[i]">{{ badgeExtras[i] }}</span>
+                    <span *ngIf="(badgeExtras[i] || [])[0]">{{ badgeExtras[i][0] }}</span>
                   </div>
                   <div *ngSwitchCase="'FR'" class='frame-rate'>
                     <div>{{ badgeExtras[i][0] }}</div>

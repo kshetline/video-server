@@ -248,7 +248,7 @@ function incrementProgress(phase: number): void {
 
 const FIELDS_TO_KEEP = new Set(['id', 'parentId', 'collectionId', 'aggregationId', 'type', 'voteAverage', 'name',
   'is3d', 'is4k', 'hdr', 'is2k', 'isHD', 'year', 'duration', 'watched', 'data', 'uri', 'season',
-  'episode', 'position']);
+  'episode', 'position', 'interlaced']);
 
 function filter(item: LibraryItem): void {
   if (item) {
@@ -498,8 +498,14 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
                   item.aspectRatio = formatAspectRatioNumber(row.aspect);
                 else
                   item.aspectRatio = formatAspectRatio(track);
+              }
 
-                item.resolution = formatResolution(track);
+              item.resolution = formatResolution(track);
+
+              if (track.ScanType === 'Interlaced') {
+                const height = toInt(track.Height);
+
+                item.interlaced = t.interlaced = height > 576 ? 1080 : height > 480 ? 576 : 480;
               }
 
               if (track.FrameRate)
@@ -769,7 +775,7 @@ function fixVideoFlagsAndEncoding(items: LibraryItem[]): void {
     delete item.isFHD;
 
     if (isFile(item)) {
-      if (!item.is3d || item.uri.endsWith('(2D).mkv'))
+      if (!item.is3d || /\b2D\)\.mkv$/i.test(item.uri))
         delete item.is3d;
 
       if (item.uri.endsWith('(2K).mkv') || item.uri.includes('/2K/'))

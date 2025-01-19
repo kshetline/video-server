@@ -43,6 +43,7 @@ export interface Track {
   codec?: string;
   frameRate?: number;
   hdr?: string;
+  interlaced?: number;
   isCommentary?: boolean;
   isDefault?: boolean;
   isForced?: boolean;
@@ -105,6 +106,7 @@ export interface LibraryItem {
   hdr?: string;
   hide?: boolean;
   homepage?: string;
+  interlaced?: number;
   is2k?: boolean;
   is3d?: boolean;
   is4k?: boolean;
@@ -194,6 +196,7 @@ export interface MediaTrack {
   ID: string;
   Language: string;
   Movie: string;
+  ScanType?: string;
   Title: string;
   VideoCount: string;
   Width: string;

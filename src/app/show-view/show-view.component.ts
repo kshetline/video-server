@@ -511,6 +511,8 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
 
     if (!v)
       return;
+    else if (v.interlaced)
+      b.push(v.interlaced + 'i');
     else if (v.is4k)
       b.push('4K-UHD');
     else if (v.is3d)
@@ -519,6 +521,8 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
       b.push('2K');
     else if (v.isHD)
       b.push('720p');
+    else if (v.isSD)
+      b.push('SD');
 
     if (videoTrack?.codec)
       b.push(videoTrack.codec.replace(/\s+.*$/, ''));
@@ -558,7 +562,7 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
         else if (!stereo)
           extra = [chan];
       }
-      else if (codec === 'DTS-HD' || codec === 'DTS-X') {
+      else if (/^(DD|DTS|DTS-HD|DTS-X)$/.test(codec)) {
         text = codec;
 
         if (!stereo)
@@ -566,8 +570,7 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
       }
       else if (codec) {
         if (!codecs.has(codec) && a.language === v.audio[0].language)
-          text = codec + (stereo ? '' : (chan && (i === 0 || /\bmono\b/i.test(chan) ?
-            (chan === 'Atmos' ? '\n' : ' ') + chan : '')));
+          text = codec + (stereo ? '' : (chan && (i === 0 || /\bmono\b/i.test(chan) ? '\n' + chan : '')));
 
         codecs.add(codec);
       }
@@ -576,7 +579,7 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
 
       const combo = [text, ...(extra ?? [])].join();
 
-      if (text && text !== 'DD' && !combos.has(combo)) {
+      if (text && !combos.has(combo)) {
         this.badgeExtras[b.length] = extra;
         b.push(text);
         combos.add(combo);
