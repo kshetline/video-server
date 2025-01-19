@@ -70,22 +70,6 @@
                   <img *ngSwitchCase="'HDR10'" src="/assets/HDR10.svg" height=14 alt="HDR10">
                   <img *ngSwitchCase="'HDR'" src="/assets/HDR.svg" height=14 alt="HDR">
                   <img *ngSwitchCase="'Atmos'" src="/assets/Atmos.svg" height=20 alt="Dolby Atmos">
-                  <div *ngSwitchCase="'DD'" class="badge-col">
-                    <img src="/assets/DD.svg" [height]='(badgeExtras[i] || [])[0] ? 10 : 18' alt="Dolby Digital">
-                    <span *ngIf="(badgeExtras[i] || [])[0]">{{ badgeExtras[i][0] }}</span>
-                  </div>
-                  <div *ngSwitchCase="'DTS'" class="badge-row">
-                    <img src="/assets/DTS.svg" class='DTS' height=18 alt="DTS">
-                    <span *ngIf="(badgeExtras[i] || [])[0]">{{ badgeExtras[i][0] }}</span>
-                  </div>
-                  <div *ngSwitchCase="'DTS-HD'" class="badge-row">
-                    <img src="/assets/DTS-HD.png" height=20 alt="DTS-HD">
-                    <span *ngIf="(badgeExtras[i] || [])[0]">{{ badgeExtras[i][0] }}</span>
-                  </div>
-                  <div *ngSwitchCase="'DTS-X'" class="badge-row">
-                    <img src="/assets/DTS-X.png" height=20 alt="DTS-X">
-                    <span *ngIf="(badgeExtras[i] || [])[0]">{{ badgeExtras[i][0] }}</span>
-                  </div>
                   <div *ngSwitchCase="'FR'" class='frame-rate'>
                     <div>{{ badgeExtras[i][0] }}</div>
                     <div class='hz'>HZ</div>
@@ -94,7 +78,17 @@
                   <span *ngSwitchCase="'DS'"><i class="pi pi-align-left"></i></span>
                   <span *ngSwitchCase="'AC'"><i class="pi pi-comments"></i><i class="pi pi-volume-up sup"></i></span>
                   <span *ngSwitchCase="'TC'"><i class="pi pi-comments"></i><i class="pi pi-align-left sup"></i></span>
-                  <span *ngSwitchDefault [style.font-size]="badge?.includes('\n') ? '0.6em' : 'inherited'">{{badge}}</span>
+                  <ng-container *ngSwitchDefault>
+                    <div *ngIf="logoImages.has(badge)" [class]="logoImages.get(badge).col ? 'badge-col' : 'badge-row'">
+                      <img src="/assets/{{ logoImages.get(badge).file }}"
+                           [height]="logoImages.get(badge).reduced && badgeExtras[i] ?
+                                     logoImages.get(badge).reduced : logoImages.get(badge).height"
+                           [style.top]="logoImages.get(badge).top ? logoImages.get(badge).top + 'px' : undefined"
+                           [alt]="logoImages.get(badge).alt">
+                      <span *ngIf="(badgeExtras[i] || [])[0]">{{ badgeExtras[i][0] }}</span>
+                    </div>
+                    <span *ngIf="!logoImages.has(badge)" [style.font-size]="badge?.includes('\n') ? '0.6em' : 'inherited'">{{badge}}</span>
+                  </ng-container>
                 </ng-container>
               </div>
             </div>

@@ -20,6 +20,15 @@ interface Person {
   role?: string;
 }
 
+interface ImageInfo {
+  file: string;
+  height: number;
+  alt: string;
+  col?: boolean;
+  top?: number;
+  reduced?: number;
+}
+
 @Component({
   selector: 'app-show-view',
   templateUrl: './show-view.component.html',
@@ -39,6 +48,15 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
   private _playSrc: ItemStreamPair = undefined;
   private _show: LibraryItem;
   private thumbnailMode = false;
+
+  readonly logoImages = new Map<string, ImageInfo>([
+    ['3D',     { file: '3D.svg',     height: 24, alt: '3D' }],
+    ['DD',     { file: 'DD.svg',     height: 18, alt: 'Dolby Digital', col: true, reduced: 10 }],
+    ['DTS',    { file: 'DTS.svg',    height: 16, alt: 'DTS', top: 3 }],
+    ['DTS-HD', { file: 'DTS-HD.png', height: 20, alt: 'DTS-HD MA' }],
+    ['DTS-X',  { file: 'DTS-X.png',  height: 20, alt: 'Dolby Digital' }],
+    ['TrueHD', { file: 'TrueHD.svg', height: 18, alt: 'TrueHD', top: 1 }]
+  ]);
 
   anyOverview = false;
   backgroundOverlay = '';
@@ -542,8 +560,8 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
       const a = v.audio[i];
       let codec = a?.codec || '';
       let chan = a?.channels || '';
-      const chanCount = getChannelCount(chan);
-      const stereo = /\bstereo\b/i.test(chan);
+      let chanCount = getChannelCount(chan);
+      let stereo = (chanCount === 2);
       let extra: string[];
       let text: string;
 
@@ -554,8 +572,13 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
       else if (/^ac-?3$/i.test(codec))
         codec = 'DD';
 
-      if (/^stereo$/i.test(chan) && /\bmono\b/i.test(a.name))
+      if (stereo && /\bmono\b/i.test(a.name)) {
         chan = 'Mono';
+        chanCount = 1;
+        stereo = false;
+      }
+
+      text = codec;
 
       if (codec === 'TrueHD') {
         if (chan === 'Atmos')
@@ -564,15 +587,11 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
           extra = [chan];
       }
       else if (/^(DD|DTS|DTS-HD|DTS-X)$/.test(codec)) {
-        text = codec;
-
         if (!stereo)
           extra = [chan];
       }
       else if (codec)
         text = codec + (stereo ? '' : (chan ? '\n' + chan : ''));
-      else if (chan && i === 0)
-        text = chan;
 
       const combo = [text, ...(extra ?? [])].join();
 
