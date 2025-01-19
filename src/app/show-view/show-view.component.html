@@ -79,15 +79,14 @@
                   <span *ngSwitchCase="'AC'"><i class="pi pi-comments"></i><i class="pi pi-volume-up sup"></i></span>
                   <span *ngSwitchCase="'TC'"><i class="pi pi-comments"></i><i class="pi pi-align-left sup"></i></span>
                   <ng-container *ngSwitchDefault>
-                    <div *ngIf="logoImages.has(badge)" [class]="logoImages.get(badge).col ? 'badge-col' : 'badge-row'">
-                      <img src="/assets/{{ logoImages.get(badge).file }}"
-                           [height]="logoImages.get(badge).reduced && badgeExtras[i] ?
-                                     logoImages.get(badge).reduced : logoImages.get(badge).height"
-                           [style.top]="logoImages.get(badge).top ? logoImages.get(badge).top + 'px' : undefined"
-                           [alt]="logoImages.get(badge).alt">
+                    <div *ngIf="li(badge)" [class]="li(badge).col ? 'badge-col' : 'badge-row'">
+                      <img src="/assets/{{ li(badge).file }}"
+                           [height]="li(badge).reduced && badgeExtras[i] ? li(badge).reduced : li(badge).height"
+                           [style.top]="li(badge).top ? li(badge).top + 'px' : undefined"
+                           [alt]="li(badge).alt">
                       <span *ngIf="(badgeExtras[i] || [])[0]">{{ badgeExtras[i][0] }}</span>
                     </div>
-                    <span *ngIf="!logoImages.has(badge)" [style.font-size]="badge?.includes('\n') ? '0.6em' : 'inherited'">{{badge}}</span>
+                    <span *ngIf="!li(badge)" [style.font-size]="badge?.includes('\n') ? '0.6em' : 'inherited'">{{badge}}</span>
                   </ng-container>
                 </ng-container>
               </div>
