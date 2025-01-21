@@ -6,6 +6,7 @@ import { safeLstat, safeUnlink, webSocketSend } from './vs-util';
 import { stopPending, VideoWalkInfo } from './admin-router';
 import { VideoWalkOptionsPlus } from './shared-types';
 import { abs } from '@tubular/math';
+import { getAugmentedMediaInfo } from './settings';
 
 export async function mkvValidate(path: string, options: VideoWalkOptionsPlus, _info: VideoWalkInfo): Promise<boolean> {
   let linkName = '';
@@ -24,7 +25,14 @@ export async function mkvValidate(path: string, options: VideoWalkOptionsPlus, _
     try {
       console.log('Validating:', path);
 
-      linkName = makePlainASCII(basename(path), true);
+      const mediainfo = await getAugmentedMediaInfo(path);
+
+      if (!mediainfo?.media?.track || mediainfo.media.track.length < 2)
+        error = 'mediainfo problem';
+
+      // mkvalidator is terrible with non-ASCII characters in filenames, so the easiest solution
+      // is using symbolic links
+      linkName = makePlainASCII(basename(path), true).replace(/\.mkv$/i, '.ln.temp.mkv');
       await monitorProcess(spawn('ln', ['-s', path, linkName]));
 
       let lastFeedback = 0;
@@ -53,14 +61,14 @@ export async function mkvValidate(path: string, options: VideoWalkOptionsPlus, _
 
         if (errCount > 0 || $861Count > 0 || warnCount - $0C2Count > 5) {
           console.log(result);
-          error = result;
+          error = (error ? error + '\n' : '') + result;
         }
       }
     }
     catch (e) {
       if (e.code !== -999999) {
         console.log('Failed:', e.message);
-        error = e.message;
+        error = (error ? error + '\n' : '') + e.message;
       }
     }
   }
