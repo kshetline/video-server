@@ -5,7 +5,7 @@ import paths from 'path';
 import { LibraryItem } from './shared-types';
 import { hashTitle } from './shared-utils';
 import { WebSocketServer } from 'ws';
-import { asLines, isObject, isString } from '@tubular/util';
+import { asLines, isArray, isObject, isString, toInt } from '@tubular/util';
 import { getDb } from './settings';
 import { setEncodeProgress } from './admin-router';
 import { cacheDir, thumbnailDir } from './shared-values';
@@ -268,4 +268,163 @@ export async function getRemoteFileCounts(): Promise<Map<string, number>> {
       resolve(null);
     });
   });
+}
+
+export function unescapeBash(s: string): string {
+  return s.replace(/\\(.)/g, (_match, p1) => {
+    switch (p1) {
+      case 'n': return '\n';
+      case 't': return '\t';
+      case 'r': return '\r';
+      case 'b': return '\b';
+      case 'f': return '\f';
+      case 'v': return '\v';
+      case '\\': return '\\';
+      case '"': return '"';
+      case "'": return "'";
+      default: return p1;
+    }
+  });
+}
+
+export interface DirectoryEntry {
+  name: string;
+  isDir: boolean;
+  isLink: boolean;
+  size: number;
+  mdate: Date;
+  children?: DirectoryEntry[];
+}
+
+enum DirState { AT_DIRECTORY, AT_TOTAL, AT_ENTRY }
+
+export async function getRemoteRecursiveDirectory(streaming = false): Promise<DirectoryEntry[]> {
+  const ssh = spawn('ssh', [process.env.VS_VIDEO_SOURCE_SSH]);
+  const root = streaming ? process.env.VS_STREAMING_SOURCE_ROOT : process.env.VS_VIDEO_SOURCE_ROOT;
+
+  ssh.stdin.write(`ls -R --full-time ${linuxEscape(root)}\n`);
+  ssh.stdin.write('exit\n');
+  ssh.stdin.end();
+
+  return new Promise<DirectoryEntry[]>((resolve, _reject) => {
+    let content = '';
+
+    ssh.stdout.on('data', data => content += (data as Buffer).toString('utf-8'));
+
+    ssh.on('close', () => {
+      const lines = asLines(content.normalize()).map(l => l.trim());
+      const dirs = new Map<string, DirectoryEntry[]>();
+      let state = DirState.AT_DIRECTORY;
+      let top: DirectoryEntry[];
+      let entries: DirectoryEntry[] = [];
+      let dir = '';
+
+      lines.push(''); // Make sure last list of entries gets processed
+
+      for (const line of lines) {
+        switch (state) {
+          case DirState.AT_DIRECTORY:
+            if (line) {
+              dir = line.replace(/:$/, '').replace(/^.$/, '').substring(root.length).replace(/^\//, '');
+              entries = dirs.get(dir) || [];
+              state = DirState.AT_TOTAL;
+            }
+
+            break;
+
+          case DirState.AT_TOTAL:
+            if (line.startsWith('total'))
+              state = DirState.AT_ENTRY;
+
+            break;
+
+          case DirState.AT_ENTRY:
+            if (!line) {
+              state = DirState.AT_DIRECTORY;
+
+              if (!dir)
+                top = entries;
+            }
+            else {
+              // 55 2025-01-12 22:06:50.733115601 -0500
+              const $ = /^(.).*\s+(\d+)\s+(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\.\d+ [+-]\d\d\d\d)\s+(.*)$/.exec(line);
+
+              if ($) {
+                const entry = {
+                  name: unescapeBash($[4]),
+                  isDir: $[1] === 'd',
+                  isLink: $[1] === 'l',
+                  size: toInt($[2]),
+                  mdate: new Date($[3])
+                } as DirectoryEntry;
+
+                if (entry.isLink)
+                  entry.name = entry.name.replace(/ -> .*?$/, '');
+
+                if (entry.isDir) {
+                  entry.children = [];
+                  dirs.set(paths.join(dir, entry.name), entry.children);
+                }
+
+                entries.push(entry);
+              }
+            }
+        }
+      }
+
+      resolve(top);
+    });
+
+    ssh.stderr.on('error', err => {
+      console.error(err);
+      resolve(null);
+    });
+
+    ssh.on('error', err => {
+      console.error(err);
+      resolve(null);
+    });
+  });
+}
+
+export function pathToEntry(entries: DirectoryEntry[], path: string): DirectoryEntry {
+  path = path.replace(/^\//, '');
+
+  const name = (/^(.+?)\//.exec(path) || ['', path])[1];
+  const match = entries?.find(e => e.name === name);
+
+  if (!match)
+    return null;
+
+  path = path.substring(name.length + 1);
+
+  if (!path)
+    return match;
+  else if (!match.isDir)
+    return null;
+
+  return pathToEntry(match.children, path);
+}
+
+export function pathExists(entries: DirectoryEntry[], path: string): boolean {
+  return !!pathToEntry(entries, path);
+}
+
+export function fileCountFromEntry(entry: DirectoryEntry | DirectoryEntry[]): number {
+  if (isArray(entry))
+    entry = { name: '.', isDir: true, isLink: false, size: 0, children: entry, mdate: null };
+
+  if (!entry?.children || !entry.isDir)
+    return 0;
+
+  let total = 0;
+
+  for (const child of entry.children) {
+    if (child.isDir)
+      total += fileCountFromEntry(child);
+    else if (/\.(iso|mkv)$/.test(child.name))
+      ++total;
+  }
+
+  return total;
 }

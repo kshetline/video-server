@@ -24,9 +24,9 @@ export class AdminViewComponent implements OnInit {
   currentFile = '';
   encodeProgress = '';
   lastStatus: ServerStatus;
+  listToShow: string[];
   setEarliest = false;
   showRefreshDialog = false;
-  showUnstreamed = false;
   stopPending = false;
   updateProgress = -1;
   videoStats: VideoStats;
@@ -79,8 +79,8 @@ export class AdminViewComponent implements OnInit {
     });
 
     document.body.addEventListener('click', evt => {
-      if (this.showUnstreamed) {
-        const list = document.getElementById('unstreamed-list');
+      if (this.listToShow) {
+        const list = document.getElementById('show-list');
         let target = evt.target;
 
         while (target) {
@@ -90,14 +90,14 @@ export class AdminViewComponent implements OnInit {
             target = (target as HTMLElement).parentElement;
         }
 
-        this.showUnstreamed = false;
+        this.listToShow = null;
         evt.stopPropagation();
       }
     }, true);
 
     document.body.addEventListener('keydown', evt => {
-      if (this.showUnstreamed && evt.key === 'Escape') {
-        this.showUnstreamed = false;
+      if (this.listToShow && evt.key === 'Escape') {
+        this.listToShow = null;
         evt.stopPropagation();
       }
     }, true);

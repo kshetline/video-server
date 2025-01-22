@@ -1,4 +1,5 @@
 import { AsyncDatabase } from 'promised-sqlite3';
+import { DirectoryEntry } from './vs-util';
 
 export enum VType { FILE = 0, MOVIE, COLLECTION, TV_SHOW, TV_SEASON, TV_EPISODE, TV_COLLECTION }
 export enum LibraryStatus { NOT_STARTED, INITIALIZED, BONUS_MATERIAL_LINKED, ALL_VIDEOS, MEDIA_DETAILS, DONE = 100 }
@@ -419,12 +420,13 @@ export interface VideoWalkOptions {
 }
 
 export interface VideoWalkOptionsPlus extends VideoWalkOptions {
-  countsByPath?: Map<string, number>;
   db?: AsyncDatabase;
   fileCount?: number;
-  streamingDirectory?: string;
+  streamingBasePath?: string;
+  streamingDirectory?: DirectoryEntry[];
   totalFileCount?: number;
-  videoDirectory?: string;
+  videoBasePath?: string;
+  videoDirectory?: DirectoryEntry[];
   zidooDb? : AsyncDatabase;
 }
 

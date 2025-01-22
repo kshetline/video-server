@@ -377,7 +377,7 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
 
   const start = Date.now();
   const resolutions = [{ w: 1920, h: 1080 }, { w: 1280, h: 720 }, { w: 853.33, h: 480 }, { w: 640, h: 360 }, { w: 569, h: 320 }];
-  const mpdRoot = toStreamPath(path, options.videoDirectory, options.streamingDirectory);
+  const mpdRoot = toStreamPath(path, options.videoBasePath, options.streamingBasePath);
   const mpdPath = mpdRoot + '.mpd';
   const avPath = mpdRoot + '.av.webm';
   const mobilePath = mpdRoot + '.mobile.mp4';

@@ -583,7 +583,7 @@ async function getDirectories(dir: string, bonusDirs: Set<string>, map: Map<stri
 
     if (file === '.' || file === '..' || stat.isSymbolicLink() || file.endsWith('~')) {}
     else if (stat.isDirectory()) {
-      if (/\bBonus Disc\b/i.test(file))
+      if (/_Bonus\b/i.test(file))
         bonusDirs.add(file);
 
       const subCount = await getDirectories(path, bonusDirs, map);

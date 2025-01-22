@@ -1,4 +1,4 @@
-<div class="go-back-panel" [class.show-busy]="stopPending" (keyup.escape)="showUnstreamed = false">
+<div class="go-back-panel" [class.show-busy]="stopPending" (keyup.escape)="listToShow = null">
   <p-button label="Back" icon="pi pi-chevron-left" (click)="goBack.emit()"/>
   <p-button icon="pi pi-stop" styleClass="p-button-rounded p-button-danger" (click)="sendStop()"
     [disabled]="!status?.processing || stopPending"></p-button>
@@ -20,6 +20,9 @@
     <tr>
       <th>Unique movie titles</th>
       <td>{{videoStats?.videoCount ? $any(videoStats.movieTitles)?.length : ''}}</td>
+      <td *ngIf="$any(videoStats?.movieTitles)?.length"><div class="info-icon" (click)="listToShow = $any(videoStats?.movieTitles)">
+        <i class="pi pi-info-circle"></i>
+      </div></td>
     </tr>
     <tr>
       <th>Movie storage usage</th>
@@ -32,6 +35,9 @@
     <tr>
       <th>Unique TV show titles</th>
       <td>{{videoStats?.videoCount ? $any(videoStats.tvShowTitles)?.length : ''}}</td>
+      <td *ngIf="$any(videoStats?.tvShowTitles)?.length"><div class="info-icon" (click)="listToShow = $any(videoStats?.tvShowTitles)">
+        <i class="pi pi-info-circle"></i>
+      </div></td>
     </tr>
     <tr>
       <th>Unique TV show episodes</th>
@@ -72,7 +78,7 @@
     <tr>
       <th>Unstreamed video count</th>
       <td>{{videoStats?.videoCount ? $any(videoStats.unstreamedTitles)?.length : ''}}</td>
-      <td *ngIf="$any(videoStats?.unstreamedTitles)?.length"><div class="info-icon" (click)="showUnstreamed = true">
+      <td *ngIf="$any(videoStats?.unstreamedTitles)?.length"><div class="info-icon" (click)="listToShow = $any(videoStats?.unstreamedTitles)">
         <i class="pi pi-info-circle"></i>
       </div></td>
     </tr>
@@ -138,8 +144,8 @@
   <div>{{currentFile}}<span style="opacity: 0; user-select: none">：</span></div>
   <div class="mono">{{currentFile ? encodeProgress : ''}}</div>
 </div>
-<div *ngIf="showUnstreamed" class="unstreamed-list" id="unstreamed-list">
-  <div *ngFor="let title of ($any(videoStats?.unstreamedTitles) || [])">
+<div *ngIf="listToShow" class="show-list" id="show-list">
+  <div *ngFor="let title of listToShow">
     {{title}}
   </div>
 </div>
