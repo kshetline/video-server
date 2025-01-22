@@ -298,7 +298,7 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
 
               if (w > 1880 || h > 1000) {
                 const db = (options as VideoWalkOptionsPlus).db;
-                const key = path.substring(options.videoDirectory.length).normalize();
+                const key = path.substring(options.videoBasePath.length).normalize();
                 const row = await db.get<any>('SELECT * FROM aspects WHERE key = ?', key);
 
                 if (row && abs(row.mdate - +entry.mdate) < 1) {
@@ -342,7 +342,7 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
 
             const baseTitle = file.replace(/( ~)?\.mkv$/i, '');
             let title = baseTitle;
-            const uri = ('/' + path.substring(options.videoDirectory.length)).replace(/\\/g, '/').replace(/^\/\//, '/');
+            const uri = ('/' + path.substring(options.videoBasePath.length)).replace(/\\/g, '/').replace(/^\/\//, '/');
 
             if (info.isMovie || info.isTV) {
               title = baseTitle.replace(/\s*\(.*?[a-z].*?\)/gi, '').replace(/^\d{1,2} - /, '').replace(/ - /g, ': ')

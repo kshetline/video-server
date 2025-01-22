@@ -307,12 +307,12 @@ export async function getRemoteRecursiveDirectory(streaming = false): Promise<Di
   ssh.stdin.end();
 
   return new Promise<DirectoryEntry[]>((resolve, _reject) => {
-    let content = '';
+    const content: Buffer[] = [];
 
-    ssh.stdout.on('data', data => content += (data as Buffer).toString('utf-8'));
+    ssh.stdout.on('data', data => content.push(data as Buffer));
 
     ssh.on('close', () => {
-      const lines = asLines(content.normalize()).map(l => l.trim());
+      const lines = asLines(Buffer.concat(content).toString('utf-8')).map(l => l.trim());
       const dirs = new Map<string, DirectoryEntry[]>();
       let state = DirState.AT_DIRECTORY;
       let top: DirectoryEntry[];
@@ -373,6 +373,11 @@ export async function getRemoteRecursiveDirectory(streaming = false): Promise<Di
       }
 
       resolve(top);
+    });
+
+    ssh.stdin.on('error', err => {
+      console.error(err);
+      resolve(null);
     });
 
     ssh.stderr.on('error', err => {
