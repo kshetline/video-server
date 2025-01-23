@@ -3,7 +3,7 @@
   <p-button icon="pi pi-stop" styleClass="p-button-rounded p-button-danger" (click)="sendStop()"
     [disabled]="!status?.processing || stopPending"></p-button>
   <p-progressBar *ngIf="updateProgress >= 0 && status?.processing" [value]="updateProgress"
-                 [showValue]="false"></p-progressBar>
+                 [mode]="progressMode" [showValue]="false"></p-progressBar>
 </div>
 <div class="content" [class.show-busy]="stopPending">
   <p-button label="Refresh Video Library" icon="pi pi-refresh"

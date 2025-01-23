@@ -298,7 +298,7 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
 
               if (w > 1880 || h > 1000) {
                 const db = (options as VideoWalkOptionsPlus).db;
-                const key = path.substring(options.videoBasePath.length).normalize();
+                const key = path.substring(options.videoBasePath.length);
                 const row = await db.get<any>('SELECT * FROM aspects WHERE key = ?', key);
 
                 if (row && abs(row.mdate - +entry.mdate) < 1) {
@@ -382,8 +382,6 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
             else if (info.isExtra)
               title = uri;
 
-            title = title.normalize();
-
             if (!mappedDurations.has(uri)) {
               const mediainfo = await getAugmentedMediaInfo(path);
               const general = mediainfo?.media?.track?.find(t => t['@type'] === 'General');
@@ -465,7 +463,7 @@ router.post('/stop', async (req: Request, res: Response) => {
     if (!stopPending) {
       stopPending = true;
       await killStreamingProcesses();
-      sendStatus();
+      setTimeout(() => sendStatus());
     }
 
     res.json(adminProcessing);

@@ -2,8 +2,7 @@ import * as paths from 'path';
 import { existsAsync } from './vs-util';
 import { AsyncDatabase } from 'promised-sqlite3';
 import { toBoolean } from '@tubular/util';
-import { monitorProcess } from './process-util';
-import { spawn } from 'child_process';
+import { getAugmentedMediaInfo } from './settings';
 
 export async function doZidooDbMaintenance(): Promise<void> {
   const dbPath = process.env.VS_ZIDOO_DB;
@@ -41,8 +40,8 @@ export async function doZidooDbMaintenance(): Promise<void> {
       for (const row of rows) {
         const path = paths.join(process.env.VS_VIDEO_SOURCE, row.uri);
 
-        try { // TODO: Update to getMediainfo()?
-          const mediaJson = JSON.stringify(JSON.parse(await monitorProcess(spawn('mediainfo', [path, '--Output=JSON']))), null, 4);
+        try {
+          const mediaJson = JSON.stringify(await getAugmentedMediaInfo(path, true));
 
           await db.run('UPDATE VIDEO_INFO SET MEDIA_JSON = ? WHERE _id = ?', mediaJson, row.id);
           console.log('Updated mediainfo for', path);

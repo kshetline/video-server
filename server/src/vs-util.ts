@@ -3,7 +3,7 @@ import { lstat, open, unlink, utimes } from 'fs/promises';
 import { existsSync, mkdirSync, Stats } from 'fs';
 import paths from 'path';
 import { LibraryItem } from './shared-types';
-import { hashTitle } from './shared-utils';
+import { comparator, hashTitle } from './shared-utils';
 import { WebSocketServer } from 'ws';
 import { asLines, isArray, isObject, isString, toInt } from '@tubular/util';
 import { getDb } from './settings';
@@ -226,50 +226,6 @@ export function getIp(req: Request): string {
   return req.ip || req.socket?.remoteAddress || (req as any).connection?.remoteAddress || (req as any).connection?.socket?.remoteAddress;
 }
 
-export async function getRemoteFileCounts(): Promise<Map<string, number>> {
-  const ssh = spawn('ssh', [process.env.VS_VIDEO_SOURCE_SSH]);
-  const root = process.env.VS_VIDEO_SOURCE_ROOT;
-
-  ssh.stdin.write(`find ${linuxEscape(root)} -name "*.mkv" -o -name "*.iso" | sort\n`);
-  ssh.stdin.write('exit\n');
-  ssh.stdin.end();
-
-  return new Promise<Map<string, number>>((resolve, _reject) => {
-    let content = '';
-
-    ssh.stdout.on('data', data => content += data.toString());
-
-    ssh.on('close', () => {
-      const countsByPath: Map<string, number> = new Map();
-      const files = asLines(content.normalize()).map(p => p.substring(root.length));
-
-      for (let path of files) {
-        const isExtra = /\/(_Extras_|_Bonus)\b/.test(path);
-
-        while (path && path !== '/') {
-          path = paths.dirname(path);
-          countsByPath.set(path, (countsByPath.get(path) || 0) + 1);
-
-          if (path === '/' && !isExtra)
-            countsByPath.set('*', (countsByPath.get('*') || 0) + 1);
-        }
-      }
-
-      resolve(countsByPath);
-    });
-
-    ssh.stderr.on('error', err => {
-      console.error(err);
-      resolve(null);
-    });
-
-    ssh.on('error', err => {
-      console.error(err);
-      resolve(null);
-    });
-  });
-}
-
 export function unescapeBash(s: string): string {
   return s.replace(/\\(.)/g, (_match, p1) => {
     switch (p1) {
@@ -297,6 +253,8 @@ export interface DirectoryEntry {
 }
 
 enum DirState { AT_DIRECTORY, AT_TOTAL, AT_ENTRY }
+
+export const entryComparator = (x: DirectoryEntry, y: DirectoryEntry): number => comparator(x.name, y.name);
 
 export async function getRemoteRecursiveDirectory(streaming = false): Promise<DirectoryEntry[]> {
   const ssh = spawn('ssh', [process.env.VS_VIDEO_SOURCE_SSH]);
@@ -340,6 +298,7 @@ export async function getRemoteRecursiveDirectory(streaming = false): Promise<Di
 
           case DirState.AT_ENTRY:
             if (!line) {
+              entries.sort(entryComparator);
               state = DirState.AT_DIRECTORY;
 
               if (!dir)
@@ -415,7 +374,7 @@ export function pathExists(entries: DirectoryEntry[], path: string): boolean {
   return !!pathToEntry(entries, path);
 }
 
-export function fileCountFromEntry(entry: DirectoryEntry | DirectoryEntry[]): number {
+export function fileCountFromEntry(entry: DirectoryEntry | DirectoryEntry[], allFiles = false): number {
   if (isArray(entry))
     entry = { name: '.', isDir: true, isLink: false, size: 0, children: entry, mdate: null };
 
@@ -427,7 +386,7 @@ export function fileCountFromEntry(entry: DirectoryEntry | DirectoryEntry[]): nu
   for (const child of entry.children) {
     if (child.isDir)
       total += fileCountFromEntry(child);
-    else if (/\.(iso|mkv)$/.test(child.name))
+    else if (!child.isLink && (allFiles || /\.(iso|mkv)$/.test(child.name)))
       ++total;
   }
 

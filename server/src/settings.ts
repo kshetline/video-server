@@ -132,10 +132,10 @@ export function setValue(key: string, value: string | number): void {
   db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', key, value).finally();
 }
 
-export async function getAugmentedMediaInfo(path: string): Promise<MediaInfo> {
+export async function getAugmentedMediaInfo(path: string, stripAugments = false): Promise<MediaInfo> {
   const stat = await safeLstat(path);
   const mdate = stat?.mtimeMs || 0;
-  const key = path.substring(process.env.VS_VIDEO_SOURCE.length).replace(/^([^/])/, '/$1').normalize();
+  const key = path.substring(process.env.VS_VIDEO_SOURCE.length).replace(/^([^/])/, '/$1');
   const row = await db.get<any>('SELECT * FROM mediainfo WHERE key = ?', key);
   let mediainfo: MediaInfo;
 
@@ -159,6 +159,16 @@ export async function getAugmentedMediaInfo(path: string): Promise<MediaInfo> {
 
     await db.run('INSERT OR REPLACE INTO mediainfo (key, mdate, json) VALUES (?, ?, ?)', key, mdate,
         JSON.stringify(mediainfo));
+  }
+
+  // Always gather the augmented data so that the DB has it, but the client might not want it.
+  if (stripAugments) {
+    for (const track of mediainfo?.media?.track || []) {
+      delete track.comment;
+      delete track.hearing_impaired;
+      delete track.original;
+      delete track.visual_impaired;
+    }
   }
 
   return mediainfo;

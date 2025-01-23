@@ -25,6 +25,7 @@ export class AdminViewComponent implements OnInit {
   encodeProgress = '';
   lastStatus: ServerStatus;
   listToShow: string[];
+  progressMode: string;
   setEarliest = false;
   showRefreshDialog = false;
   stopPending = false;
@@ -48,6 +49,7 @@ export class AdminViewComponent implements OnInit {
           break;
 
         case 'status':
+          this.progressMode = undefined;
           this.lastStatus = (msg.data as ServerStatus);
           this.updateProcessSettings();
           this.currentFile = this.lastStatus.currentFile;
@@ -106,11 +108,13 @@ export class AdminViewComponent implements OnInit {
   refresh(quick = false): void {
     this.showRefreshDialog = false;
     this.updateProgress = 0;
+    this.progressMode = 'indeterminate';
     this.httpClient.post(`/api/admin/library-refresh${quick ? '?quick=true' : ''}`, null).subscribe();
   }
 
   refreshInventory(): void {
     this.updateProgress = 0;
+    this.progressMode = 'indeterminate';
     this.httpClient.get('/api/admin/stats?update=true').subscribe((stats: VideoStats) => this.videoStats = stats);
   }
 
@@ -164,6 +168,7 @@ export class AdminViewComponent implements OnInit {
     if (!this.setEarliest)
       delete options.earliest;
 
+    this.progressMode = 'indeterminate';
     this.httpClient.post('/api/admin/process', options, { responseType: 'text' }).subscribe();
   }
 

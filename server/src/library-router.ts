@@ -8,15 +8,16 @@ import {
 import { abs, ceil, floor, max, min } from '@tubular/math';
 import { requestJson } from 'by-request';
 import paths from 'path';
-import { readdir, readFile, writeFile } from 'fs/promises';
+import { readFile, writeFile } from 'fs/promises';
 import {
-  existsAsync, getRemoteFileCounts, isAdmin, isDemo, itemAccessAllowed, jsonOrJsonp, noCache, role, safeLstat,
+  DirectoryEntry,
+  existsAsync, fileCountFromEntry, getRemoteRecursiveDirectory, isAdmin, isDemo, itemAccessAllowed, jsonOrJsonp, noCache, role,
   unref, username, webSocketSend
 } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
 import {
-  addBackLinks, comparator, findAliases as _findAliases, hashUri, isAnyCollection, isCollection, isFile, isMovie, isTV,
-  isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, removeBackLinks, setWatched, stripBackLinks, syncValues,
+  addBackLinks, findAliases as _findAliases, hashUri, isAnyCollection, isCollection, isFile, isMovie, isTV,
+  isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, removeBackLinks, setWatched, sleep, stripBackLinks, syncValues,
   toStreamPath
 } from './shared-utils';
 import { sendStatus } from './app';
@@ -272,7 +273,7 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
     if (item.videoinfo) {
       item.duration = item.videoinfo.duration / 1000; // Make duration (originally in msecs) compatible with playback position (in seconds).
       item.position = item.videoinfo.playPoint ? max(item.videoinfo.playPoint / 1000, -1) : 0;
-      item.uri = item.videoinfo.uri;
+      item.uri = item.videoinfo.uri.normalize();
       delete item.videoinfo;
     }
 
@@ -491,7 +492,7 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
               if (item.aspectRatioOverride)
                 item.aspectRatio = item.aspectRatioOverride;
               else {
-                const key = item.uri.replace(/^[\\/]/, '').normalize();
+                const key = item.uri.replace(/^[\\/]/, '');
                 const row = await db.get<any>('SELECT * FROM aspects WHERE key = ?', key);
 
                 if (row?.aspect)
@@ -570,23 +571,22 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
   }
 }
 
-async function getDirectories(dir: string, bonusDirs: Set<string>, map: Map<string, string[]>): Promise<number> {
-  const files = (await readdir(dir)).sort(comparator);
+async function getDirectories(dir: DirectoryEntry[], dirPath: string, bonusDirs: Set<string>, map: Map<string, string[]>): Promise<number> {
   let count = 0;
 
-  for (const file of files) {
+  for (const entry of dir) {
     if (stopPending)
       break;
 
-    const path = paths.join(dir, file);
-    const stat = await safeLstat(path);
+    const file = entry.name;
+    const path = paths.join(dirPath, file);
 
-    if (file === '.' || file === '..' || stat.isSymbolicLink() || file.endsWith('~')) {}
-    else if (stat.isDirectory()) {
+    if (file === '.' || file === '..' || entry.isLink || file.endsWith('~')) {}
+    else if (entry.isDir) {
       if (/_Bonus\b/i.test(file))
         bonusDirs.add(file);
 
-      const subCount = await getDirectories(path, bonusDirs, map);
+      const subCount = await getDirectories(entry.children, path, bonusDirs, map);
       const isBonusDir = bonusDirs.has(file);
 
       if (isBonusDir)
@@ -596,11 +596,11 @@ async function getDirectories(dir: string, bonusDirs: Set<string>, map: Map<stri
       }
     }
     else {
-      if (!map.has(dir))
-        map.set(dir, []);
+      if (!map.has(dirPath))
+        map.set(dirPath, []);
 
       if (/\.(mkv|iso)$/i.test(file)) {
-        map.get(dir).push(file);
+        map.get(dirPath).push(file);
         ++count;
         incrementProgress(1);
       }
@@ -995,6 +995,7 @@ export async function updateLibrary(quick = false): Promise<void> {
   if (pendingLibrary)
     return;
 
+  const dir = await getRemoteRecursiveDirectory();
   const oldStats = getValue('libraryUpdateStats');
 
   if (oldStats && isValidJson(oldStats))
@@ -1003,7 +1004,7 @@ export async function updateLibrary(quick = false): Promise<void> {
   const newUpdateStats = { start: processMillis(), t:[] } as LibraryUpdateStats;
 
   setUpdateProgress(0);
-  currentFileCount = (await getRemoteFileCounts()).get('/');
+  currentFileCount = fileCountFromEntry(dir);
 
   try {
     const url = process.env.VS_ZIDOO_CONNECT + 'Poster/v2/getFilterAggregations?type=0&start=0';
@@ -1031,7 +1032,7 @@ export async function updateLibrary(quick = false): Promise<void> {
       pendingLibrary.array.forEach(i => delete i.hide);
     }
     else {
-      await getDirectories(vSource, bonusDirs, directoryMap);
+      await getDirectories(dir, vSource, bonusDirs, directoryMap);
       newUpdateStats.t.push(processMillis() - newUpdateStats.start);
       pendingLibrary.progress = lastUpdateStats.cumulativePercent[1];
       sendStatus();
@@ -1092,7 +1093,7 @@ export async function updateLibrary(quick = false): Promise<void> {
 function mapDurationsAux(items: LibraryItem[]): void {
   for (const item of items) {
     if (item.uri && item.duration)
-      mappedDurations.set(item.uri.normalize(), item.duration);
+      mappedDurations.set(item.uri, item.duration);
 
     if (item.data)
       mapDurationsAux(item.data);
@@ -1193,8 +1194,10 @@ async function watchCheck(id: number, position = -1): Promise<void> {
     for (const status of statuses) {
       const vItem = findId(status.id);
 
-      if (vItem?.watched !== status.watched || vItem?.position !== status.position)
+      if (vItem?.watched !== status.watched || vItem?.position !== status.position) {
+        await sleep(500);
         updateItemWatchedState(vItem, status.watched, status.position);
+      }
     }
   }
   catch {}
@@ -1268,6 +1271,7 @@ function monitorPlayer(): void {
       const ids = collectIds();
       let index = 0;
       async function watchCheckLoop(): Promise<void> {
+        await sleep(500);
         await watchCheck(ids[index++]);
 
         if (index < ids.length && !pendingLibrary)
@@ -1291,7 +1295,7 @@ function laxJsonParse(s: string): any {
     return JSON.parse(s);
   }
   catch (e) {
-    console.error(e);
+    console.error(e.message);
 
     // Sometimes reading the library JSON fails because there's mysterious garbage beyond where the file
     // contents should end. See if that can be clipped off for a successful parse.
