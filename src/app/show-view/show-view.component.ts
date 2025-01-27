@@ -27,6 +27,7 @@ interface ImageInfo {
   col?: boolean;
   top?: number;
   reduced?: number;
+  reducedTop?: number;
 }
 
 @Component({
@@ -53,6 +54,7 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
   readonly logoImages = new Map<string, ImageInfo>([
     ['3D',     { file: '3D.svg',     height: 24, alt: '3D' }],
     ['DD',     { file: 'DD.svg',     height: 18, alt: 'Dolby Digital', col: true, reduced: 10 }],
+    ['DD+',    { file: 'DD+.png',    height: 18, alt: 'Dolby Digital Plus', col: true, reduced: 14, reducedTop: 2 }],
     ['DTS',    { file: 'DTS.svg',    height: 16, alt: 'DTS', top: 3 }],
     ['DTS-HD', { file: 'DTS-HD.png', height: 20, alt: 'DTS-HD MA' }],
     ['DTS-X',  { file: 'DTS-X.png',  height: 20, alt: 'Dolby Digital' }],
@@ -575,6 +577,10 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
         codec = 'MP3';
       else if (/^ac-?3$/i.test(codec))
         codec = 'DD';
+      else if (/^ac-?3$/i.test(codec))
+        codec = 'DD';
+      else if (/^e-?ac-?3$/i.test(codec))
+        codec = 'DD+';
 
       if (stereo && /\bmono\b/i.test(a.name)) {
         chan = 'Mono';
@@ -590,7 +596,7 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
         else if (!stereo)
           extra = [chan];
       }
-      else if (/^(DD|DTS|DTS-HD|DTS-X)$/.test(codec)) {
+      else if (/^(DD|DD\+|DTS|DTS-HD|DTS-X)$/.test(codec)) {
         if (!stereo)
           extra = [chan];
       }

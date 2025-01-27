@@ -1,17 +1,17 @@
 <div class="go-back-panel" [class.show-busy]="stopPending" (keyup.escape)="listToShow = null">
   <p-button label="Back" icon="pi pi-chevron-left" (click)="goBack.emit()"/>
   <p-button icon="pi pi-stop" styleClass="p-button-rounded p-button-danger" (click)="sendStop()"
-    [disabled]="!status?.processing || stopPending"></p-button>
-  <p-progressBar *ngIf="updateProgress >= 0 && status?.processing" [value]="updateProgress"
+    [disabled]="!isProcessing() || stopPending"></p-button>
+  <p-progressBar *ngIf="updateProgress >= 0 && isProcessing()" [value]="updateProgress"
                  [mode]="(indeterminate ? 'in' : '') + 'determinate'" [showValue]="false"></p-progressBar>
 </div>
 <div class="content" [class.show-busy]="stopPending">
   <p-button label="Refresh Video Library" icon="pi pi-refresh"
             [styleClass]="lastStatus?.currentOp === 'lib' ? 'p-button-success' : ''"
-            [disabled]="status?.processing" (click)="!status?.processing && (showRefreshDialog = true)"/>
+            [disabled]="isProcessing()" (click)="!isProcessing() && (showRefreshDialog = true)"/>
   <p-button label="Refresh Video Inventory" icon="pi pi-refresh"
             [styleClass]="lastStatus?.currentOp === 'inv' ? 'p-button-success' : ''"
-            [disabled]="status?.processing" (click)="!status?.processing && refreshInventory()"/>
+            [disabled]="isProcessing()" (click)="!isProcessing() && refreshInventory()"/>
   <table>
     <tr>
       <th>Movie file count</th>
@@ -110,7 +110,7 @@
   <div class="footnote">*Includes only longest duration of movies/shows with multiple cuts/formats</div>
   <div class="footnote">**Not including streaming/miscellaneous</div>
   <hr style="width: 100%">
-  <div class="process-options" [class.mask]="status?.processing">
+  <div class="process-options" [class.mask]="isProcessing()">
     <div class="row">
       <p-checkbox [(ngModel)]="setEarliest" [binary]="true" label="Set earliest"></p-checkbox>
       <p-calendar [(ngModel)]="options.earliest" dateFormat="yy-mm-dd" [showIcon]="true" [disabled]="!setEarliest"></p-calendar>
@@ -137,10 +137,10 @@
   </div>
   <p-button label="Process" icon="pi pi-wrench"
             [styleClass]="lastStatus?.currentOp === 'proc' ? 'p-button-success' : ''"
-            [disabled]="status?.processing ||
+            [disabled]="isProcessing() ||
                         (!options.generateFallbackAudio && !options.mkvFlags && !options.generateStreaming && !options.validate) ||
                         (options.skipMovies && options.skipTV && options.skipExtras)"
-            (click)="!status?.processing && runProcess()"/>
+            (click)="!isProcessing() && runProcess()"/>
   <div>{{currentFile}}<span style="opacity: 0; user-select: none">：</span></div>
   <div class="mono">{{currentFile ? encodeProgress : ''}}</div>
 </div>

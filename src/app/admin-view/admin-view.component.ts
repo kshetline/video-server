@@ -15,6 +15,8 @@ export class AdminViewComponent implements OnInit {
   readonly formatSecondsToDays = formatSecondsToDays;
   readonly formatSize = formatSize;
 
+  private statusTimer: any;
+
   constructor(private httpClient: HttpClient, private confirmationService: ConfirmationService) {}
 
   options: Record<string, any> = { // TODO: better typing
@@ -49,6 +51,11 @@ export class AdminViewComponent implements OnInit {
           break;
 
         case 'status':
+          if (this.statusTimer) {
+            clearInterval(this.statusTimer);
+            this.statusTimer = undefined;
+          }
+
           this.indeterminate = false;
           this.lastStatus = (msg.data as ServerStatus);
           this.updateProcessSettings();
@@ -108,13 +115,13 @@ export class AdminViewComponent implements OnInit {
   refresh(quick = false): void {
     this.showRefreshDialog = false;
     this.updateProgress = 0;
-    this.indeterminate = true;
+    this.awaitFeedback();
     this.httpClient.post(`/api/admin/library-refresh${quick ? '?quick=true' : ''}`, null).subscribe();
   }
 
   refreshInventory(): void {
     this.updateProgress = 0;
-    this.indeterminate = true;
+    this.awaitFeedback();
     this.httpClient.get('/api/admin/stats?update=true').subscribe((stats: VideoStats) => this.videoStats = stats);
   }
 
@@ -152,6 +159,10 @@ export class AdminViewComponent implements OnInit {
     }
   }
 
+  isProcessing(): boolean {
+    return this.status?.processing || this.indeterminate;
+  }
+
   runProcess(): void {
     const options = clone(this.options);
 
@@ -168,7 +179,7 @@ export class AdminViewComponent implements OnInit {
     if (!this.setEarliest)
       delete options.earliest;
 
-    this.indeterminate = true;
+    this.awaitFeedback();
     this.httpClient.post('/api/admin/process', options, { responseType: 'text' }).subscribe();
   }
 
@@ -182,5 +193,10 @@ export class AdminViewComponent implements OnInit {
           this.httpClient.post('/api/admin/stop', null).subscribe();
         }
       });
+  }
+
+  private awaitFeedback(): void {
+    this.indeterminate = true;
+    this.statusTimer = setInterval(repoll, 1000);
   }
 }

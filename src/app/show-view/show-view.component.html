@@ -82,7 +82,7 @@
                     <div *ngIf="li(badge)" [class]="li(badge).col ? 'badge-col' : 'badge-row'">
                       <img src="/assets/{{ li(badge).file }}"
                            [height]="li(badge).reduced && badgeExtras[i] ? li(badge).reduced : li(badge).height"
-                           [style.top]="li(badge).top ? li(badge).top + 'px' : undefined"
+                           [style.top]="li(badge).reducedTop && badgeExtras[i] ? li(badge).reducedTop + 'px' : li(badge).top ? li(badge).top + 'px' : undefined"
                            [alt]="li(badge).alt">
                       <span *ngIf="(badgeExtras[i] || [])[0]">{{ badgeExtras[i][0] }}</span>
                     </div>

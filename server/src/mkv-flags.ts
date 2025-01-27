@@ -134,7 +134,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       const lang = getLanguage(tp);
       const language = code2Name[lang];
       let name = tp.track_name || '';
-      const codecInName = (/\b(AAC|AC-3|DTS-HD MA|DTS-HD HRA|DTS-MA|DTS-HD|DTS|DD EX|E-AC3|MP3|TrueHD)\b/.exec(name) || [])[1];
+      const codecInName = (/\b(AAC|AC-3|DTS-HD MA|DTS-HD HRA|DTS-MA|DTS-HD|DTS|DD EX|E-?AC-?3|MP3|TrueHD)\b/.exec(name) || [])[1];
       const atmosInName = /\bAtmos\b/i.test(name) && /\b[57]\.1\b/.test(name);
       let newName: string;
       const cCount = tp.audio_channels;
@@ -161,7 +161,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
 
       if (pl2 && markedAAC)
         reducedDescr = reducedDescr.replace('AAC ', '');
-      else if (/^(AC-3|DD|E-AC3)$/.test(codec) && reducedDescr.includes(codec)) {
+      else if (/^(AC-3|DD|E-?AC-?3)$/.test(codec) && reducedDescr.includes(codec)) {
         reducedDescr = reducedDescr.replace(new RegExp('\\b' + codec + ' '), '');
 
         if (/^\d/.test(reducedDescr))
@@ -184,6 +184,9 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
         else
           newName = reducedDescr;
       }
+
+      if (/\b(EAC3|EAC-3|E-AC-3)\b/.test(newName || name))
+        newName = (newName || name).replace(/\bE-?AC-?3\b/, 'E-AC3');
 
       if (newName && options.laxAudioRenaming !== false &&
           (language + ' ' + newName === name || newName.replace(/\bDolby PL2$/, 'AAC Stereo') === name ||
