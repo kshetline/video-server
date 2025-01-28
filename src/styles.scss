@@ -48,6 +48,7 @@ p-progressBar {
   width: 20em;
 
   .p-progressbar {
+    background-color: #E0E0EE;
     height: 1.5em;
   }
 }
@@ -89,6 +90,10 @@ app-dash-player {
 fa-icon.stroke-path > svg > path {
   stroke: white;
   stroke-width: 20px;
+}
+
+.p-confirmdialog-icon {
+  font-size: 2em !important;
 }
 
 p-treeSelect.wide > div {
