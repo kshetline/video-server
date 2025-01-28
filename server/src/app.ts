@@ -55,7 +55,7 @@ import {
 } from './library-router';
 import { router as imageRouter } from './image-router';
 import { router as streamingRouter } from './streaming-router';
-import { adminProcessing, currentFile, currentOp, encodeProgress, processArgs, router as adminRouter, statsInProgress, stopPending, updateProgress } from './admin-router';
+import { adminProcessing, currentFile, currentOp, encodeProgress, processArgs, router as adminRouter, setStopPending, statsInProgress, stopPending, updateProgress } from './admin-router';
 import { LibraryItem, LibraryStatus, PlayStatus, ServerStatus, User, UserSession } from './shared-types';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
@@ -283,6 +283,8 @@ function shutdown(signal?: string): void {
 }
 
 function getStatus(remote?: string): ServerStatus {
+  setStopPending(stopPending && (adminProcessing || statsInProgress || !!pendingLibrary));
+
   const status: ServerStatus = {
     currentFile,
     currentOp,
