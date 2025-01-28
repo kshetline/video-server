@@ -272,7 +272,8 @@ export async function createFallbackAudio(path: string, info: VideoWalkInfo): Pr
   const video = info.video && info.video[0];
   const [w, h] = (video?.properties.pixel_dimensions || '1x1').split('x').map(d => toInt(d));
 
-  if (!video || w > 1920 || h > 1080)
+  if (!video || w > 1920 || h > 1080 ||
+      video.properties?.media?.Format_Profile?.includes('Stereo') || toInt(video.properties?.media?.MultiView_Count) > 1)
     return false;
 
   const audio = info.audio && info.audio[0];

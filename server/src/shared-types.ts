@@ -189,6 +189,7 @@ export interface MediaTrack {
   Format: string;
   Format_AdditionalFeatures?: string;
   Format_Commercial_IfAny?: string;
+  Format_Profile?: string;
   Format_Settings_Mode?: string;
   FrameRate: string;
   HDR_Format: string;
@@ -197,6 +198,7 @@ export interface MediaTrack {
   ID: string;
   Language: string;
   Movie: string;
+  MultiView_Count?: string;
   ScanType?: string;
   Title: string;
   VideoCount: string;
