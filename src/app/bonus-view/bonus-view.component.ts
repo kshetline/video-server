@@ -97,8 +97,8 @@ export class BonusViewComponent implements OnInit {
     return uri.replace(/^(.*\/)/, '').replace(/\.mkv$/, '').replace(/？/g, '?').replace(/：/g, ':');
   }
 
-  startDownload(elem: HTMLElement): void {
-    const link = elem.parentElement?.querySelector('a');
+  startDownload(elem?: HTMLElement): void {
+    const link = elem?.parentElement?.querySelector('a');
 
     if (link)
       link.click();
@@ -124,7 +124,7 @@ export class BonusViewComponent implements OnInit {
     if (!this.playerMenus[index])
       this.playerMenus[index] = this.players.map((name, i) => ({
         label: `Play: ${name}`,
-        command: () => this.playOnMediaPlayer(i, uri)
+        command: (): void => this.playOnMediaPlayer(i, uri)
       }));
 
     return this.playerMenus[index];

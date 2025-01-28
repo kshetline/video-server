@@ -112,28 +112,59 @@
   <hr style="width: 100%">
   <div class="process-options" [class.mask]="isProcessing()">
     <div class="row">
-      <p-checkbox [(ngModel)]="setEarliest" [binary]="true" label="Set earliest"></p-checkbox>
-      <p-calendar [(ngModel)]="options.earliest" dateFormat="yy-mm-dd" [showIcon]="true" [disabled]="!setEarliest"></p-calendar>
+      <div class="label-pair">
+        <p-checkbox [(ngModel)]="setEarliest" [binary]="true" inputId="set-earliest" id="set-earliest"></p-checkbox>
+        <label for="set-earliest">Set earliest</label>
+      </div>
+      <p-date-picker [(ngModel)]="options.earliest" dateFormat="yy-mm-dd" [showIcon]="true" [showButtonBar]="true"
+                     [disabled]="!setEarliest"></p-date-picker>
     </div>
     <div class="row">
       <label>Start<input type="text" pInputText [(ngModel)]="options.walkStart"/></label>
       <label>Stop<input type="text" pInputText [(ngModel)]="options.walkStop"/></label>
     </div>
     <div class="skip-options">
-      <p-checkbox [(ngModel)]="options.skipMovies" [binary]="true" label="Skip movies"></p-checkbox>
-      <p-checkbox [(ngModel)]="options.skipTV" [binary]="true" label="Skip TV shows"></p-checkbox>
-      <p-checkbox [(ngModel)]="options.skipExtras" [binary]="true" label="Skip extras"></p-checkbox>
+      <div class="label-pair">
+        <p-checkbox [(ngModel)]="options.skipMovies" [binary]="true" inputId="skip-movies" id="skip-movies"></p-checkbox>
+        <label for="skip-movies">Skip movies</label>
+      </div>
+      <div class="label-pair">
+        <p-checkbox [(ngModel)]="options.skipTV" [binary]="true" inputId="skip-tv-shows" id="skip-tv-shows"></p-checkbox>
+        <label for="skip-tv-shows">Skip TV shows</label>
+      </div>
+      <div class="label-pair">
+        <p-checkbox [(ngModel)]="options.skipExtras" [binary]="true" inputId="skip-extras" id="skip-extras"></p-checkbox>
+        <label for="skip-extras">Skip extras</label>
+      </div>
     </div>
-    <p-checkbox [(ngModel)]="options.generateFallbackAudio" [binary]="true" label="Generate fallback audio"></p-checkbox>
+    <div class="label-pair">
+      <p-checkbox [(ngModel)]="options.generateFallbackAudio" [binary]="true" inputId="gen-fallback" id="gen-fallback"></p-checkbox>
+      <label for="gen-fallback">Generate fallback audio</label>
+    </div>
     <div class="flag-options">
-      <p-checkbox [(ngModel)]="options.mkvFlags" [binary]="true" label="Update MKV flags"></p-checkbox>
-      <p-checkbox [(ngModel)]="options.mkvFlagsUpdateBackups" [binary]="true" label="Update Backups"
-                  [disabled]="!options.mkvFlags"></p-checkbox>
-      <p-checkbox [(ngModel)]="options.mkvFlagsDryRun" [binary]="true" label="Dry Run"
-                  [disabled]="!options.mkvFlags"></p-checkbox>
+      <div class="label-pair">
+        <p-checkbox [(ngModel)]="options.mkvFlags" [binary]="true" inputId="update-flags" id="update-flags"></p-checkbox>
+        <label for="update-flags">Update MKV flags</label>
+      </div>
+      <div class="label-pair">
+        <p-checkbox [(ngModel)]="options.mkvFlagsUpdateBackups" [binary]="true" inputId="update-backups" id="update-backups"
+                    [disabled]="!options.mkvFlags"></p-checkbox>
+        <label for="update-backups">Update Backups</label>
+      </div>
+      <div class="label-pair">
+        <p-checkbox [(ngModel)]="options.mkvFlagsDryRun" [binary]="true" inputId="dry-run" id="dry-run"
+                    [disabled]="!options.mkvFlags"></p-checkbox>
+        <label for="dry-run">Dry Run</label>
+      </div>
     </div>
-    <p-checkbox [(ngModel)]="options.generateStreaming" [binary]="true" label="Generate streaming files"></p-checkbox>
-    <p-checkbox [(ngModel)]="options.validate" [binary]="true" label="MKV validate"></p-checkbox>
+    <div class="label-pair">
+      <p-checkbox [(ngModel)]="options.generateStreaming" [binary]="true" inputId="generate-streaming" id="generate-streaming"></p-checkbox>
+      <label for="generate-streaming">Generate streaming files</label>
+    </div>
+    <div class="label-pair">
+      <p-checkbox [(ngModel)]="options.validate" [binary]="true" inputId="mkv-validate" id="mkv-validate"></p-checkbox>
+      <label for="mkv-validate">MKV validate</label>
+    </div>
   </div>
   <p-button label="Process" icon="pi pi-wrench"
             [styleClass]="lastStatus?.currentOp === 'proc' ? 'p-button-success' : ''"
@@ -158,9 +189,9 @@
   </p>
   <ng-template pTemplate="footer">
     <div class="p-dialog-footer">
-      <button pButton icon="pi pi-refresh" (click)="refresh()" label="Full"></button>
-      <button pButton icon="pi pi-check" (click)="refresh(true)" label="Quick"></button>
-      <button pButton icon="pi pi-times" (click)="showRefreshDialog = false" label="Cancel"></button>
+      <button pButton pButtonIcon="pi pi-refresh" (click)="refresh()">Full</button>
+      <button pButton pButtonIcon="pi pi-check" (click)="refresh(true)">Quick</button>
+      <button pButton pButtonIcon="pi pi-times" (click)="showRefreshDialog = false">Cancel</button>
     </div>
   </ng-template>
 </p-dialog>

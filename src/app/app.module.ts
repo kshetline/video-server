@@ -1,21 +1,23 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
-import { HTTP_INTERCEPTORS, HttpClientJsonpModule, HttpClientModule } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi, withJsonpSupport } from '@angular/common/http';
 import { NgOptimizedImage } from '@angular/common';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 
 import { AppComponent } from './app.component';
 import { BonusViewComponent } from './bonus-view/bonus-view.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ButtonModule } from 'primeng/button';
-import { CalendarModule } from 'primeng/calendar';
 import { CheckboxModule } from 'primeng/checkbox';
 import { CollectionViewComponent } from './collection-view/collection-view.component';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DashPlayerComponent } from './dash-player/dash-player.component';
+import { DatePickerModule } from 'primeng/datepicker';
 import { DialogModule } from 'primeng/dialog';
-import { DropdownModule } from 'primeng/dropdown';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
+import { IconField } from 'primeng/iconfield';
+import { InputIcon } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
 import { LoginComponent } from './login/login.component';
 import { PasswordModule } from 'primeng/password';
@@ -23,6 +25,7 @@ import { PosterViewComponent } from './poster-view/poster-view.component';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { RatingComponent } from './rating/rating.component';
+import { SelectModule } from 'primeng/select';
 import { SplitButtonModule } from 'primeng/splitbutton';
 import { TreeModule } from 'primeng/tree';
 import { TreeSelectModule } from 'primeng/treeselect';
@@ -34,6 +37,7 @@ import { AdminViewComponent } from './admin-view/admin-view.component';
 import { WatchedIndicatorComponent } from './watched-indicator/watched-indicator.component';
 import { LongPressDirective } from './long-press.directive';
 import { PlayOptionsComponent } from './play-options/play-options.component';
+import { appConfig } from './mytheme';
 
 @NgModule({
   declarations: [
@@ -50,24 +54,25 @@ import { PlayOptionsComponent } from './play-options/play-options.component';
     WatchedIndicatorComponent,
     PlayOptionsComponent
   ],
+  bootstrap: [AppComponent],
   imports: [
     BrowserAnimationsModule,
     BrowserModule,
     ButtonModule,
-    CalendarModule,
     CheckboxModule,
     ConfirmDialogModule,
+    DatePickerModule,
     DialogModule,
-    DropdownModule,
     FontAwesomeModule,
     FormsModule,
-    HttpClientModule,
-    HttpClientJsonpModule,
+    IconField,
+    InputIcon,
     InputTextModule,
     NgOptimizedImage,
     PasswordModule,
     ProgressBarModule,
     RadioButtonModule,
+    SelectModule,
     SplitButtonModule,
     ToastModule,
     TooltipModule,
@@ -75,9 +80,11 @@ import { PlayOptionsComponent } from './play-options/play-options.component';
     TreeSelectModule
   ],
   providers: [
-    { provide: HTTP_INTERCEPTORS, useClass: StatusInterceptor, multi: true }
-  ],
-  bootstrap: [AppComponent]
+    { provide: HTTP_INTERCEPTORS, useClass: StatusInterceptor, multi: true },
+    provideAnimationsAsync(),
+    appConfig.providers[1],
+    provideHttpClient(withInterceptorsFromDi(), withJsonpSupport())
+  ]
 })
 
 export class AppModule {}

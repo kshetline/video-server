@@ -462,6 +462,7 @@ router.post('/stop', async (req: Request, res: Response) => {
   else {
     if (!stopPending) {
       stopPending = true;
+      sendStatus();
       await killStreamingProcesses();
       setTimeout(() => sendStatus());
     }

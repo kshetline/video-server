@@ -10,6 +10,35 @@ body {
   overflow: hidden;
 }
 
+.p-component, label {
+  font-size: 16px;
+}
+
+p-button.p-button-sm {
+  padding-left: 0;
+  padding-right: 0;
+
+  .p-button-label {
+    position: relative;
+    top: 1px;
+  }
+}
+
+.label-pair {
+  display: flex;
+  gap: 0.5em;
+}
+
+.p-button-icon-only.p-button-rounded {
+  height: 38px !important;
+  width: 38px;
+}
+
+.p-dialog-footer {
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+
 p-progressBar {
   display: inline-block;
   width: 20em;
@@ -19,9 +48,9 @@ p-progressBar {
   }
 }
 
-.p-button.p-button-sm.p-button-rounded {
-  height: 1.8rem;
-  width: 1.8rem;
+.p-input-text {
+  padding-block-end: 7px;
+  padding-bottom: 7px;
 }
 
 app-dash-player {
@@ -58,33 +87,24 @@ fa-icon.stroke-path > svg > path {
   stroke-width: 20px;
 }
 
-p-splitbutton.p-element.dim .p-splitbutton.p-component button.p-element.p-splitbutton-defaultbutton.p-button.p-component .p-button-label {
-  opacity: 0.33;
-}
-
 p-treeSelect.wide > div {
   min-width: 10em;
 }
 
-p-treeSelect .p-tree {
-  padding: 0.5rem;
-
-  .p-tree-container .p-treenode .p-treenode-content {
-    padding: 0.25rem;
-
-    .p-tree-toggler {
-      height: 1rem;
-      width: 1rem;
-    }
+p-treeSelect.select-style .p-tree {
+  .p-tree-node-content {
+    padding: 4px;
   }
-}
 
-p-button.w-fill > .p-button {
-  width: 100%;
-}
+  .p-tree-node:focus-visible > .p-tree-node-content {
+    box-shadow: none;
+    outline: none;
+  }
 
-p-dropdown.w-fill > .p-dropdown {
-  width: 100%;
+  .p-tree-node-toggle-button {
+    height: 22px;
+    width: 22px;
+  }
 }
 
 .playback-progress {

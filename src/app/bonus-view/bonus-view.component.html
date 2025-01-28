@@ -4,12 +4,11 @@
 <div class="content" [style.background-image]="getBackgroundUrl()">
   <div class="inner-content">
     <div *ngFor="let extra of extras; index as i" class="extra">
-      <button *ngIf="!localAccess()" pButton type="button" label="Play" icon="pi pi-play" class="p-button-sm"
+      <button *ngIf="!localAccess()" pButton type="button" pButtonLabel="Play" pButtonIcon="pi pi-play" class="p-button-sm"
         [disabled]="!streamUris.get(extra)" (click)="play(extra)"></button>
-      <p-splitButton *ngIf="localAccess()" label="Play" icon="pi pi-play" class="p-button-sm"
-        [model]="getPlayerMenu(i, extra)" [class.dim]="!streamUris.get(extra)" (onClick)="play(extra)"></p-splitButton>
-      <button #btn pButton type="button" label="Download" icon="pi pi-download"
-              class="p-button-sm" (click)="startDownload(btn)"></button>
+      <p-splitbutton *ngIf="localAccess()" label="Play" icon="pi pi-play" class="p-button-sm"
+        [model]="getPlayerMenu(i, extra)" [class.dim]="!streamUris.get(extra)" (onClick)="play(extra)"></p-splitbutton>
+      <p-button icon="pi pi-download" label="Download" class="p-button-sm" (click)="startDownload()"></p-button>
       <a [href]="downloadLink(extra)"><div>&nbsp;</div></a>
       {{uriToTitle(extra)}}
       <app-watched-indicator [video]="getVideo(extra)" class="show-watched" (onUpdate)="getPlaybackInfo()"></app-watched-indicator>

@@ -1,15 +1,15 @@
 <div class='filter-panel'>
   <div class="filter-items">
-    <span class="p-input-icon-left">
-      <i class="pi pi-search"></i>
+    <p-iconfield>
+      <p-inputicon styleClass="pi pi-search"/>
       <input type="text" pInputText [(ngModel)]="searchText"/>
-      <i class="pi pi-times-circle clear-icon" [style.display]="searchText ? 'block' : 'none'"
-         (click)="searchText = ''"></i>
-    </span>
+      <p-inputicon styleClass="pi pi-times-circle clear-icon" [style.display]="searchText ? 'block' : 'none'"
+                  (click)="searchText = ''"></p-inputicon>
+    </p-iconfield>
     <div class="filter-selectors">
-      <p-treeSelect id="filter-tree" class="wide" [(ngModel)]="filterNode" [options]="filterNodes"
+      <p-treeSelect id="filter-tree" class="select-style wide" [(ngModel)]="filterNode" [options]="filterNodes"
         (onShow)="filterShow()" (onHide)="filterHide()"></p-treeSelect>
-      <p-dropdown [options]="sortChoices" [(ngModel)]="sortMode" appendTo="body"></p-dropdown>
+      <p-select [options]="sortChoices" [(ngModel)]="sortMode" appendTo="body"></p-select>
       <p-button *ngIf="sortMode.code === 'R'" icon="pi pi-refresh" styleClass="p-button-rounded"
                 (click)="randomize()"></p-button>
     </div>

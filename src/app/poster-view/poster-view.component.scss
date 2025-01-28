@@ -32,10 +32,6 @@
     .filter-selectors {
       display: flex;
       gap: 1em;
-
-      p-treeSelect {
-        color: var(--text-color-secondary);
-      }
     }
   }
 }

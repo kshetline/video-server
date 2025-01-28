@@ -39,8 +39,11 @@
       </div>
       <div *ngIf="getGenres()" class="genres">{{getGenres()}}</div>
       <div *ngIf="categoryLabels.length > 1" class="video-categories">
-        <p-radioButton *ngFor="let label of categoryLabels; index as i" [label]="label" [value]="i"
+        <ng-container *ngFor="let label of categoryLabels; index as i">
+          <p-radioButton [value]="i" [inputId]="'category=' + i"
                        [(ngModel)]="videoCategory" (click)="selectVideo(videoIndex)"></p-radioButton>
+          <label [for]="'category=' + i">{{ label }}</label>
+        </ng-container>
       </div>
       <div *ngIf="videoLabels.length > 1" class="video-choices">
         <span *ngFor="let label of videoLabels; index as i"
@@ -114,12 +117,12 @@
       </div>
       <div class="file-wrapper">
         <div class="file">
-          <button *ngIf="!localAccess() && !demo()" pButton type="button" label="Play" icon="pi pi-play" class="p-button-sm"
+          <button *ngIf="!localAccess() && !demo()" pButton type="button" pButtonLabel="Play" pButtonIcon="pi pi-play" class="p-button-sm"
                   [disabled]="!this.streamUri" (click)="play()"></button>
-          <p-splitButton *ngIf="localAccess() || demo()" label="Play" icon="pi pi-play" class="p-button-sm"
-                  [model]="playOptions" [class.dim]="!streamUri" (onClick)="play()"></p-splitButton>
-          <button #btn pButton type="button" label="Download" icon="pi pi-download"
-                  [disabled]="!video?.uri" class="p-button-sm" (click)="startDownload(btn)"></button>
+          <p-splitbutton *ngIf="localAccess() || demo()" label="Play" icon="pi pi-play" size="small"
+                  [model]="playOptions" [class.dim]="!streamUri" (onClick)="play()"></p-splitbutton>
+          <p-button icon="pi pi-download" label="Download" size="small"
+                  [disabled]="!video?.uri" class="p-button-sm" (click)="startDownload()"></p-button>
           <a [href]="downloadLink()"><div>{{startOfPath()}}</div><div>{{endOfPath()}}</div></a>
         </div>
       </div>

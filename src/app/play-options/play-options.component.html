@@ -2,18 +2,21 @@
 
 <ng-container *ngIf="players.length > 1">
   <label>Player</label>
-  <p-dropdown class="w-fill" [options]="players" optionValue="id" [(ngModel)]="playerIndex"></p-dropdown>
+  <p-select [options]="players" optionValue="id" [(ngModel)]="playerIndex"></p-select>
   <div></div>
 </ng-container>
 
 <div></div>
-<p-checkbox [disabled]="!canChoose" [(ngModel)]="usePlayerDefaults" [binary]="true" label="Use player default audio/subtitles"></p-checkbox>
+<div class="label-pair">
+  <p-checkbox [disabled]="!canChoose" [(ngModel)]="usePlayerDefaults" [binary]="true" inputId="use-defaults" id="use-defaults"></p-checkbox>
+  <label for="use-defaults">Use player default audio/subtitles</label>
+</div>
 <div></div>
 
 <ng-container *ngIf="audioChoices.length > 1">
   <label>Audio</label>
-  <p-dropdown [disabled]="usePlayerDefaults" class="w-fill" [options]="audioChoices" optionValue="id"
-              [(ngModel)]="audioIndex" (onChange)="audioChanged()"></p-dropdown>
+  <p-select [disabled]="usePlayerDefaults" [options]="audioChoices" optionValue="id"
+              [(ngModel)]="audioIndex" (onChange)="audioChanged()"></p-select>
   <div class="adornment">
     <i *ngIf="video?.visualDescription" class="pi pi-eye-slash"></i>
     <i *ngIf="audioLangs.size > 1" class="pi pi-language"></i>
@@ -24,8 +27,8 @@
 
 <ng-container *ngIf="subtitleChoices.length > 1">
   <label>Subtitles</label>
-  <p-dropdown  [disabled]="usePlayerDefaults" class="w-fill" [options]="subtitleChoices" optionValue="id"
-               [(ngModel)]="subtitleIndex"></p-dropdown>
+  <p-select [disabled]="usePlayerDefaults" [options]="subtitleChoices" optionValue="id"
+            [(ngModel)]="subtitleIndex"></p-select>
   <div class="adornment">
     <img *ngIf="video?.sdh" src="assets/sdh.svg" width=16 height=16 alt="SDH">
     <i *ngIf="subtitleLangs.size > 2 - (subtitleLangs.has(defaultLang) ? 1 : 0)" class="pi pi-language"
@@ -35,9 +38,9 @@
 </ng-container>
 
 <div class="buttons"><div>
-  <p-button class="w-fill" styleClass="p-button-rounded p-button-secondary" label="Cancel" (click)="closed = true"></p-button>
+  <p-button styleClass="p-button-rounded p-button-secondary" label="Cancel" (click)="closed = true"></p-button>
   <div class="busy-wrapper" [class.busy]="busy">
-    <p-button class="w-fill" [disabled]="demo()" styleClass="p-button-rounded" label="Play"
+    <p-button [disabled]="demo()" styleClass="p-button-rounded" label="Play"
               (click)="!busy && !demo() && playOnMediaPlayer()"></p-button>
     <i class="pi pi-spin pi-sync"></i>
   </div>

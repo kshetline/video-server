@@ -60,13 +60,13 @@ label {
   color: #B05;
 }
 
-p-dropdown {
+p-select {
   justify-self: stretch;
   width: calc(min(90vw - 145px, 655px, 20em));
 }
 
 @media screen and (max-width: 500px) {
-  p-dropdown {
+  p-select {
     width: calc(min(90vw - 144px, 452px, 17em));
   }
 }

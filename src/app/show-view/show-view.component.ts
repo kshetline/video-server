@@ -469,8 +469,8 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
     return '/api/download?url=' + encodeForUri(this.video?.uri || '');
   }
 
-  startDownload(elem: HTMLElement): void {
-    const link = elem.parentElement?.querySelector('a');
+  startDownload(elem?: HTMLElement): void {
+    const link = elem?.parentElement?.querySelector('a');
 
     if (link)
       link.click();
