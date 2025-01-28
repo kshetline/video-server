@@ -80,7 +80,7 @@ router.put('/progress', async (req, res) => {
 router.get('/progress', async (req, res) => {
   try {
     const db = getDb();
-    const videos = (req.query as any).videos.toString().split(',');
+    const videos = req.query.videos.toString().split(',');
     const placeholders = Array(videos.length).fill('?').join(',');
     const response = (await db.all(
       `SELECT video, duration, offset, watched FROM watched WHERE user = ? AND video IN (${placeholders})`,
