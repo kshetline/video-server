@@ -80,7 +80,7 @@ router.put('/progress', async (req, res) => {
 router.get('/progress', async (req, res) => {
   try {
     const db = getDb();
-    const videos = req.query.videos.toString().split(',');
+    const videos = (req.query as any).videos.toString().split(',');
     const placeholders = Array(videos.length).fill('?').join(',');
     const response = (await db.all(
       `SELECT video, duration, offset, watched FROM watched WHERE user = ? AND video IN (${placeholders})`,
@@ -100,7 +100,7 @@ function getFilePath(url: string, offset = 1): string {
     url.substring(offset).split('/').map(s => decodeURIComponent(s)).join('/')).normalize();
 }
 
-router.get('/get-delay/*', async (req, res) => {
+router.get('/get-delay/*name', async (req, res) => {
   const filePath = getFilePath(req.url, 11).replace(/\.mpd$/, '.v480.webm');
 
   if (await existsAsync(filePath)) {
@@ -120,7 +120,7 @@ router.get('/get-delay/*', async (req, res) => {
   res.send(0);
 });
 
-router.get('/*', async (req, res) => {
+router.get('/*name', async (req, res) => {
   const filePath = getFilePath(req.url);
 
   if (isDemo(req) && !filePath.endsWith('.sample.mp4')) {

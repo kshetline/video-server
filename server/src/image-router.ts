@@ -115,7 +115,7 @@ async function getImage(imageType: string, apiPath: string, req: Request, res: R
       try {
         const image = await Jimp.read((fullSize || imagePath) as any);
 
-        image.resize(toInt(req.query.w), toInt(req.query.h)).quality(80).write(thumbnailPath,
+        (image as any).resize(toInt(req.query.w), toInt(req.query.h)).quality(80).write(thumbnailPath,
             () => res.sendFile(thumbnailPath));
       }
       catch (e) {

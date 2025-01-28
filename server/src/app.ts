@@ -1,6 +1,6 @@
 // #!/usr/bin/env node
 /*
-  Copyright © 2023 Kerry Shetline, kerry@shetline.com
+  Copyright ©2023-2025 Kerry Shetline, kerry@shetline.com
 
   MIT license: https://opensource.org/licenses/MIT
 
@@ -360,8 +360,8 @@ function getApp(): Express {
   });
 
   theApp.use(logger('[:date[iso]] :remote-addr - :remote-user ":method :url HTTP/:http-version" :status :res[content-length] :response-time'));
-  theApp.use(express.json());
-  theApp.use(express.urlencoded({ extended: false }));
+  theApp.use(express.json() as any);
+  theApp.use(express.urlencoded({ extended: false }) as any);
   theApp.use(cookieParser());
 
   // hashed_password = crypto.pbkdf2Sync("password", salt, 100000, 64, 'sha512').toString('hex')
@@ -449,7 +449,7 @@ function getApp(): Express {
 
   theApp.post('/api/login', async (req, res) => {
     const username = req.body.user?.toString();
-    const pwd = req.body.pwd?.toString() || '';
+    const pwd = (req.body as any).pwd?.toString() || '';
     const db = getDb();
     const ip = getIp(req);
     const time = new Date().toISOString();
@@ -551,7 +551,7 @@ function getApp(): Express {
     noCache(res);
 
     const demo = isDemo(req);
-    const mobile = toBoolean(req.query.mobile);
+    const mobile = toBoolean((req.query as any).mobile);
     let uri = req.query.uri as string;
     let streamUri: string;
     let video: LibraryItem;
@@ -675,7 +675,7 @@ function getApp(): Express {
       res.sendStatus(403);
     else {
       const host = getHost(req);
-      const mainPlayer = (req.query.player == null || toInt(req.query.player) === 0);
+      const mainPlayer = ((req.query as any).player == null || toInt((req.query as any).player) === 0);
       const id = toInt(req.query.id);
       let uri = req.query.uri as string;
 
@@ -748,7 +748,7 @@ function getApp(): Express {
 
     // Are we close to the playback position that means the player is likely to present
     // a restart/continue dialog that will block track choices from being made?
-    if (!toBoolean(req.query.ignorePlaying, false, true) && status?.video?.currentPosition > 58000) {
+    if (!toBoolean((req.query as any).ignorePlaying, false, true) && status?.video?.currentPosition > 58000) {
       res.json({ inProgress: true });
       return;
     }
