@@ -1,21 +1,13 @@
 import { Router } from 'express';
 import { LibraryItem, LibraryStatus, MediaTrack, PlaybackProgress, PlayStatus, ShowInfo, Track, VideoLibrary, VType } from './shared-types';
-import {
-  clone, compareCaseSecondary, forEach, isNumber, isObject, isValidJson, processMillis, toBoolean, toInt, toNumber
-} from '@tubular/util';
+import { clone, compareCaseSecondary, forEach, isNumber, isObject, isValidJson, processMillis, toBoolean, toInt, toNumber } from '@tubular/util';
 import { abs, ceil, floor, max, min } from '@tubular/math';
 import { requestJson } from 'by-request';
 import paths from 'path';
 import { readFile, writeFile } from 'fs/promises';
-import {
-  DirectoryEntry, existsAsync, fileCountFromEntry, getRemoteRecursiveDirectory, isAdmin, isDemo, itemAccessAllowed, jsonOrJsonp,
-  noCache, role, unref, username, webSocketSend
-} from './vs-util';
+import { DirectoryEntry, existsAsync, fileCountFromEntry, getRemoteRecursiveDirectory, isAdmin, isDemo, itemAccessAllowed, jsonOrJsonp, noCache, role, unref, username, webSocketSend } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
-import {
-  addBackLinks, findAliases as _findAliases, hashUri, isAnyCollection, isCollection, isFile, isMovie, isTV, isTvCollection,
-  isTvEpisode, isTvSeason, isTvShow, librarySorter, removeBackLinks, setWatched, sleep, stripBackLinks, syncValues, toStreamPath
-} from './shared-utils';
+import { addBackLinks, findAliases as _findAliases, hashUri, isAnyCollection, isCollection, isFile, isMovie, isTV, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, removeBackLinks, setWatched, sleep, stripBackLinks, syncValues, toStreamPath } from './shared-utils';
 import { sendStatus } from './app';
 import { setStopPending, setUpdateProgress, stopPending } from './admin-router';
 import { getAugmentedMediaInfo, getDb, getValue, setValue } from './settings';
@@ -333,7 +325,7 @@ async function mediaTrackToTrack(tracks: MediaTrack[], item: LibraryItem): Promi
         item.audio = item.audio ?? [];
         item.audio.push(t);
 
-        if (track.comment) {
+        if (track.comment || (item.type === VType.EXTRA && /commentary|info/i.test(track.Title))) {
           t.isCommentary = true;
           item.commentaryAudio = true;
         }
@@ -356,12 +348,12 @@ async function mediaTrackToTrack(tracks: MediaTrack[], item: LibraryItem): Promi
         item.subtitle = item.subtitle ?? [];
         item.subtitle.push(t);
 
-        if (track.comment) {
+        if (track.comment || (item.type === VType.EXTRA && /commentary|info/i.test(track.Title))) {
           t.isCommentary = true;
           item.commentaryText = true;
         }
 
-        if (track.hearing_impaired) {
+        if (track.hearing_impaired || (item.type === VType.EXTRA && /(\bSDH\b)|\[CC]/.test(track.Title))) {
           t.sdh = true;
           item.sdh = true;
         }
@@ -774,6 +766,8 @@ async function getShowInfo(items: LibraryItem[], showInfos?: ShowInfo): Promise<
   }
 }
 
+const rankedHdr = ['HDR', 'HLG', 'HDR10', 'HDR10+', 'DV'];
+
 function fixVideoFlagsAndEncoding(items: LibraryItem[]): void {
   for (const item of items) {
     if (item.uri)
@@ -831,7 +825,7 @@ function fixVideoFlagsAndEncoding(items: LibraryItem[]): void {
         delete item.isSD;
 
       if (data.find(v => v.hdr))
-        item.hdr = data.find(v => v.hdr).hdr; // TODO: pick best HDR
+        item.hdr = rankedHdr[max(...data.map(v => rankedHdr.indexOf(v.hdr)))]; // Extract most highly ranked version of HDR.
       else
         delete item.hdr;
 
