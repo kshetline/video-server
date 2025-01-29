@@ -2,7 +2,7 @@
   <p-button label="Back" icon="pi pi-chevron-left" (click)="goBack.emit()"/>
   <p-button icon="pi pi-stop" styleClass="p-button-rounded p-button-danger" (click)="sendStop()"
     [disabled]="!isProcessing() || stopPending"></p-button>
-  <p-progressBar *ngIf="updateProgress >= 0 && isProcessing()" [value]="updateProgress"
+  <p-progressBar *ngIf="isProcessing()" [value]="updateProgress"
                  [mode]="(indeterminate ? 'in' : '') + 'determinate'" [showValue]="false"></p-progressBar>
 </div>
 <div class="content" [class.show-busy]="stopPending">

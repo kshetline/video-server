@@ -1,7 +1,5 @@
 import { Router } from 'express';
-import {
-  LibraryItem, LibraryStatus, MediaTrack, PlaybackProgress, PlayStatus, ShowInfo, Track, VideoLibrary, VType
-} from './shared-types';
+import { LibraryItem, LibraryStatus, MediaTrack, PlaybackProgress, PlayStatus, ShowInfo, Track, VideoLibrary, VType } from './shared-types';
 import {
   clone, compareCaseSecondary, forEach, isNumber, isObject, isValidJson, processMillis, toBoolean, toInt, toNumber
 } from '@tubular/util';
@@ -10,15 +8,13 @@ import { requestJson } from 'by-request';
 import paths from 'path';
 import { readFile, writeFile } from 'fs/promises';
 import {
-  DirectoryEntry,
-  existsAsync, fileCountFromEntry, getRemoteRecursiveDirectory, isAdmin, isDemo, itemAccessAllowed, jsonOrJsonp, noCache, role,
-  unref, username, webSocketSend
+  DirectoryEntry, existsAsync, fileCountFromEntry, getRemoteRecursiveDirectory, isAdmin, isDemo, itemAccessAllowed, jsonOrJsonp,
+  noCache, role, unref, username, webSocketSend
 } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
 import {
-  addBackLinks, findAliases as _findAliases, hashUri, isAnyCollection, isCollection, isFile, isMovie, isTV,
-  isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, removeBackLinks, setWatched, sleep, stripBackLinks, syncValues,
-  toStreamPath
+  addBackLinks, findAliases as _findAliases, hashUri, isAnyCollection, isCollection, isFile, isMovie, isTV, isTvCollection,
+  isTvEpisode, isTvSeason, isTvShow, librarySorter, removeBackLinks, setWatched, sleep, stripBackLinks, syncValues, toStreamPath
 } from './shared-utils';
 import { sendStatus } from './app';
 import { setStopPending, setUpdateProgress, stopPending } from './admin-router';
@@ -38,6 +34,8 @@ const INT_THEATRICAL = /\(.*\bInternational Theatrical\b/i;
 const SPECIAL_EDITION = /\bspecial edition\b/i;
 const UNRATED = /\bunrated\b/i;
 const THEATRICAL = /(\/|\(.*)\b(Original|Theatrical)\b/i;
+const EXTRAS_ID_BASE = -100000;
+let extrasId = EXTRAS_ID_BASE;
 
 const libraryFile = paths.join(cacheDir, 'library.json');
 const vSource = process.env.VS_VIDEO_SOURCE;
@@ -265,6 +263,136 @@ function filter(item: LibraryItem): void {
   }
 }
 
+async function mediaTrackToTrack(tracks: MediaTrack[], item: LibraryItem): Promise<void> {
+  const db = getDb();
+
+  for (const track of tracks || []) {
+    const t = {} as Track;
+
+    if (track.Title)
+      t.name = track.Title;
+
+    if (track.Language && track.Language !== 'und')
+      t.language = track.Language;
+
+    if (track.Format)
+      t.codec = getCodec(track);
+
+    if (track.HDR_Format) {
+      const hf = track.HDR_Format + ';' + track.HDR_Format_Compatibility;
+
+      if (/\bDolby Vision\b/.test(hf))
+        t.hdr = 'DV';
+      else if (/\bHLG\b/.test(hf))
+        t.hdr = 'HLG';
+      else if (/\bHDR10\+/.test(hf))
+        t.hdr = 'HDR10+';
+      else if (/\bHDR10\b/.test(hf))
+        t.hdr = 'HDR10';
+      else
+        t.hdr = 'HDR';
+    }
+
+    switch (track['@type']) {
+      case 'General':
+        item.title = track.Title || track.Movie;
+        break;
+
+      case 'Video':
+        if (item.aspectRatioOverride)
+          item.aspectRatio = item.aspectRatioOverride;
+        else if (item.uri) {
+          const key = item.uri.replace(/^[\\/]/, '');
+          const row = await db.get<any>('SELECT * FROM aspects WHERE key = ?', key);
+
+          if (row?.aspect)
+            item.aspectRatio = formatAspectRatioNumber(row.aspect);
+          else
+            item.aspectRatio = formatAspectRatio(track);
+        }
+
+        item.resolution = formatResolution(track);
+
+        if (track.ScanType === 'Interlaced') {
+          const height = toInt(track.Height);
+
+          item.interlaced = t.interlaced = height > 576 ? 1080 : height > 480 ? 576 : 480;
+        }
+
+        if (track.FrameRate)
+          t.frameRate = toNumber(track.FrameRate);
+
+        item.video = item.video ?? [];
+        item.video.push(t);
+
+        break;
+
+      case 'Audio':
+        t.channels = channelString(track);
+        t.isDefault = toBoolean(track.Default);
+        item.audio = item.audio ?? [];
+        item.audio.push(t);
+
+        if (track.comment) {
+          t.isCommentary = true;
+          item.commentaryAudio = true;
+        }
+
+        if (track.visual_impaired) {
+          t.visualDescription = true;
+          item.visualDescription = true;
+        }
+
+        if (/\b(music only|isolated music|isolated score)\b/i.test(track.Title)) {
+          t.isolatedMusic = true;
+          item.isolatedMusic = true;
+        }
+
+        break;
+
+      case 'Text':
+        t.isDefault = toBoolean(track.Default);
+        t.isForced = toBoolean(track.Forced);
+        item.subtitle = item.subtitle ?? [];
+        item.subtitle.push(t);
+
+        if (track.comment) {
+          t.isCommentary = true;
+          item.commentaryText = true;
+        }
+
+        if (track.hearing_impaired) {
+          t.sdh = true;
+          item.sdh = true;
+        }
+
+        if (track.Default === 'Yes' || track.Forced === 'Yes')
+          item.defaultSubtitles = true;
+        break;
+    }
+  }
+}
+
+async function createExtraFromPath(uri: string, parentId: number): Promise<LibraryItem> {
+  const path = paths.join(vSource, uri);
+  const tracks = (await getAugmentedMediaInfo(path))?.media?.track;
+  const item: LibraryItem = {
+    id: --extrasId,
+    parentId,
+    collectionId: -1,
+    aggregationId: -1,
+    type: VType.EXTRA,
+    uri
+  } as LibraryItem;
+
+  await mediaTrackToTrack(tracks, item);
+
+  if (!item.name)
+    item.name = uri;
+
+  return item;
+}
+
 async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directoryMap: Map<string, string[]>, depth = 0): Promise<void> {
   for (const item of (items || [])) {
     if (stopPending)
@@ -431,7 +559,7 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
       }
 
       if (extras.size > 0)
-        item.extras = Array.from(extras);
+        item.extras = await Promise.all(Array.from(extras).map(path => createExtraFromPath(path, item.id)));
     }
 
     if (items === pendingLibrary.array)
@@ -440,8 +568,6 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
 }
 
 async function getMediaInfo(items: LibraryItem[]): Promise<void> {
-  const db = getDb();
-
   for (const item of (items || [])) {
     if (stopPending)
       break;
@@ -454,114 +580,7 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
 
       item.lastWatchTime = data.lastWatchTime;
       item.position = max(data.playPoint / 1000, -1);
-
-      if (mediaInfo?.media?.track) {
-        for (const track of mediaInfo.media.track) {
-          const t = {} as Track;
-
-          if (track.Title)
-            t.name = track.Title;
-
-          if (track.Language && track.Language !== 'und')
-            t.language = track.Language;
-
-          if (track.Format)
-            t.codec = getCodec(track);
-
-          if (track.HDR_Format) {
-            const hf = track.HDR_Format + ';' + track.HDR_Format_Compatibility;
-
-            if (/\bDolby Vision\b/.test(hf))
-              t.hdr = 'DV';
-            else if (/\bHLG\b/.test(hf))
-              t.hdr = 'HLG';
-            else if (/\bHDR10\+/.test(hf))
-              t.hdr = 'HDR10+';
-            else if (/\bHDR10\b/.test(hf))
-              t.hdr = 'HDR10';
-            else
-              t.hdr = 'HDR';
-          }
-
-          switch (track['@type']) {
-            case 'General':
-              item.title = track.Title || track.Movie;
-              break;
-
-            case 'Video':
-              if (item.aspectRatioOverride)
-                item.aspectRatio = item.aspectRatioOverride;
-              else {
-                const key = item.uri.replace(/^[\\/]/, '');
-                const row = await db.get<any>('SELECT * FROM aspects WHERE key = ?', key);
-
-                if (row?.aspect)
-                  item.aspectRatio = formatAspectRatioNumber(row.aspect);
-                else
-                  item.aspectRatio = formatAspectRatio(track);
-              }
-
-              item.resolution = formatResolution(track);
-
-              if (track.ScanType === 'Interlaced') {
-                const height = toInt(track.Height);
-
-                item.interlaced = t.interlaced = height > 576 ? 1080 : height > 480 ? 576 : 480;
-              }
-
-              if (track.FrameRate)
-                t.frameRate = toNumber(track.FrameRate);
-
-              item.video = item.video ?? [];
-              item.video.push(t);
-
-              break;
-
-            case 'Audio':
-              t.channels = channelString(track);
-              t.isDefault = toBoolean(track.Default);
-              item.audio = item.audio ?? [];
-              item.audio.push(t);
-
-              if (track.comment) {
-                t.isCommentary = true;
-                item.commentaryAudio = true;
-              }
-
-              if (track.visual_impaired) {
-                t.visualDescription = true;
-                item.visualDescription = true;
-              }
-
-              if (/\b(music only|isolated music|isolated score)\b/i.test(track.Title)) {
-                t.isolatedMusic = true;
-                item.isolatedMusic = true;
-              }
-
-              break;
-
-            case 'Text':
-              t.isDefault = toBoolean(track.Default);
-              t.isForced = toBoolean(track.Forced);
-              item.subtitle = item.subtitle ?? [];
-              item.subtitle.push(t);
-
-              if (track.comment) {
-                t.isCommentary = true;
-                item.commentaryText = true;
-              }
-
-              if (track.hearing_impaired) {
-                t.sdh = true;
-                item.sdh = true;
-              }
-
-              if (track.Default === 'Yes' || track.Forced === 'Yes')
-                item.defaultSubtitles = true;
-              break;
-          }
-        }
-      }
+      await mediaTrackToTrack(mediaInfo?.media?.track, item);
     }
     else
       await getMediaInfo(item.data);
@@ -799,15 +818,20 @@ function fixVideoFlagsAndEncoding(items: LibraryItem[]): void {
     else {
       const data: any[] = item.data || [];
 
-      for (const flag of ['isSD', 'is3d', 'isHD', 'is2k', 'is4k']) {
+      for (const flag of ['is3d', 'isHD', 'is2k', 'is4k']) {
         if (data.find(v => v[flag]))
           (item as any)[flag] = true;
         else
           delete (item as any)[flag];
       }
 
+      if (data.length > 0 && data.reduce((t, v) => t + +v.isSD, 0) === data.length)
+        item.isSD = true;
+      else
+        delete item.isSD;
+
       if (data.find(v => v.hdr))
-        item.hdr = data.find(v => v.hdr).hdr;
+        item.hdr = data.find(v => v.hdr).hdr; // TODO: pick best HDR
       else
         delete item.hdr;
 
@@ -1003,6 +1027,7 @@ export async function updateLibrary(quick = false): Promise<void> {
 
   const newUpdateStats = { start: processMillis(), t:[] } as LibraryUpdateStats;
 
+  extrasId = EXTRAS_ID_BASE;
   setUpdateProgress(0);
   currentFileCount = fileCountFromEntry(dir);
 
@@ -1545,7 +1570,7 @@ router.get('/', async (req, res) => {
   if (toBoolean(req.query.test)) {
     const keep = new Set(['watched', 'name', 'title', 'type', 'id', 'aggregationId', 'position', 'playPoint',
                           'collectionId']);
-    const skip = new Set(['audio', 'video', 'subtitle', 'actors', 'directors', 'genres']);
+    const skip = new Set(['audio', 'video', 'subtitle', 'actors', 'directors', 'genres', 'extras']);
     function strip(obj: any): void {
       const keys = Object.keys(obj);
       for (const key of keys) {

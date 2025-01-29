@@ -18,11 +18,12 @@ export class BonusViewComponent implements OnInit {
   private _playSrc: ItemStreamPair = undefined;
   private _source: LibraryItem;
 
-  extras: string[] = [];
+  extras: LibraryItem[] = [];
   itemsByStream = new Map<string, LibItem>();
   players: string[] = [];
   playerMenus: MenuItem[][] = [];
   streamUris = new Map<string, string>();
+  video: LibraryItem;
 
   constructor(private httpClient: HttpClient, private auth: AuthService) {}
 
@@ -51,10 +52,10 @@ export class BonusViewComponent implements OnInit {
           if (src.extras) {
             this.extras.push(...src.extras);
             src.extras.forEach(extra =>
-              this.httpClient.get<string>(`/api/stream-check?uri=${encodeForUri(extra)}${canPlayVP9() ? '' : '&mobile=true'}`)
+              this.httpClient.get<string>(`/api/stream-check?uri=${encodeForUri(extra.uri)}${canPlayVP9() ? '' : '&mobile=true'}`)
                 .subscribe(streamUri => {
                   if (streamUri) {
-                    this.streamUris.set(extra, streamUri);
+                    this.streamUris.set(extra.uri, streamUri);
 
                     if (this.streamUris.size === this.extras.length)
                       this.getPlaybackInfo();
@@ -120,18 +121,16 @@ export class BonusViewComponent implements OnInit {
     return stream && this.itemsByStream.get(stream);
   }
 
-  getPlayerMenu(index: number, uri: string): MenuItem[] {
+  getPlayerMenu(index: number): MenuItem[] {
     if (!this.playerMenus[index])
-      this.playerMenus[index] = this.players.map((name, i) => ({
-        label: `Play: ${name}`,
-        command: (): void => this.playOnMediaPlayer(i, uri)
-      }));
+      this.playerMenus[index] = [{
+        label: 'Zidoo play options...',
+        command: (): void => {
+          this.video = this.extras[index];
+        }
+      }];
 
     return this.playerMenus[index];
-  }
-
-  playOnMediaPlayer(player: number, uri: string): void {
-    this.httpClient.get(`/api/play?uri=${encodeForUri(uri)}&player=${player}`).subscribe();
   }
 
   localAccess(): boolean {

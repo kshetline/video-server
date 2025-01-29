@@ -1,7 +1,7 @@
 import { AsyncDatabase } from 'promised-sqlite3';
 import { DirectoryEntry } from './vs-util';
 
-export enum VType { FILE = 0, MOVIE, COLLECTION, TV_SHOW, TV_SEASON, TV_EPISODE, TV_COLLECTION }
+export enum VType { EXTRA = -1, FILE = 0, MOVIE, COLLECTION, TV_SHOW, TV_SEASON, TV_EPISODE, TV_COLLECTION }
 export enum LibraryStatus { NOT_STARTED, INITIALIZED, BONUS_MATERIAL_LINKED, ALL_VIDEOS, MEDIA_DETAILS, DONE = 100 }
 export enum WatchStatus { WATCHING = 0, UNWATCHED, WATCHED }
 
@@ -51,6 +51,7 @@ export interface Track {
   isolatedMusic?: boolean;
   language?: string;
   name?: string;
+  resolution?: string;
   sdh?: boolean;
   visualDescription?: boolean;
 }
@@ -101,7 +102,7 @@ export interface LibraryItem {
   }[];
   duration?: number;
   episode?: number;
-  extras?: string[];
+  extras?: LibraryItem[];
   frameRate?: number;
   genres?: string[];
   hdr?: string;

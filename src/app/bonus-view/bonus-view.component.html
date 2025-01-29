@@ -5,14 +5,15 @@
   <div class="inner-content">
     <div *ngFor="let extra of extras; index as i" class="extra">
       <button *ngIf="!localAccess()" pButton type="button" pButtonLabel="Play" pButtonIcon="pi pi-play" class="p-button-sm"
-        [disabled]="!streamUris.get(extra)" (click)="play(extra)"></button>
+        [disabled]="!streamUris.get(extra.uri)" (click)="play(extra.uri)"></button>
       <p-splitbutton *ngIf="localAccess()" label="Play" icon="pi pi-play" class="p-button-sm"
-        [model]="getPlayerMenu(i, extra)" [class.dim]="!streamUris.get(extra)" (onClick)="play(extra)"></p-splitbutton>
+        [model]="getPlayerMenu(i)" [class.dim]="!streamUris.get(extra.uri)" (onClick)="play(extra.uri)"></p-splitbutton>
       <p-button icon="pi pi-download" label="Download" class="p-button-sm" (click)="startDownload()"></p-button>
-      <a [href]="downloadLink(extra)"><div>&nbsp;</div></a>
-      {{uriToTitle(extra)}}
-      <app-watched-indicator [video]="getVideo(extra)" class="show-watched" (onUpdate)="getPlaybackInfo()"></app-watched-indicator>
+      <a [href]="downloadLink(extra.uri)"><div>&nbsp;</div></a>
+      {{uriToTitle(extra.uri)}}
+      <app-watched-indicator [video]="getVideo(extra.uri)" class="show-watched" (onUpdate)="getPlaybackInfo()"></app-watched-indicator>
     </div>
   </div>
 </div>
+<app-play-options *ngIf="video" [video]="video" (close)="video = null"></app-play-options>
 <app-dash-player [src]="playSrc" (onClose)="closePlayer()" [class.active]="!!playSrc"></app-dash-player>

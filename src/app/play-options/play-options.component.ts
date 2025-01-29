@@ -1,8 +1,8 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { LibraryItem, Track } from '../../../server/src/shared-types';
+import { LibraryItem, Track, VType } from '../../../server/src/shared-types';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { HttpClient } from '@angular/common/http';
-import { isObject, isString, isValidJson, toInt } from '@tubular/util';
+import { encodeForUri, isObject, isString, isValidJson, toInt } from '@tubular/util';
 import { max } from '@tubular/math';
 import { AuthService } from '../auth.service';
 
@@ -192,7 +192,12 @@ export class PlayOptionsComponent implements OnInit {
 
     this.messageService.clear();
     this.busy = true;
-    this.httpClient.get(`/api/play?id=${this.video?.aggregationId}&player=${this.playerIndex}`).subscribe({
+
+    const url = this.video.type === VType.EXTRA ?
+      `/api/play?uri=${encodeForUri(this.video.uri)}&player=${this.playerIndex}` :
+      `/api/play?id=${this.video?.aggregationId}&player=${this.playerIndex}`;
+
+    this.httpClient.get(url).subscribe({
       next: (response: any) => {
         if (response?.status && response.status !== 200)
           this.showError(response);

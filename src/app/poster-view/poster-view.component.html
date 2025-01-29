@@ -10,7 +10,7 @@
       <p-treeSelect id="filter-tree" class="select-style wide" [(ngModel)]="filterNode" [options]="filterNodes"
         (onShow)="filterShow()" (onHide)="filterHide()"></p-treeSelect>
       <p-select [options]="sortChoices" [(ngModel)]="sortMode" appendTo="body"></p-select>
-      <p-button *ngIf="sortMode.code === 'R'" icon="pi pi-refresh" styleClass="p-button-rounded"
+      <p-button *ngIf="sortMode.code !== 'A'" icon="pi pi-refresh" styleClass="p-button-rounded"
                 (click)="randomize()"></p-button>
     </div>
   </div>

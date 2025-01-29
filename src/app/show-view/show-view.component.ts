@@ -72,7 +72,7 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
   faderOpacity = '0';
   identicalThumbnail = false;
   people: Person[] = [];
-  playOptions: MenuItem[] = [{ label: 'Zidoo play options...', command: () => this.showPlayOptions = true }];
+  playOptions: MenuItem[] = [{ label: 'Zidoo play options...', command: (): void => { this.showPlayOptions = true; } }];
   roleId = -1;
   selection: LibraryItem;
   showCast = false;
