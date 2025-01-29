@@ -140,6 +140,11 @@ export class PosterViewComponent implements OnDestroy, OnInit {
       switch (msg.type) {
         case 'session_start':
           this.updateSortChoices(true);
+          break;
+
+        case 'idUpdate':
+          this.watchedCache.delete(msg.data);
+          break;
       }
     });
 
