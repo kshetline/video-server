@@ -135,7 +135,7 @@ export function setValue(key: string, value: string | number): void {
 export async function getAugmentedMediaInfo(path: string, stripAugments = false): Promise<MediaInfo> {
   const stat = await safeLstat(path);
   const mdate = stat?.mtimeMs || 0;
-  const key = path.substring(process.env.VS_VIDEO_SOURCE.length).replace(/^([^/])/, '/$1');
+  const key = path.substring(process.env.VS_VIDEO_SOURCE.length).replaceAll('\\', '/').replace(/^([^/])/, '/$1');
   const row = await db.get<any>('SELECT * FROM mediainfo WHERE key = ?', key);
   let mediainfo: MediaInfo;
 

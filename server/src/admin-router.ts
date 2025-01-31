@@ -3,7 +3,7 @@ import { DirectoryEntry, fileCountFromEntry, getRemoteRecursiveDirectory, isAdmi
 import { mappedDurations, updateLibrary } from './library-router';
 import { asLines, clone, forEach, isNumber, isString, last, toBoolean, toInt, toNumber } from '@tubular/util';
 import { getDb, getAugmentedMediaInfo, getValue, setValue } from './settings';
-import { join as pathJoin } from 'path';
+import { join as pathJoin, sep as pathSep } from 'path';
 import { ErrorMode, monitorProcess } from './process-util';
 import { spawn } from 'child_process';
 import { AudioTrack, MKVInfo, ProcessArgs, SubtitlesTrack, VideoStats, VideoTrack, VideoWalkOptions, VideoWalkOptionsPlus } from './shared-types';
@@ -77,6 +77,14 @@ export async function walkVideoDirectory(options: VideoWalkOptions, callback: Vi
   (options as VideoWalkOptionsPlus).videoDirectory = dir;
   (options as VideoWalkOptionsPlus).db = getDb();
 
+  if (pathSep === '\\') {
+    if (!(options as VideoWalkOptionsPlus).streamingBasePath.endsWith('\\'))
+      (options as VideoWalkOptionsPlus).streamingBasePath += '\\';
+
+    if (!(options as VideoWalkOptionsPlus).videoBasePath.endsWith('\\'))
+      (options as VideoWalkOptionsPlus).videoBasePath += '\\';
+  }
+
   if (process.env.VS_ZIDOO_DB) {
     try {
       (options as VideoWalkOptionsPlus).zidooDb = await AsyncDatabase.open(process.env.VS_ZIDOO_DB);
@@ -92,7 +100,7 @@ export async function walkVideoDirectory(options: VideoWalkOptions, callback: Vi
   }
 
   if (options.checkStreaming === true)
-    options.checkStreaming = getValue('videoDirectory') + '\t' + getValue('streamingDirectory');
+    options.checkStreaming = (options as VideoWalkOptionsPlus).videoBasePath + '\t' + (options as VideoWalkOptionsPlus).streamingBasePath;
 
   if (options.walkStart)
     options.walkStartArray = options.walkStart.split('/').map(s => s.toLowerCase());

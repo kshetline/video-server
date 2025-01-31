@@ -322,7 +322,7 @@ export async function getRemoteRecursiveDirectory(streaming = false): Promise<Di
 
                 if (entry.isDir) {
                   entry.children = [];
-                  dirs.set(paths.join(dir, entry.name), entry.children);
+                  dirs.set(dir + (dir ? '/' : '') + entry.name, entry.children);
                 }
 
                 entries.push(entry);
@@ -352,7 +352,7 @@ export async function getRemoteRecursiveDirectory(streaming = false): Promise<Di
 }
 
 export function pathToEntry(entries: DirectoryEntry[], path: string): DirectoryEntry {
-  path = path.replace(/^\//, '');
+  path = path.replaceAll('\\', '/').replace(/^\//, '');
 
   const name = (/^(.+?)\//.exec(path) || ['', path])[1];
   const match = entries?.find(e => e.name === name);
