@@ -10,7 +10,7 @@
         [model]="getPlayerMenu(i)" [class.dim]="!streamUris.get(extra.uri)" (onClick)="play(extra.uri)"></p-splitbutton>
       <p-button icon="pi pi-download" label="Download" class="p-button-sm" (click)="startDownload()"></p-button>
       <a [href]="downloadLink(extra.uri)"><div>&nbsp;</div></a>
-      {{uriToTitle(extra.uri)}}
+      {{getExtraTitle(extra)}}
       <app-watched-indicator [video]="getVideo(extra.uri)" class="show-watched" (onUpdate)="getPlaybackInfo()"></app-watched-indicator>
     </div>
   </div>

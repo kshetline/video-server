@@ -371,7 +371,7 @@ function getApp(): Express {
     const token = (req.cookies as NodeJS.Dict<string>).vs_jwt;
     const userInfo = token?.split('.')[1];
 
-    if (/^\/(ab2g|ab2h|admin|app|apps|backup|blog|cgi-bin|cms|crm|laravel|lib|panel|password|phpunit|shell|systembc|test|V2|workspace|ws|yii|zend)/.test(req.url)) {
+    if (/^\/(ab2g|ab2h|admin|app|apps|backup|blog|cgi-bin|cms|crm|laravel|lib|panel|password|phpunit|shell|systembc|(test(?!-ws))|V2|workspace|ws|yii|zend)/.test(req.url)) {
       const ip = getIp(req);
       const block = blockedIps.get(ip);
 
@@ -382,7 +382,7 @@ function getApp(): Express {
 
       unref(setTimeout(() => res.sendStatus(403), BAD_REQUEST_DELAY));
     }
-    else if (!/^\/api\//.test(req.url) || /^\/api\/(login|status)\b/.test(req.url))
+    else if (!/^\/api\//.test(req.url) || /^\/api\/(login|status|test-ws)\b/.test(req.url))
       next();
     else if (!userInfo)
       res.sendStatus(401);
@@ -493,6 +493,47 @@ function getApp(): Express {
   theApp.use('/api/img', imageRouter);
   theApp.use('/api/stream', streamingRouter);
   theApp.use('/api/admin', adminRouter);
+
+  theApp.get('/api/test-ws', (req, res) => {
+    const id = toInt(req.query.id);
+    const item = findVideo(id);
+    const itemA = item as any;
+
+    if (item) {
+      res.send('Found: ' + item.name);
+
+      if (toBoolean(req.query.r, false, true)) {
+        if (itemA.position_x != null) {
+          item.position = itemA.position_x;
+          delete itemA.position_x;
+        }
+
+        if (itemA.watched_x != null) {
+          item.watched = itemA.watched_x;
+          delete itemA.watched_x;
+        }
+      }
+      else {
+        if (req.query.pos) {
+          if (itemA.position_x == null)
+            itemA.position_x = item.position;
+
+          item.position = toInt(req.query.pos);
+        }
+
+        if (req.query.w) {
+          if (itemA.watched_x == null)
+            itemA.watched_x = item.watched;
+
+          item.watched = toBoolean(req.query.w, false, true);
+        }
+      }
+
+      webSocketSend({ type: 'idUpdate', data: id });
+    }
+    else
+      res.send('No match for ' + id);
+  });
 
   theApp.get('/api/status', async (req, res) => {
     noCache(res);

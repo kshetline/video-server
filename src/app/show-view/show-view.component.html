@@ -25,7 +25,7 @@
       </div>
       <app-watched-indicator progressBar="prog-show" [video]="video" class="show-watched" (onUpdate)="getPlaybackInfo()"></app-watched-indicator>
       <app-watched-indicator progressBar="prog-show-a" [video]="video" class="show-watched-admin" [asAdmin]="true"></app-watched-indicator>
-      <div class="show-title">{{getSeasonTitle(show)}}</div>
+      <div class="show-title" [title]="video.id">{{getSeasonTitle(show)}}</div>
       <div class="info-line">
         <app-rating *ngIf="getVoteAverage()" [value]="getVoteAverage()" [topValue]="10"></app-rating>
         <span *ngIf="hasYear()">{{selection.year}}</span>

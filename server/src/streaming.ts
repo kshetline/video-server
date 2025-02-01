@@ -4,7 +4,7 @@ import { basename, dirname, join } from 'path';
 import { closeSync, mkdirSync, openSync } from 'fs';
 import { mkdtemp, readdir, readFile, rename, symlink, writeFile } from 'fs/promises';
 import { VideoWalkOptionsPlus } from './shared-types';
-import { existsAsync, safeUnlink, webSocketSend } from './vs-util';
+import { existsAsync, safeLstat, safeUnlink, webSocketSend } from './vs-util';
 import { abs, floor, min, round } from '@tubular/math';
 import { ErrorMode, monitorProcess, ProcessInterrupt, spawn } from './process-util';
 import { stopPending, VideoWalkInfo } from './admin-router';
@@ -356,7 +356,7 @@ export async function createFallbackAudio(path: string, info: VideoWalkInfo): Pr
     await tryThrice(() => safeUnlink(backupPath));
     await safeUnlink(aacFile);
   }
-  catch (e) {
+  catch {
     if (await existsAsync(backupPath)) {
       await tryThrice(() => rename(backupPath, path));
       await tryThrice(() => safeUnlink(updatePath));
@@ -369,6 +369,15 @@ export async function createFallbackAudio(path: string, info: VideoWalkInfo): Pr
   }
 
   return true;
+}
+
+const MIN_BAD_DATE = new Date('2024-12-21T05:00Z').getTime();
+const MAX_BAD_DATE = new Date('2025-01-31T05:00Z').getTime();
+
+async function inBadRange(path: string): Promise<boolean> {
+  const stats = await safeLstat(path);
+
+  return stats?.mtimeMs > MIN_BAD_DATE && stats?.mtimeMs < MAX_BAD_DATE;
 }
 
 export async function createStreaming(path: string, options: VideoWalkOptionsPlus,
@@ -393,6 +402,23 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
 
   if (((threeD || fourK) && (await has2k2dVersion(path, threeD)) && !path.includes('(extended edition) (4K)')))
     return false;
+
+  // Delete then redo streaming files with unwanted burned-in subtitles.
+  if (await inBadRange(mpdPath) || await inBadRange(avPath) || await inBadRange(mobilePath) || await inBadRange(samplePath)) {
+    const subtitles = info.subtitles || [];
+    const defaultIndex = subtitles.findIndex(s => s.properties.default_track);
+    const forcedIndex = subtitles.findIndex(s => !s.properties.default_track && s.properties.forced_track);
+
+    if (forcedIndex >= 0 && (defaultIndex < 0 || (defaultIndex > 0 && forcedIndex < defaultIndex))) {
+      await safeUnlink(mpdPath);
+      await safeUnlink(avPath);
+      await safeUnlink(mobilePath);
+      await safeUnlink(samplePath);
+      await safeUnlink(mpdRoot + '.v480.webm');
+      await safeUnlink(mpdRoot + '.v720.webm');
+      await safeUnlink(mpdRoot + '.v1080.webm');
+    }
+  }
 
   const hasDesktopVideo = await existsAsync(mpdPath) || await existsAsync(avPath);
   const hasMobile = await existsAsync(mobilePath);
@@ -483,7 +509,7 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
     }
   }
 
-  const subtitleIndex = subtitles.findIndex(s => s.properties.default_track || s.properties.forced_track);
+  const subtitleIndex = subtitles.findIndex(s => s.properties.default_track);
   // TODO: Add other text subtitle codecs
   const isGraphicSub = subtitleIndex >= 0 && !/^(SubRip\/SRT)$/.test(subtitles[subtitleIndex].codec);
   const dashVideos: string[] = [];

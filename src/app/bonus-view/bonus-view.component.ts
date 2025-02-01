@@ -15,6 +15,7 @@ import { ItemStreamPair, LibItem } from '../dash-player/dash-player.component';
   styleUrls: ['./bonus-view.component.scss']
 })
 export class BonusViewComponent implements OnInit {
+  private commonTitleStart = '';
   private _playSrc: ItemStreamPair = undefined;
   private _source: LibraryItem;
 
@@ -44,6 +45,7 @@ export class BonusViewComponent implements OnInit {
       this.playSrc = undefined;
       this.playerMenus = [];
       this.streamUris.clear();
+      this.commonTitleStart = '';
 
       if (value) {
         let src = value;
@@ -62,6 +64,18 @@ export class BonusViewComponent implements OnInit {
                   }
                 })
             );
+
+            for (let i = 0; i < src.extras.length; ++i) {
+              const extra = src.extras[i];
+              const start = (/^([^•]+\s*•\s*)/.exec(extra.title) || [])[1];
+
+              if (start && i === 0)
+                this.commonTitleStart = start;
+              else if (!start || start !== this.commonTitleStart) {
+                this.commonTitleStart = '';
+                break;
+              }
+            }
           }
 
           src = src.parent;
@@ -94,8 +108,11 @@ export class BonusViewComponent implements OnInit {
       return null;
   }
 
-  uriToTitle(uri: string): string {
-    return uri.replace(/^(.*\/)/, '').replace(/\.mkv$/, '').replace(/？/g, '?').replace(/：/g, ':');
+  getExtraTitle(item: LibraryItem): string {
+    if (item.title?.includes('•'))
+      return item.title.substring(this.commonTitleStart.length);
+
+    return item.uri.replace(/^(.*\/)/, '').replace(/\.mkv$/, '').replace(/？/g, '?').replace(/：/g, ':');
   }
 
   startDownload(elem?: HTMLElement): void {
