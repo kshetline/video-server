@@ -48,7 +48,7 @@ export function linuxEscape(arg: string): string {
 function errorish(s: string): boolean {
   s = stripFormatting(s);
 
-  return regex`\b(exception|operation not permitted|not a valid|
+  return regex`\b(exception|operation not permitted|not a valid|([0-9a-fx]{4,}] Error\b)|
                   isn't a valid|Cannot resolve|must be specified|must implement|
                   need to install|doesn't exist|are required|should be strings?)\b${'i'}`.test(s) ||
     /[_\da-z](Error|Exception|Invalid)\b/.test(s) || /\[ERR_|code: 'ERR/.test(s);

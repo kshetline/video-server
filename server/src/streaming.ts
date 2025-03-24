@@ -629,23 +629,29 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
         }
         else if (running < simultaneousMax && videoQueue.length > 0) {
           const task = videoQueue.pop();
-
-          ++running;
-          startTask(task);
-          task.promise.then(() => {
+          const moveOn = (): void => {
             rename(trackTempFile(tmp(task.videoPath), true), task.videoPath).finally(() => {
               checkAndFixBadDuration(task.videoPath, progress, task.name).finally(() => {
                 --running;
                 checkQueue();
               });
             });
-          }).catch(() => {
+          };
+
+          ++running;
+          startTask(task);
+          task.promise.then(() => moveOn()).catch((err) => {
             task.process = undefined;
             --running;
 
             const percentDone = progress.percent?.get(task.name) || 0;
 
-            if (++task.tries < maxTries * 3 / 4 && percentDone < 10 || task.tries < maxTries / 2) {
+            // Sometimes an error is thrown at the last moment, but the file generated is perfectly usable
+            if (percentDone > 99.89 && (err?.message || err?.toString())?.includes('pts/dts pair unsupported')) {
+              ++running;
+              moveOn();
+            }
+            else if (++task.tries < maxTries * 3 / 4 && percentDone < 10 || task.tries < maxTries / 2) {
               videoQueue.splice(0, 0, task);
               videoProgress('', -1, task.name, true, progress);
               checkQueue();

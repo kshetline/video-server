@@ -12,7 +12,7 @@ export async function mkvValidate(path: string, options: VideoWalkOptionsPlus, _
   let linkName = '';
   let error: string = null;
   const db = options.db;
-  const key = path.substring(options.videoDirectory.length).normalize();
+  const key = path.substring(options.videoBasePath.length).normalize();
   const stat = await safeLstat(path);
   const row = await db.get<any>('SELECT * FROM validation WHERE key = ?', key);
 
