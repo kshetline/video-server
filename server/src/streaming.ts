@@ -642,24 +642,25 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
           startTask(task);
           task.promise.then(() => moveOn()).catch((err) => {
             task.process = undefined;
-            --running;
 
             const percentDone = progress.percent?.get(task.name) || 0;
 
             // Sometimes an error is thrown at the last moment, but the file generated is perfectly usable
-            if (percentDone > 99.89 && (err?.message || err?.toString())?.includes('pts/dts pair unsupported')) {
-              ++running;
+            if (percentDone > 99.89 && (err?.message || err?.toString())?.includes('pts/dts pair unsupported'))
               moveOn();
-            }
-            else if (++task.tries < maxTries * 3 / 4 && percentDone < 10 || task.tries < maxTries / 2) {
-              videoQueue.splice(0, 0, task);
-              videoProgress('', -1, task.name, true, progress);
-              checkQueue();
-            }
             else {
-              redoQueue.push(task);
-              videoProgress('', -1, task.name, true, progress);
-              checkQueue();
+              --running;
+
+              if (++task.tries < maxTries * 3 / 4 && percentDone < 10 || task.tries < maxTries / 2) {
+                videoQueue.splice(0, 0, task);
+                videoProgress('', -1, task.name, true, progress);
+                checkQueue();
+              }
+              else {
+                redoQueue.push(task);
+                videoProgress('', -1, task.name, true, progress);
+                checkQueue();
+              }
             }
           });
 
