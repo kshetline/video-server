@@ -61,6 +61,7 @@ export interface VideoInfo {
   aggregationId: number;
   name: string;
 
+  addedTime: number;
   duration: number;
   lastWatchTime: number;
   mediaInfo: any;
@@ -83,6 +84,7 @@ export interface LibraryItem {
     profilePath: string;
   }[];
   addedTime?: number;
+  addedTimeCached?: number;
   airDate?: string;
   aliasPosterPath?: string;
   aspectRatio?: string;

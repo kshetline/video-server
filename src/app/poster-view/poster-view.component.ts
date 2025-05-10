@@ -20,6 +20,7 @@ const SORT_CHOICES = [
   { label: 'Alphabetical', code: 'A' },
   { label: 'Watching', code: 'W' },
   { label: 'Random', code: 'R' },
+  { label: 'Recently Added', code: 'D' },
   { label: 'Zidoo Watching', code: 'Z' },
 ];
 
@@ -45,6 +46,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   private resizeSub: Subscription;
   private _sortMode = SORT_CHOICES[0];
   private watchedCache = new Map<number, WatchStatus>();
+  private yearAgo = new Date(Date.now() - 31536000000).getTime();
 
   filterChoices = ['All', 'Movies', 'TV', '4K', '3D'];
   filterNodes: any[];
@@ -238,12 +240,14 @@ export class PosterViewComponent implements OnDestroy, OnInit {
 
     grid.style.scrollBehavior = 'auto';
     grid.scrollTop = 0;
+    this.yearAgo = new Date(Date.now() - 31536000000).getTime();
     setTimeout(() => grid.style.scrollBehavior = 'smooth', 1000);
 
     let sort: (a: LibraryItem, b: LibraryItem, admin?: boolean) => number;
     let admin = false;
 
     switch (this.sortMode.code) {
+      case 'D': sort = this.recentSorter; break;
       case 'R': sort = this.randomSorter; break;
       case 'W': sort = this.watchSorter; break;
       case 'Z': sort = this.watchSorter; admin = true; break;
@@ -309,6 +313,13 @@ export class PosterViewComponent implements OnDestroy, OnInit {
         return WatchStatus.UNWATCHED;
     });
   }
+
+  private recentSorter = (a: LibraryItem, b: LibraryItem, admin = false): number => {
+    const bt = Math.max(getWatchInfo(admin, b).addedTime, this.yearAgo);
+    const at = Math.max(getWatchInfo(admin, a).addedTime, this.yearAgo);
+
+    return bt - at;
+  };
 
   private watchSorter = (a: LibraryItem, b: LibraryItem, admin = false): number => {
     return this.getWatchStatus(a, admin) - this.getWatchStatus(b, admin);

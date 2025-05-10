@@ -239,7 +239,7 @@ function incrementProgress(phase: number): void {
 
 const FIELDS_TO_KEEP = new Set(['id', 'parentId', 'collectionId', 'aggregationId', 'type', 'voteAverage', 'name',
   'is3d', 'is4k', 'hdr', 'is2k', 'isHD', 'year', 'duration', 'watched', 'data', 'uri', 'season',
-  'episode', 'position', 'interlaced']);
+  'episode', 'position', 'interlaced', 'addedTime']);
 
 function filter(item: LibraryItem): void {
   if (item) {
@@ -391,6 +391,7 @@ async function getChildren(items: LibraryItem[], bonusDirs: Set<string>, directo
       break;
 
     if (item.videoinfo) {
+      item.addedTime = item.videoinfo.addedTime;
       item.duration = item.videoinfo.duration / 1000; // Make duration (originally in msecs) compatible with playback position (in seconds).
       item.position = item.videoinfo.playPoint ? max(item.videoinfo.playPoint / 1000, -1) : 0;
       item.uri = item.videoinfo.uri.normalize();
@@ -566,10 +567,11 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
 
     if (isFile(item)) {
       const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getVideoInfo?id=${item.aggregationId}`;
-      const data: { lastWatchTime: number, playPoint: number } = await requestJson(url);
+      const data: { addedTime: number, lastWatchTime: number, playPoint: number } = await requestJson(url);
       const path = paths.join(process.env.VS_VIDEO_SOURCE, item.uri);
       const mediaInfo = await getAugmentedMediaInfo(path);
 
+      item.addedTime = data.addedTime;
       item.lastWatchTime = data.lastWatchTime;
       item.position = max(data.playPoint / 1000, -1);
       await mediaTrackToTrack(mediaInfo?.media?.track, item);

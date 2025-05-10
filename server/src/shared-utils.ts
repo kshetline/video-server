@@ -437,6 +437,7 @@ export function removeBackLinks(childrenOrLibOrItem: VideoLibrary | LibraryItem 
 }
 
 export interface WatchInfo {
+  addedTime: number;
   counts?: {
     duration: number;
     position: number;
@@ -460,12 +461,25 @@ interface WatchedInfo {
   watched: boolean;
 }
 
+function mostRecentAddedTime(item: LibraryItem): number {
+  if (item.addedTimeCached != null)
+    return item.addedTimeCached;
+
+  let addedTime = item.addedTime ?? 0;
+
+  for (const child of item.data || [])
+    addedTime = Math.max(addedTime, mostRecentAddedTime(child));
+
+  return (item.addedTimeCached = addedTime);
+}
+
 export function getWatchInfo(asAdmin: boolean, item: LibraryItem, wi?: WatchInfo, unique = true): WatchInfo {
   let atTop = false;
 
   if (!wi) {
     atTop = true;
     wi = {
+      addedTime: mostRecentAddedTime(item),
       counts: { duration: 0, position: 0, unwatched: 0, watched: 0 },
       duration: 0,
       incomplete: false,
