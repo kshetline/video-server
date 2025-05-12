@@ -196,6 +196,9 @@ export class AdminViewComponent implements OnInit {
   }
 
   private awaitFeedback(): void {
+    if (this.statusTimer)
+      return;
+
     this.indeterminate = true;
     this.statusTimer = setInterval(repoll, 1000);
   }
