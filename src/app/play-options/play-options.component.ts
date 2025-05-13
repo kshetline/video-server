@@ -42,7 +42,8 @@ function errorText(err: any): string {
 @Component({
   selector: 'app-play-options',
   templateUrl: './play-options.component.html',
-  styleUrls: ['./play-options.component.scss']
+  styleUrls: ['./play-options.component.scss'],
+  standalone: false
 })
 export class PlayOptionsComponent implements OnInit {
   private static lastPlayers: MenuItem[] = [];

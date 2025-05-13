@@ -26,7 +26,8 @@ const MAX_RESTING_DELAY = 180000; // 3 minutes
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
-  providers: [ConfirmationService, MessageService, StatusInterceptor]
+  providers: [ConfirmationService, MessageService, StatusInterceptor],
+  standalone: false
 })
 export class AppComponent implements AfterViewInit, OnInit {
   static filter = 'All';

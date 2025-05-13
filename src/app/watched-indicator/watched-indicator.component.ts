@@ -12,7 +12,8 @@ import { min } from '@tubular/math';
 @Component({
   selector: 'app-watched-indicator',
   templateUrl: './watched-indicator.component.html',
-  styleUrls: ['./watched-indicator.component.scss']
+  styleUrls: ['./watched-indicator.component.scss'],
+  standalone: false
 })
 export class WatchedIndicatorComponent implements OnInit {
   private _asAdmin = false;

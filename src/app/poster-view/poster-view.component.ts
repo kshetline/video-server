@@ -27,7 +27,8 @@ const SORT_CHOICES = [
 @Component({
   selector: 'app-poster-view',
   templateUrl: './poster-view.component.html',
-  styleUrls: ['./poster-view.component.scss']
+  styleUrls: ['./poster-view.component.scss'],
+  standalone: false
 })
 export class PosterViewComponent implements OnDestroy, OnInit {
   readonly faFolderOpen = faFolderOpen;

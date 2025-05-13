@@ -2,17 +2,16 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
     "baseUrl": "./",
     "outDir": "./dist/out-tsc",
     "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "sourceMap": true,
     "declaration": false,
-    "downlevelIteration": true,
     "experimentalDecorators": true,
     "moduleResolution": "node",
     "importHelpers": true,
@@ -23,6 +22,7 @@
       "dom"
     ],
     "types": ["node", "jasmine"],
+    "skipLibCheck": true // Remove when Uint8Array<TArrayBuffer/ArrayBufferLike> conflict is solved
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

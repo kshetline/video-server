@@ -34,7 +34,8 @@ interface ImageInfo {
   selector: 'app-show-view',
   templateUrl: './show-view.component.html',
   styleUrls: ['./show-view.component.scss'],
-  providers: [MessageService]
+  providers: [MessageService],
+  standalone: false
 })
 export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
   readonly getSeasonTitle = getSeasonTitle;

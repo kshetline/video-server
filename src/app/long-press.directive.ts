@@ -5,6 +5,7 @@ import { filter, merge, switchMap, takeUntil, tap, timer } from 'rxjs';
 
 @Directive({
   selector: '[longPress]',
+  standalone: false
 })
 export class LongPressDirective implements OnInit, OnDestroy {
   readonly elem: HTMLElement;

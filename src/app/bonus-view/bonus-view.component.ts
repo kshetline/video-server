@@ -12,7 +12,8 @@ import { ItemStreamPair, LibItem } from '../dash-player/dash-player.component';
 @Component({
   selector: 'app-bonus-view',
   templateUrl: './bonus-view.component.html',
-  styleUrls: ['./bonus-view.component.scss']
+  styleUrls: ['./bonus-view.component.scss'],
+  standalone: false
 })
 export class BonusViewComponent implements OnInit {
   private commonTitleStart = '';

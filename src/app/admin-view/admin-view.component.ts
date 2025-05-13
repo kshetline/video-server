@@ -9,7 +9,8 @@ import { repoll } from '../app.component';
 @Component({
   selector: 'app-admin-view',
   templateUrl: './admin-view.component.html',
-  styleUrls: ['./admin-view.component.scss']
+  styleUrls: ['./admin-view.component.scss'],
+  standalone: false
 })
 export class AdminViewComponent implements OnInit {
   readonly formatSecondsToDays = formatSecondsToDays;

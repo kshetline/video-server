@@ -21,7 +21,8 @@ function getSortTime(item: LibraryItem): number {
 @Component({
   selector: 'app-collection-view',
   templateUrl: './collection-view.component.html',
-  styleUrls: ['./collection-view.component.scss']
+  styleUrls: ['./collection-view.component.scss'],
+  standalone: false
 })
 export class CollectionViewComponent {
   readonly hashTitle = hashTitle;

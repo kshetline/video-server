@@ -29,7 +29,8 @@ export interface ItemStreamPair {
 @Component({
   selector: 'app-dash-player',
   templateUrl: './dash-player.component.html',
-  styleUrls: ['./dash-player.component.scss']
+  styleUrls: ['./dash-player.component.scss'],
+  standalone: false
 })
 export class DashPlayerComponent implements OnDestroy, OnInit {
   private aspectRatio = -1;
