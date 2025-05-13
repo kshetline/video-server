@@ -134,7 +134,6 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
     const badgeView = document.getElementById('badges');
 
     if (this.badgeView !== badgeView) {
-      console.log(badgeView);
       this.badgeView = badgeView;
 
       if (badgeView)
