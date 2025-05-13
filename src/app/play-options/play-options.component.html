@@ -1,10 +1,10 @@
-<div class="title">Zidoo Play Options<span *ngIf="demo()" class="demo"> (demo mode)</span></div>
+<div class="title">Zidoo Play Options@if (demo()) {<span class="demo"> (demo mode)</span>}</div>
 
-<ng-container *ngIf="players.length > 1">
+@if (players.length > 1) {
   <label>Player</label>
   <p-select [options]="players" optionValue="id" [(ngModel)]="playerIndex"></p-select>
   <div></div>
-</ng-container>
+}
 
 <div></div>
 <div class="label-pair">
@@ -13,29 +13,29 @@
 </div>
 <div></div>
 
-<ng-container *ngIf="audioChoices.length > 1">
+@if (audioChoices.length > 1) {
   <label>Audio</label>
   <p-select [disabled]="usePlayerDefaults" [options]="audioChoices" optionValue="id"
               [(ngModel)]="audioIndex" (onChange)="audioChanged()"></p-select>
   <div class="adornment">
-    <i *ngIf="video?.visualDescription" class="pi pi-eye-slash"></i>
-    <i *ngIf="audioLangs.size > 1" class="pi pi-language"></i>
-    <i *ngIf="video?.commentaryAudio" class="pi pi-comments"></i>
-    <span *ngIf="video?.isolatedMusic">♫</span>
+    @if (video?.visualDescription) {<i class="pi pi-eye-slash"></i>}
+    @if (audioLangs.size > 1) {<i class="pi pi-language"></i>}
+    @if (video?.commentaryAudio) {<i class="pi pi-comments"></i>}
+    @if (video?.isolatedMusic) {<span>♫</span>}
   </div>
-</ng-container>
+}
 
-<ng-container *ngIf="subtitleChoices.length > 1">
+@if (subtitleChoices.length > 1) {
   <label>Subtitles</label>
   <p-select [disabled]="usePlayerDefaults" [options]="subtitleChoices" optionValue="id"
             [(ngModel)]="subtitleIndex"></p-select>
   <div class="adornment">
-    <img *ngIf="video?.sdh" src="assets/sdh.svg" width=16 height=16 alt="SDH">
-    <i *ngIf="subtitleLangs.size > 2 - (subtitleLangs.has(defaultLang) ? 1 : 0)" class="pi pi-language"
-       [class.forced]="forcedSubs.size > 0"></i>
-    <i *ngIf="video?.commentaryText" class="pi pi-comments"></i>
+    @if (video?.sdh) {<img src="assets/sdh.svg" width=16 height=16 alt="SDH">}
+    @if (subtitleLangs.size > 2 - (subtitleLangs.has(defaultLang) ? 1 : 0))
+      {<i class="pi pi-language" [class.forced]="forcedSubs.size > 0"></i>}
+    @if (video?.commentaryText) {<i class="pi pi-comments"></i>}
   </div>
-</ng-container>
+}
 
 <div class="buttons"><div>
   <p-button styleClass="p-button-rounded p-button-secondary" label="Cancel" (click)="closed = true"></p-button>

@@ -9,7 +9,6 @@ import { MenuItem } from 'primeng/api';
 import { AuthService } from '../auth.service';
 import { ItemStreamPair, LibItem, DashPlayerComponent } from '../dash-player/dash-player.component';
 import { Button, ButtonDirective, ButtonLabel, ButtonIcon } from 'primeng/button';
-import { NgFor, NgIf } from '@angular/common';
 import { SplitButton } from 'primeng/splitbutton';
 import { WatchedIndicatorComponent } from '../watched-indicator/watched-indicator.component';
 import { PlayOptionsComponent } from '../play-options/play-options.component';
@@ -18,8 +17,8 @@ import { PlayOptionsComponent } from '../play-options/play-options.component';
   selector: 'app-bonus-view',
   templateUrl: './bonus-view.component.html',
   styleUrls: ['./bonus-view.component.scss'],
-  imports: [Button, NgFor, NgIf, ButtonDirective, ButtonLabel, ButtonIcon, SplitButton,
-            WatchedIndicatorComponent, PlayOptionsComponent, DashPlayerComponent]
+  imports: [Button, ButtonDirective, ButtonLabel, ButtonIcon, SplitButton, WatchedIndicatorComponent,
+            PlayOptionsComponent, DashPlayerComponent]
 })
 export class BonusViewComponent implements OnInit {
   private commonTitleStart = '';

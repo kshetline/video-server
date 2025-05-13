@@ -10,56 +10,73 @@
       <p-treeSelect id="filter-tree" class="select-style wide" [(ngModel)]="filterNode" [options]="filterNodes"
         (onShow)="filterShow()" (onHide)="filterHide()"></p-treeSelect>
       <p-select [options]="sortChoices" [(ngModel)]="sortMode" appendTo="body"></p-select>
-      <p-button *ngIf="sortMode.code !== 'A' && sortMode.code !== 'D'" icon="pi pi-refresh" styleClass="p-button-rounded"
-                (click)="randomize()"></p-button>
+      @if (sortMode.code !== 'A' && sortMode.code !== 'D') {
+        <p-button icon="pi pi-refresh" styleClass="p-button-rounded" (click)="randomize()"></p-button>
+      }
     </div>
   </div>
 </div>
 <div class="poster-wrapper">
   <div class="poster-grid" [class.ready]="fullLibrary">
-    <div *ngIf="overview" class="overview">{{overview}}</div>
-    <div *ngFor="let item of items; index as i" class="library-item">
-      <ng-container *ngIf="!item.isAlias && isCollection(item); else notCollection">
-        <div *ngIf="item.data?.length > 1" class="poster-thumbnail-wrapper offset2">
-          <img [ngSrc]="getPosterUrl(item.data[1])" width="150" height="225" alt="{{item.data[1].name}}">
-        </div>
-        <div *ngIf="item.data?.length > 0" class="poster-thumbnail-wrapper offset">
-          <img [ngSrc]="getPosterUrl(item.data[0])" width="150" height="225" alt="{{item.data[0].name}}">
-        </div>
-      </ng-container>
-      <ng-template #notCollection><span class="hash">{{hashTitle(item.name)}}</span></ng-template>
+    @if (overview) {<div class="overview">{{overview}}</div>}
+    @for (item of items; track $index; let i = $index) {
+      <div class="library-item">
+        @if (!item.isAlias && isCollection(item)) {
+          @if (item.data?.length > 1) {
+            <div class="poster-thumbnail-wrapper offset2">
+              <img [ngSrc]="getPosterUrl(item.data[1])" width="150" height="225" alt="{{item.data[1].name}}">
+            </div>
+          }
+          @if (item.data?.length > 0) {
+            <div class="poster-thumbnail-wrapper offset">
+              <img [ngSrc]="getPosterUrl(item.data[0])" width="150" height="225" alt="{{item.data[0].name}}">
+            </div>
+          }
+        } @else {
+          <span class="hash">{{hashTitle(item.name)}}</span>
+        }
 
-      <div class="poster-thumbnail-wrapper">
-        <div class="video-tags">
-          <div *ngIf="item.isSD" class="sd">SD</div>
-          <div *ngIf="item.is3d && filter !== '3D'" class="d3">3D</div>
-          <div *ngIf="item.is4k && filter !== '4K'">4K</div>
-          <div *ngIf="item.isTV && filter !== 'TV'" class="tv">TV</div>
+        <div class="poster-thumbnail-wrapper">
+          <div class="video-tags">
+            @if (item.isSD) {<div class="sd">SD</div>}
+            @if (item.is3d && filter !== '3D') {<div class="d3">3D</div>}
+            @if (item.is4k && filter !== '4K') {<div>4K</div>}
+            @if (item.isTV && filter !== 'TV') {<div class="tv">TV</div>}
+          </div>
+          @if (item.aliasPosterPath || !item.isAlias || item.isLink) {
+            <div class="loading">Loading...</div>
+          }
+          <img [ngSrc]="getPosterUrl(item)" width="150" height="225" alt="{{item.id}}">
+          @if (item.isLink) {
+            <fa-icon [icon]="faShare" class="fa-xl fa-rotate-by stroke-path" style="--fa-rotate-angle: -45deg;"></fa-icon>
+          }
+          @if (item.id !== floor(item.id) && !item.isLink) {
+            <fa-icon [icon]="faFolderOpen" class="fa-xl stroke-path"></fa-icon>
+          }
         </div>
-        <div *ngIf="item.aliasPosterPath || !item.isAlias || item.isLink" class="loading">Loading...</div>
-        <img [ngSrc]="getPosterUrl(item)" width="150" height="225" alt="{{item.id}}">
-        <fa-icon *ngIf="item.isLink" [icon]="faShare"
-                 class="fa-xl fa-rotate-by stroke-path" style="--fa-rotate-angle: -45deg;"></fa-icon>
-        <fa-icon *ngIf="item.id !== floor(item.id) && !item.isLink" [icon]="faFolderOpen" class="fa-xl stroke-path"></fa-icon>
-      </div>
-      <div class="progress-wrapper">
-        <div class="playback-progress" [id]="'prog-' + item.id + '-' + i"><div></div></div>
-        <div class="playback-progress admin" [id]="'prog-a-' + item.id + '-' + i"><div></div></div>
-      </div>
-      <div class="rating-wrapper">
-        <app-watched-indicator [progressBar]="'prog-a-' + item.id + '-' + i" [video]="item" class="show-watched" [asAdmin]="true" fade="unwatched"></app-watched-indicator>
-        <app-rating [style.opacity]="item.voteAverage ? '1' : '0'" [value]="item.voteAverage" [topValue]="10"></app-rating>
-        <app-watched-indicator [progressBar]="'prog-' + item.id + '-' + i" [video]="item" class="show-watched" fade="unwatched"></app-watched-indicator>
-      </div>
-      <div class="title" [style.font-style]="item.isAlias ? 'italic' : 'plain'">{{titleAdjust(item.name)}}</div>
+        <div class="progress-wrapper">
+          <div class="playback-progress" [id]="'prog-' + item.id + '-' + i"><div></div></div>
+          <div class="playback-progress admin" [id]="'prog-a-' + item.id + '-' + i"><div></div></div>
+        </div>
+        <div class="rating-wrapper">
+          <app-watched-indicator [progressBar]="'prog-a-' + item.id + '-' + i" [video]="item" class="show-watched"
+                                 [asAdmin]="true" fade="unwatched"></app-watched-indicator>
+          <app-rating [style.opacity]="item.voteAverage ? '1' : '0'" [value]="item.voteAverage" [topValue]="10"></app-rating>
+          <app-watched-indicator [progressBar]="'prog-' + item.id + '-' + i" [video]="item" class="show-watched"
+                                fade="unwatched"></app-watched-indicator>
+        </div>
+        <div class="title" [style.font-style]="item.isAlias ? 'italic' : 'plain'">{{titleAdjust(item.name)}}</div>
 
-      <div class="clicker" (mouseenter)="overview = item.overview" (mouseleave)="overview = ''" (click)="onClick(item)"></div>
-    </div>
-    <div *ngFor="let item of [].constructor(8)" class="dummy-item"></div>
+        <div class="clicker" (mouseenter)="overview = item.overview" (mouseleave)="overview = ''" (click)="onClick(item)"></div>
+      </div>
+    }
+    @for (item of [].constructor(8); track $index) {<div class="dummy-item"></div>}
   </div>
   <div class="letter-nav" [class.disabled]="sortMode.code !== 'A'"
        [style.opacity]="resizing || sortMode.code !== 'A' ? '0' : '1'">
-    <div *ngFor="let group of letterGroups" (click)="jumpScroll(group)"
-         [style.transform]="letterGroups.length < 27 ? 'scale(0.75, 1)' : 'none'">{{group}}</div>
+    @for (group of letterGroups; track group) {
+      <div (click)="jumpScroll(group)"
+           [style.transform]="letterGroups.length < 27 ? 'scale(0.75, 1)' : 'none'">{{group}}</div>
+    }
   </div>
 </div>

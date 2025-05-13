@@ -6,7 +6,6 @@ import { clone } from '@tubular/util';
 import { ConfirmationService, PrimeTemplate } from 'primeng/api';
 import { repoll } from '../app.component';
 import { Button, ButtonDirective, ButtonIcon } from 'primeng/button';
-import { NgIf, NgFor } from '@angular/common';
 import { ProgressBar } from 'primeng/progressbar';
 import { Checkbox } from 'primeng/checkbox';
 import { FormsModule } from '@angular/forms';
@@ -18,8 +17,8 @@ import { Dialog } from 'primeng/dialog';
   selector: 'app-admin-view',
   templateUrl: './admin-view.component.html',
   styleUrls: ['./admin-view.component.scss'],
-  imports: [Button, NgIf, ProgressBar, Checkbox, FormsModule, DatePicker, InputText, NgFor,
-            Dialog, PrimeTemplate, ButtonDirective, ButtonIcon]
+  imports: [Button, ProgressBar, Checkbox, FormsModule, DatePicker, InputText, Dialog, PrimeTemplate,
+            ButtonDirective, ButtonIcon]
 })
 export class AdminViewComponent implements OnInit {
   readonly formatSecondsToDays = formatSecondsToDays;

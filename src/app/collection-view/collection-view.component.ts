@@ -5,7 +5,7 @@ import { floor } from '@tubular/math';
 import { StatusInterceptor } from '../status.service';
 import { checksum53 } from '@tubular/util';
 import { Button } from 'primeng/button';
-import { NgIf, NgFor, NgOptimizedImage } from '@angular/common';
+import { NgOptimizedImage } from '@angular/common';
 import { WatchedIndicatorComponent } from '../watched-indicator/watched-indicator.component';
 import { RatingComponent } from '../rating/rating.component';
 
@@ -26,7 +26,7 @@ function getSortTime(item: LibraryItem): number {
   selector: 'app-collection-view',
   templateUrl: './collection-view.component.html',
   styleUrls: ['./collection-view.component.scss'],
-  imports: [Button, NgIf, NgFor, NgOptimizedImage, WatchedIndicatorComponent, RatingComponent]
+  imports: [Button, NgOptimizedImage, WatchedIndicatorComponent, RatingComponent]
 })
 export class CollectionViewComponent {
   readonly hashTitle = hashTitle;

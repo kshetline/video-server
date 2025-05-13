@@ -1,134 +1,167 @@
 <div class="go-back-panel">
   <p-button label="Back" icon="pi pi-chevron-left" (click)="goBack.emit()"/>
-  <p-button *ngIf="hasBonusMaterial()" label="Bonus material" icon="pi pi-plus" styleClass="p-button-success"
-            (click)="viewBonus.emit(video)"/>
+  @if (hasBonusMaterial()) {
+    <p-button label="Bonus material" icon="pi pi-plus" styleClass="p-button-success" (click)="viewBonus.emit(video)"/>
+  }
 </div>
-<div *ngIf="show" class="content" [style.background-image]="cssUrl(getBackground())">
-  <div class="background-fader" [style.opacity]="faderOpacity" [style.background-image]="cssUrl(backgroundOverlay)"
-       [style.transition-duration]="transitionDuration"></div>
-  <div *ngIf="thumbnail && thumbnailNaturalWidth > 1 && !identicalThumbnail"
-       class="thumbnail" [style.background-image]="cssUrl(thumbnail)"
-    [style.width]="thumbnailWidth"></div>
-  <div class="poster-area">
-    <div class="logo">
-      <img *ngIf="show.logo" [ngSrc]="getLogoUrl()" [alt]="show.name" fill="true" priority="true">
+@if (show) {
+  <div class="content" [style.background-image]="cssUrl(getBackground())">
+    <div class="background-fader" [style.opacity]="faderOpacity" [style.background-image]="cssUrl(backgroundOverlay)"
+         [style.transition-duration]="transitionDuration"></div>
+    @if (thumbnail && thumbnailNaturalWidth > 1 && !identicalThumbnail) {
+      <div class="thumbnail" [style.background-image]="cssUrl(thumbnail)" [style.width]="thumbnailWidth"></div>
+    }
+    <div class="poster-area">
+      <div class="logo">
+        @if (show.logo) {
+          <img [ngSrc]="getLogoUrl()" [alt]="show.name" fill="true" priority="true">
+        }
+      </div>
+      <div class="poster">
+        <img [ngSrc]="getPosterUrl(show)" class="poster" [alt]="show.name" fill="true" priority="true">
+      </div>
     </div>
-    <div class="poster">
-      <img [ngSrc]="getPosterUrl(show)" class="poster" [alt]="show.name" fill="true" priority="true">
-    </div>
-  </div>
-  <div class="show-info-wrapper">
-    <div class="show-info">
-      <div class="progress-wrapper">
-        <div class="playback-progress" id="prog-show"><div></div></div>
-        <div class="playback-progress admin" id="prog-show-a"><div></div></div>
-      </div>
-      <app-watched-indicator progressBar="prog-show" [video]="video" class="show-watched" (onUpdate)="getPlaybackInfo()"></app-watched-indicator>
-      <app-watched-indicator progressBar="prog-show-a" [video]="video" class="show-watched-admin" [asAdmin]="true"></app-watched-indicator>
-      <div class="show-title" [title]="video.id">{{getSeasonTitle(show)}}</div>
-      <div class="info-line">
-        <app-rating *ngIf="getVoteAverage()" [value]="getVoteAverage()" [topValue]="10"></app-rating>
-        <span *ngIf="hasYear()">{{selection.year}}</span>
-        <span *ngIf="hasAirDate()" class="air-date">{{selection.airDate}}</span>
-        <span *ngIf="show.certification" class="rating">{{show.certification}}</span>
-        <span *ngIf="video?.duration || video?.parent?.duration" class="duration">{{getDuration()}}</span>
-        <span *ngIf="show.homepage" class="homepage">
-          <a [href]="show.homepage" target="_blank">
-            <i class="pi pi-home"><span class="blank">&nbsp;</span></i><span class="text">Homepage</span></a>
-        </span>
-      </div>
-      <div *ngIf="getGenres()" class="genres">{{getGenres()}}</div>
-      <div *ngIf="categoryLabels.length > 1" class="video-categories">
-        <ng-container *ngFor="let label of categoryLabels; index as i">
-          <p-radioButton [value]="i" [inputId]="'category=' + i"
-                       [(ngModel)]="videoCategory" (click)="selectVideo(videoIndex)"></p-radioButton>
-          <label [for]="'category=' + i">{{ label }}</label>
-        </ng-container>
-      </div>
-      <div *ngIf="videoLabels.length > 1" class="video-choices">
-        <span *ngFor="let label of videoLabels; index as i"
-              [ngStyle]="i === videoIndex ? { 'background-color': 'rgba(255, 255, 255, 0.75)',
-                'color': 'black', 'box-shadow': '#69F 0 0 3px 3px' } : null"
-              [style.opacity]="videoChoices[videoCategory][i].watchedByUser ? '0.6' : '1'"
-              (click)="selectVideo(i)"
-        >{{label}}</span>
-      </div>
-      <div class="swappable-info">
-        <div class="general-wrapper" [class.expand]="!showCast">
-          <div class="general">
-            <div class="text-wrapper" [class.shrink]="twoRowsOfBadges">
-              <div *ngIf="show.tagLine" class="tag-line">{{show.tagLine}}</div>
-              <div *ngIf="isTvSeason(show)" class="episode-title">{{selection.name}}</div>
-              <div *ngIf="anyOverview" class="overview"><div class="overview-content">{{selection.overview}}</div></div>
-            </div>
-            <div *ngIf="badges?.length > 0" id="badges" class="badges" [class.foo]="badgeCheckIn()"
-                 [class.bottom-adjust]="twoRowsOfBadges">
-              <div *ngFor="let badge of badges; index as i" class="badge">
-                <ng-container [ngSwitch]="badge">
-                  <img *ngSwitchCase="'H.264'" src="/assets/H264.svg" height=28 alt="H.264 AVC">
-                  <img *ngSwitchCase="'H.265'" src="/assets/H265.svg" height=28 alt="H.265 HEVC">
-                  <img *ngSwitchCase="'4K-UHD'" src="/assets/4K-UHD.svg" height=20 alt="4K-UHD">
-                  <img *ngSwitchCase="'DV'" src="/assets/DV.svg" height=20 alt="Dolby Vision">
-                  <img *ngSwitchCase="'HDR10+'" src="/assets/HDR10+.svg" height=20 alt="HDR10+">
-                  <img *ngSwitchCase="'HDR10'" src="/assets/HDR10.svg" height=14 alt="HDR10">
-                  <img *ngSwitchCase="'HDR'" src="/assets/HDR.svg" height=14 alt="HDR">
-                  <img *ngSwitchCase="'Atmos'" src="/assets/Atmos.svg" height=20 alt="Dolby Atmos">
-                  <div *ngSwitchCase="'FR'" class='frame-rate'>
-                    <div>{{ badgeExtras[i][0] }}</div>
-                    <div class='hz'>HZ</div>
-                    <div *ngIf="badgeExtras[i][1]" class='frac'>.{{ badgeExtras[i][1] }}</div>
-                  </div>
-                  <span *ngSwitchCase="'DS'"><i class="pi pi-align-left"></i></span>
-                  <span *ngSwitchCase="'AC'"><i class="pi pi-comments"></i><i class="pi pi-volume-up sup"></i></span>
-                  <span *ngSwitchCase="'TC'"><i class="pi pi-comments"></i><i class="pi pi-align-left sup"></i></span>
-                  <ng-container *ngSwitchDefault>
-                    <div *ngIf="li(badge)" [class]="li(badge).col ? 'badge-col' : 'badge-row'">
-                      <img src="/assets/{{ li(badge).file }}"
-                           [height]="li(badge).reduced && badgeExtras[i] ? li(badge).reduced : li(badge).height"
-                           [style.top]="li(badge).reducedTop && badgeExtras[i] ? li(badge).reducedTop + 'px' : li(badge).top ? li(badge).top + 'px' : undefined"
-                           [alt]="li(badge).alt">
-                      <span *ngIf="(badgeExtras[i] || [])[0]">{{ badgeExtras[i][0] }}</span>
+    <div class="show-info-wrapper">
+      <div class="show-info">
+        <div class="progress-wrapper">
+          <div class="playback-progress" id="prog-show"><div></div></div>
+          <div class="playback-progress admin" id="prog-show-a"><div></div></div>
+        </div>
+        <app-watched-indicator progressBar="prog-show" [video]="video" class="show-watched" (onUpdate)="getPlaybackInfo()"></app-watched-indicator>
+        <app-watched-indicator progressBar="prog-show-a" [video]="video" class="show-watched-admin" [asAdmin]="true"></app-watched-indicator>
+        <div class="show-title" [title]="video.id">{{getSeasonTitle(show)}}</div>
+        <div class="info-line">
+          @if (getVoteAverage()) {<app-rating [value]="getVoteAverage()" [topValue]="10"></app-rating>}
+          @if (hasYear()) {<span>{{selection.year}}</span>}
+          @if (hasAirDate()) {<span class="air-date">{{selection.airDate}}</span>}
+          @if (show.certification) {<span class="rating">{{show.certification}}</span>}
+          @if (video?.duration || video?.parent?.duration) {<span class="duration">{{getDuration()}}</span>}
+          @if (show.homepage) {
+            <span class="homepage">
+              <a [href]="show.homepage" target="_blank">
+                <i class="pi pi-home"><span class="blank">&nbsp;</span></i><span class="text">Homepage</span></a>
+            </span>
+          }
+        </div>
+        @if (getGenres()) {
+          <div class="genres">{{getGenres()}}</div>
+        }
+        @if (categoryLabels.length > 1) {
+          <div class="video-categories">
+            @for (label of categoryLabels; track label; let i = $index) {
+              <p-radioButton [value]="i" [inputId]="'category=' + i"
+                             [(ngModel)]="videoCategory" (click)="selectVideo(videoIndex)"></p-radioButton>
+              <label [for]="'category=' + i">{{ label }}</label>
+            }
+          </div>
+        }
+        @if (videoLabels.length > 1) {
+          <div class="video-choices">
+            @for (label of videoLabels; track label; let i = $index) {
+              <span [ngStyle]="i === videoIndex ? { 'background-color': 'rgba(255, 255, 255, 0.75)',
+                    'color': 'black', 'box-shadow': '#69F 0 0 3px 3px' } : null"
+                    [style.opacity]="videoChoices[videoCategory][i].watchedByUser ? '0.6' : '1'"
+                    (click)="selectVideo(i)"
+              >{{label}}</span>
+            }
+          </div>
+        }
+        <div class="swappable-info">
+          <div class="general-wrapper" [class.expand]="!showCast">
+            <div class="general">
+              <div class="text-wrapper" [class.shrink]="twoRowsOfBadges">
+                @if (show.tagLine) {<div class="tag-line">{{show.tagLine}}</div>}
+                @if (isTvSeason(show)) {<div class="episode-title">{{selection.name}}</div>}
+                @if (anyOverview) {<div class="overview"><div class="overview-content">{{selection.overview}}</div></div>}
+              </div>
+              @if (badges?.length > 0) {
+                <div id="badges" class="badges" [class.foo]="badgeCheckIn()" [class.bottom-adjust]="twoRowsOfBadges">
+                  @for (badge of badges; track badge; let i = $index) {
+                    <div class="badge">
+                      @switch (badge) {
+                        @case ('H.264') {<img src="/assets/H264.svg" height=28 alt="H.264 AVC">}
+                        @case ('H.265') {<img src="/assets/H265.svg" height=28 alt="H.265 HEVC">}
+                        @case ('4K-UHD') {<img src="/assets/4K-UHD.svg" height=20 alt="4K-UHD">}
+                        @case ('DV') {<img src="/assets/DV.svg" height=20 alt="Dolby Vision">}
+                        @case ('HDR10+') {<img src="/assets/HDR10+.svg" height=20 alt="HDR10+">}
+                        @case ('HDR10') {<img src="/assets/HDR10.svg" height=14 alt="HDR10">}
+                        @case ('HDR') {<img src="/assets/HDR.svg" height=14 alt="HDR">}
+                        @case ('Atmos') {<img src="/assets/Atmos.svg" height=20 alt="Dolby Atmos">}
+                        @case ('FR') {
+                          <div class='frame-rate'>
+                            <div>{{ badgeExtras[i][0] }}</div>
+                            <div class='hz'>HZ</div>
+                            @if (badgeExtras[i][1]) {<div class='frac'>.{{ badgeExtras[i][1] }}</div>}
+                          </div>
+                        }
+                        @case ('DS') {<span><i class="pi pi-align-left"></i></span>}
+                        @case ('AC') {<span><i class="pi pi-comments"></i><i class="pi pi-volume-up sup"></i></span>}
+                        @case ('TC') {<span><i class="pi pi-comments"></i><i class="pi pi-align-left sup"></i></span>}
+                        @default {
+                          @if (li(badge)) {
+                            <div [class]="li(badge).col ? 'badge-col' : 'badge-row'">
+                              <img src="/assets/{{ li(badge).file }}"
+                                   [height]="li(badge).reduced && badgeExtras[i] ? li(badge).reduced : li(badge).height"
+                                   [style.top]="li(badge).reducedTop && badgeExtras[i] ?
+                                     li(badge).reducedTop + 'px' :
+                                     li(badge).top ? li(badge).top + 'px' : undefined"
+                                   [alt]="li(badge).alt">
+                                   @if ((badgeExtras[i] || [])[0]) {<span>{{ badgeExtras[i][0] }}</span>}
+                            </div>
+                          }
+                          @if (!li(badge)) {
+                            <span [style.font-size]="badge?.includes('\n') ? '0.6em' : 'inherited'">{{badge}}</span>
+                          }
+                        }
+                      }
                     </div>
-                    <span *ngIf="!li(badge)" [style.font-size]="badge?.includes('\n') ? '0.6em' : 'inherited'">{{badge}}</span>
-                  </ng-container>
-                </ng-container>
-              </div>
+                  }
+                </div>
+              }
             </div>
           </div>
-        </div>
-        <div *ngIf="people.length > 0" class="tab" (click)="toggleCast()">
-          <span>{{showCast ? 'SUMMARY' : 'CAST'}}</span>
-        </div>
-        <div *ngIf="people.length === 0" class="tab"></div>
-        <div *ngIf="people.length > 0" class="gallery-wrapper" [class.expand]="showCast">
-          <div class="gallery">
-            <div *ngFor="let person of people; index as i" class="person"
-                (touchstart)="roleId = i" (touchend)="roleId = -1" (touchcancel)="roleId = -1"
-                 [title]="(person.name?.length > 20 ? person.name + (person.role ? ': ' : '') : '') + (person.role || '')">
-              <div class="image-frame">
-                <img [ngSrc]="getProfileUrl(person)" width=100 height=150 [alt]="person.name">
-              </div>
-              <div class="director">{{person.isDirector ? 'Director' : '\u00A0'}}</div>
-              <div class="name">{{person.name}}</div>
-              <div *ngIf="!person.isDirector && person.role && roleId === i" class="role">{{person.role}}</div>
+          @if (people.length > 0) {
+            <div class="tab" (click)="toggleCast()">
+              <span>{{showCast ? 'SUMMARY' : 'CAST'}}</span>
             </div>
-          </div>
+            <div class="gallery-wrapper" [class.expand]="showCast">
+              <div class="gallery">
+                @for (person of people; track person; let i = $index) {
+                  <div class="person" (touchstart)="roleId = i" (touchend)="roleId = -1" (touchcancel)="roleId = -1"
+                       [title]="(person.name?.length > 20 ? person.name + (person.role ? ': ' : '') : '') + (person.role || '')">
+                    <div class="image-frame">
+                      <img [ngSrc]="getProfileUrl(person)" width=100 height=150 [alt]="person.name">
+                    </div>
+                    <div class="director">{{person.isDirector ? 'Director' : '\u00A0'}}</div>
+                    <div class="name">{{person.name}}</div>
+                    @if (!person.isDirector && person.role && roleId === i) { <div class="role">{{person.role}}</div>}
+                  </div>
+                }
+              </div>
+            </div>
+          } @else {<div class="empty-tab"></div>}
         </div>
-      </div>
-      <div class="file-wrapper">
-        <div class="file">
-          <button *ngIf="!localAccess() && !demo()" pButton type="button" pButtonLabel="Play" pButtonIcon="pi pi-play" class="p-button-sm"
-                  [disabled]="!this.streamUri" (click)="play()"></button>
-          <p-splitbutton *ngIf="localAccess() || demo()" label="Play" icon="pi pi-play" size="small"
-                  [model]="playOptions" [class.dim]="!streamUri" (onClick)="play()"></p-splitbutton>
-          <p-button icon="pi pi-download" label="Download" size="small"
-                  [disabled]="!video?.uri" class="p-button-sm" (click)="startDownload()"></p-button>
-          <a [href]="downloadLink()"><div>{{startOfPath()}}</div><div>{{endOfPath()}}</div></a>
+        <div class="file-wrapper">
+          <div class="file">
+            @if (!localAccess() && !demo()) {
+              <button pButton type="button" pButtonLabel="Play" pButtonIcon="pi pi-play" class="p-button-sm"
+                      [disabled]="!this.streamUri" (click)="play()"></button>
+            }
+            @if (localAccess() || demo()) {
+              <p-splitbutton label="Play" icon="pi pi-play" size="small"
+                             [model]="playOptions" [class.dim]="!streamUri" (onClick)="play()"></p-splitbutton>
+            }
+            <p-button icon="pi pi-download" label="Download" size="small"
+                      [disabled]="!video?.uri" class="p-button-sm" (click)="startDownload()"></p-button>
+            <a [href]="downloadLink()"><div>{{startOfPath()}}</div><div>{{endOfPath()}}</div></a>
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
-<app-play-options *ngIf="video && showPlayOptions" [video]="video" (close)="showPlayOptions = false"></app-play-options>
+}
+@if (video && showPlayOptions) {
+  <app-play-options [video]="video" (close)="showPlayOptions = false"></app-play-options>
+}
 <app-dash-player [src]="playSrc" (onClose)="closePlayer()" [class.active]="!!playSrc"></app-dash-player>
 <p-toast position="top-center"></p-toast>

@@ -17,7 +17,7 @@ import { FormsModule } from '@angular/forms';
 import { InputText } from 'primeng/inputtext';
 import { TreeSelect } from 'primeng/treeselect';
 import { Select } from 'primeng/select';
-import { NgIf, NgFor, NgOptimizedImage } from '@angular/common';
+import { NgOptimizedImage } from '@angular/common';
 import { Button } from 'primeng/button';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { WatchedIndicatorComponent } from '../watched-indicator/watched-indicator.component';
@@ -39,8 +39,8 @@ const SORT_CHOICES = [
   selector: 'app-poster-view',
   templateUrl: './poster-view.component.html',
   styleUrls: ['./poster-view.component.scss'],
-  imports: [IconField, InputIcon, FormsModule, InputText, TreeSelect, Select, NgIf, Button,
-            NgFor, NgOptimizedImage, FaIconComponent, WatchedIndicatorComponent, RatingComponent]
+  imports: [IconField, InputIcon, FormsModule, InputText, TreeSelect, Select, Button, NgOptimizedImage,
+            FaIconComponent, WatchedIndicatorComponent, RatingComponent]
 })
 export class PosterViewComponent implements OnDestroy, OnInit {
   readonly faFolderOpen = faFolderOpen;

@@ -9,6 +9,8 @@
 </div>
 <video id="dash-player" controls [class.narrow]="narrow" [style.display]="videoUrl ? 'none' : 'block'"
    [style.cursor]="showHeader ? 'default' : 'none'"></video>
-<video *ngIf="videoUrl" id="direct-player" controls [class.narrow]="narrow" [style.cursor]="showHeader ? 'default' : 'none'">
-  <source [src]="videoUrl" [type]="videoUrl.endsWith('.webm') ? 'video/webm' : 'video/mp4'">
-</video>
+@if (videoUrl) {
+  <video id="direct-player" controls [class.narrow]="narrow" [style.cursor]="showHeader ? 'default' : 'none'">
+    <source [src]="videoUrl" [type]="videoUrl.endsWith('.webm') ? 'video/webm' : 'video/mp4'">
+  </video>
+}

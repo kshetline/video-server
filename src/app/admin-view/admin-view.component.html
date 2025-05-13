@@ -2,8 +2,10 @@
   <p-button label="Back" icon="pi pi-chevron-left" (click)="goBack.emit()"/>
   <p-button icon="pi pi-stop" styleClass="p-button-rounded p-button-danger" (click)="sendStop()"
     [disabled]="!isProcessing() || stopPending"></p-button>
-  <p-progressBar *ngIf="isProcessing()" [value]="updateProgress"
-                 [mode]="(indeterminate || updateProgress <= 0 ? 'in' : '') + 'determinate'" [showValue]="false"></p-progressBar>
+  @if (isProcessing()) {
+    <p-progressBar [value]="updateProgress"
+                   [mode]="(indeterminate || updateProgress <= 0 ? 'in' : '') + 'determinate'" [showValue]="false"></p-progressBar>
+  }
 </div>
 <div class="content" [class.show-busy]="stopPending">
   <p-button label="Refresh Video Library" icon="pi pi-refresh"
@@ -20,9 +22,11 @@
     <tr>
       <th>Unique movie titles</th>
       <td>{{videoStats?.videoCount ? $any(videoStats.movieTitles)?.length : ''}}</td>
-      <td *ngIf="$any(videoStats?.movieTitles)?.length"><div class="info-icon" (click)="listToShow = $any(videoStats?.movieTitles)">
-        <i class="pi pi-info-circle"></i>
-      </div></td>
+      @if ($any(videoStats?.movieTitles)?.length) {
+        <td><div class="info-icon" (click)="listToShow = $any(videoStats?.movieTitles)">
+          <i class="pi pi-info-circle"></i>
+        </div></td>
+      }
     </tr>
     <tr>
       <th>Movie storage usage</th>
@@ -35,9 +39,11 @@
     <tr>
       <th>Unique TV show titles</th>
       <td>{{videoStats?.videoCount ? $any(videoStats.tvShowTitles)?.length : ''}}</td>
-      <td *ngIf="$any(videoStats?.tvShowTitles)?.length"><div class="info-icon" (click)="listToShow = $any(videoStats?.tvShowTitles)">
-        <i class="pi pi-info-circle"></i>
-      </div></td>
+      @if ($any(videoStats?.tvShowTitles)?.length) {
+        <td><div class="info-icon" (click)="listToShow = $any(videoStats?.tvShowTitles)">
+          <i class="pi pi-info-circle"></i>
+        </div></td>
+      }
     </tr>
     <tr>
       <th>Unique TV show episodes</th>
@@ -78,9 +84,11 @@
     <tr>
       <th>Unstreamed video count</th>
       <td>{{videoStats?.videoCount ? $any(videoStats.unstreamedTitles)?.length : ''}}</td>
-      <td *ngIf="$any(videoStats?.unstreamedTitles)?.length"><div class="info-icon" (click)="listToShow = $any(videoStats?.unstreamedTitles)">
-        <i class="pi pi-info-circle"></i>
-      </div></td>
+      @if ($any(videoStats?.unstreamedTitles)?.length) {
+        <td><div class="info-icon" (click)="listToShow = $any(videoStats?.unstreamedTitles)">
+          <i class="pi pi-info-circle"></i>
+        </div></td>
+      }
     </tr>
     <tr>
       <th>Streaming storage usage</th>
@@ -103,8 +111,8 @@
     </tr>
     <tr>
       <th>Total storage usage</th>
-      <td>{{videoStats?.videoCount ? formatSize(videoStats.movieBytes + videoStats.tvBytes + videoStats.extrasBytes
-        + videoStats.miscFileBytes + videoStats.streamingFileBytes) : ''}}</td>
+      <td>{{videoStats?.videoCount ? formatSize(videoStats.movieBytes + videoStats.tvBytes + videoStats.extrasBytes +
+            videoStats.miscFileBytes + videoStats.streamingFileBytes) : ''}}</td>
     </tr>
   </table>
   <div class="footnote">*Includes only longest duration of movies/shows with multiple cuts/formats</div>
@@ -175,11 +183,13 @@
   <div>{{currentFile}}<span style="opacity: 0; user-select: none">：</span></div>
   <div class="mono">{{currentFile ? encodeProgress : ''}}</div>
 </div>
-<div *ngIf="listToShow" class="show-list" id="show-list">
-  <div *ngFor="let title of listToShow">
-    {{title}}
+@if (listToShow) {
+  <div class="show-list" id="show-list">
+    @for (title of listToShow; track title) {
+      <div>{{title}}</div>
+    }
   </div>
-</div>
+}
 <p-dialog header="Header" [(visible)]="showRefreshDialog" [style]="{ width: 'min(35em, calc(100vw - 4em))' }">
   <ng-template pTemplate="header">
     <span class="p-dialog-title">Refresh Video Library</span>

@@ -1,25 +1,46 @@
-<div *ngIf="isLoggedIn()" class="poster-panel">
-  <app-poster-view [library]="library" [genres]="genres" (itemClicked)="itemClicked($event)"
-    (filterChanged)="filter = $event" [fullLibrary]="fullLibrary"></app-poster-view>
-  <app-collection-view *ngIf="isLoggedIn()" [class.active]="currentCollection" [collection]=currentCollection
-    (goBack)="currentCollection = null" (showSelected)="currentShow = $event" [filter]="filter"
-    [currentShow]="currentShow"></app-collection-view>
-  <app-show-view *ngIf="isLoggedIn()" [class.active]="currentShow" [show]="currentShow" (goBack)="currentShow = null"
-                 (viewBonus)="bonusSource = $event" (playing)="playing = $event"
-                 [currentBonus]="bonusSource"></app-show-view>
-  <app-bonus-view *ngIf="isLoggedIn()" [class.active]="bonusSource" [source]="bonusSource" (goBack)="bonusSource = null"
-                  (playing)="playing = $event"></app-bonus-view>
-  <app-admin-view *ngIf="isAdmin()" [class.active]="showAdminPage"
-                  [status]="status" (goBack)="showAdminPage = false"></app-admin-view>
-  <div *ngIf="!playing" class="status-panel">
-    <p-button *ngIf="isAdmin() && !showAdminPage && !posterWallHidden()" icon="pi pi-wrench"
-              styleClass="p-button-rounded p-button-danger" (click)="clickAdminPage()"></p-button>
-    <span *ngIf="!posterWallHidden()">{{userName()}}</span>
-    <p-button *ngIf="posterWallHidden()" icon="pi pi-home" styleClass="p-button-rounded p-button-success" (click)="goHome()"></p-button>
-    <p-button icon="pi pi-sign-out" styleClass="p-button-rounded" (click)="logOut()"></p-button>
+@if (isLoggedIn()) {
+  <div class="poster-panel">
+    <app-poster-view [library]="library" [genres]="genres" (itemClicked)="itemClicked($event)"
+      (filterChanged)="filter = $event" [fullLibrary]="fullLibrary"></app-poster-view>
+    @if (isLoggedIn()) {
+      <app-collection-view [class.active]="currentCollection" [collection]=currentCollection
+          (goBack)="currentCollection = null" (showSelected)="currentShow = $event" [filter]="filter"
+          [currentShow]="currentShow"></app-collection-view>
+    }
+    @if (isLoggedIn()) {
+      <app-show-view [class.active]="currentShow" [show]="currentShow" (goBack)="currentShow = null"
+                     (viewBonus)="bonusSource = $event" (playing)="playing = $event"
+                     [currentBonus]="bonusSource"></app-show-view>
+    }
+    @if (isLoggedIn()) {
+      <app-bonus-view [class.active]="bonusSource" [source]="bonusSource" (goBack)="bonusSource = null"
+                      (playing)="playing = $event"></app-bonus-view>
+    }
+    @if (isAdmin()) {
+      <app-admin-view [class.active]="showAdminPage"
+                      [status]="status" (goBack)="showAdminPage = false"></app-admin-view>
+    }
+    @if (!playing) {
+      <div class="status-panel">
+        @if (isAdmin() && !showAdminPage && !posterWallHidden()) {
+          <p-button icon="pi pi-wrench" styleClass="p-button-rounded p-button-danger" (click)="clickAdminPage()"></p-button>
+        }
+        @if (!posterWallHidden()) {
+          <span>{{userName()}}</span>
+        }
+        @if (posterWallHidden()) {
+          <p-button icon="pi pi-home" styleClass="p-button-rounded p-button-success" (click)="goHome()"></p-button>
+        }
+        <p-button icon="pi pi-sign-out" styleClass="p-button-rounded" (click)="logOut()"></p-button>
+      </div>
+    }
   </div>
-</div>
-<app-login *ngIf="isLoggedOut()" (typing)="clearStatusMessage()" (open)="resetLogoffTime()"></app-login>
+}
+@if (isLoggedOut()) {
+  <app-login (typing)="clearStatusMessage()" (open)="resetLogoffTime()"></app-login>
+}
 <p-toast></p-toast>
 <p-confirmDialog [style]="{ width: 'min(35em, calc(100vw - 4em))' }"></p-confirmDialog>
-<div *ngIf="clickDelayed" class="click-delay"></div>
+@if (clickDelayed) {
+  <div class="click-delay"></div>
+}
