@@ -8,8 +8,17 @@ import { hashUri, isFile, isMovie, isTvSeason } from '../../../server/src/shared
 import { StatusInterceptor } from '../status.service';
 import { AuthService } from '../auth.service';
 import { MenuItem, MessageService } from 'primeng/api';
-import { ItemStreamPair } from '../dash-player/dash-player.component';
+import { ItemStreamPair, DashPlayerComponent } from '../dash-player/dash-player.component';
 import { updatedItem } from '../app.component';
+import { Button, ButtonDirective, ButtonLabel, ButtonIcon } from 'primeng/button';
+import { NgIf, NgOptimizedImage, NgFor, NgStyle, NgSwitch, NgSwitchCase, NgSwitchDefault } from '@angular/common';
+import { WatchedIndicatorComponent } from '../watched-indicator/watched-indicator.component';
+import { RatingComponent } from '../rating/rating.component';
+import { RadioButton } from 'primeng/radiobutton';
+import { FormsModule } from '@angular/forms';
+import { SplitButton } from 'primeng/splitbutton';
+import { PlayOptionsComponent } from '../play-options/play-options.component';
+import { Toast } from 'primeng/toast';
 
 const FADER_TRANSITION_DURATION = '0.75s';
 
@@ -35,7 +44,10 @@ interface ImageInfo {
   templateUrl: './show-view.component.html',
   styleUrls: ['./show-view.component.scss'],
   providers: [MessageService],
-  standalone: false
+  imports: [Button, NgIf, NgOptimizedImage, WatchedIndicatorComponent, RatingComponent, NgFor,
+            RadioButton, FormsModule, NgStyle, NgSwitch, NgSwitchCase, NgSwitchDefault,
+            ButtonDirective, ButtonLabel, ButtonIcon, SplitButton, PlayOptionsComponent,
+            DashPlayerComponent, Toast]
 })
 export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
   readonly getSeasonTitle = getSeasonTitle;

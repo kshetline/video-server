@@ -8,6 +8,8 @@ import { HttpClient } from '@angular/common/http';
 import { hashUri, itemPath } from '../../../server/src/shared-utils';
 import { LibraryItem, PlaybackProgress } from '../../../server/src/shared-types';
 import { broadcastMessage } from '../video-ui-utils';
+import { Button } from 'primeng/button';
+import { NgIf } from '@angular/common';
 
 export interface LibItem {
   aggregationId?: number;
@@ -30,7 +32,7 @@ export interface ItemStreamPair {
   selector: 'app-dash-player',
   templateUrl: './dash-player.component.html',
   styleUrls: ['./dash-player.component.scss'],
-  standalone: false
+  imports: [Button, NgIf]
 })
 export class DashPlayerComponent implements OnDestroy, OnInit {
   private aspectRatio = -1;

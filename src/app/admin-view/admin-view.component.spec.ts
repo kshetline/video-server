@@ -7,7 +7,7 @@ describe('AdminViewComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [AdminViewComponent]
+      imports: [AdminViewComponent]
     })
       .compileComponents();
 

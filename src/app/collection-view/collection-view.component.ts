@@ -4,6 +4,10 @@ import { hashTitle, isCollection, isTvShow } from '../../../server/src/shared-ut
 import { floor } from '@tubular/math';
 import { StatusInterceptor } from '../status.service';
 import { checksum53 } from '@tubular/util';
+import { Button } from 'primeng/button';
+import { NgIf, NgFor, NgOptimizedImage } from '@angular/common';
+import { WatchedIndicatorComponent } from '../watched-indicator/watched-indicator.component';
+import { RatingComponent } from '../rating/rating.component';
 
 function getSortTime(item: LibraryItem): number {
   if (item.airDate)
@@ -22,7 +26,7 @@ function getSortTime(item: LibraryItem): number {
   selector: 'app-collection-view',
   templateUrl: './collection-view.component.html',
   styleUrls: ['./collection-view.component.scss'],
-  standalone: false
+  imports: [Button, NgIf, NgFor, NgOptimizedImage, WatchedIndicatorComponent, RatingComponent]
 })
 export class CollectionViewComponent {
   readonly hashTitle = hashTitle;

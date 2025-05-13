@@ -13,6 +13,16 @@ import {
 import { StatusInterceptor } from './status.service';
 import { Observable } from 'rxjs';
 import { shareReplay } from 'rxjs/internal/operators/shareReplay';
+import { NgIf } from '@angular/common';
+import { PosterViewComponent } from './poster-view/poster-view.component';
+import { CollectionViewComponent } from './collection-view/collection-view.component';
+import { ShowViewComponent } from './show-view/show-view.component';
+import { BonusViewComponent } from './bonus-view/bonus-view.component';
+import { AdminViewComponent } from './admin-view/admin-view.component';
+import { Button } from 'primeng/button';
+import { LoginComponent } from './login/login.component';
+import { Toast } from 'primeng/toast';
+import { ConfirmDialog } from 'primeng/confirmdialog';
 
 const defaultGenres = [
   'Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Family', 'Fantasy',
@@ -27,7 +37,8 @@ const MAX_RESTING_DELAY = 180000; // 3 minutes
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
   providers: [ConfirmationService, MessageService, StatusInterceptor],
-  standalone: false
+  imports: [NgIf, PosterViewComponent, CollectionViewComponent, ShowViewComponent, BonusViewComponent,
+            AdminViewComponent, Button, LoginComponent, Toast, ConfirmDialog]
 })
 export class AppComponent implements AfterViewInit, OnInit {
   static filter = 'All';

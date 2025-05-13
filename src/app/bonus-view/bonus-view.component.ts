@@ -7,13 +7,19 @@ import { hashUri, isMovie, isTvShow } from '../../../server/src/shared-utils';
 import { StatusInterceptor } from '../status.service';
 import { MenuItem } from 'primeng/api';
 import { AuthService } from '../auth.service';
-import { ItemStreamPair, LibItem } from '../dash-player/dash-player.component';
+import { ItemStreamPair, LibItem, DashPlayerComponent } from '../dash-player/dash-player.component';
+import { Button, ButtonDirective, ButtonLabel, ButtonIcon } from 'primeng/button';
+import { NgFor, NgIf } from '@angular/common';
+import { SplitButton } from 'primeng/splitbutton';
+import { WatchedIndicatorComponent } from '../watched-indicator/watched-indicator.component';
+import { PlayOptionsComponent } from '../play-options/play-options.component';
 
 @Component({
   selector: 'app-bonus-view',
   templateUrl: './bonus-view.component.html',
   styleUrls: ['./bonus-view.component.scss'],
-  standalone: false
+  imports: [Button, NgFor, NgIf, ButtonDirective, ButtonLabel, ButtonIcon, SplitButton,
+            WatchedIndicatorComponent, PlayOptionsComponent, DashPlayerComponent]
 })
 export class BonusViewComponent implements OnInit {
   private commonTitleStart = '';

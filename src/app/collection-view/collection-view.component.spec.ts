@@ -8,7 +8,7 @@ describe('CollectionViewComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [CollectionViewComponent]
+      imports: [CollectionViewComponent]
     })
       .compileComponents();
 

@@ -3,14 +3,23 @@ import { formatSecondsToDays, formatSize, webSocketMessagesEmitter } from '../vi
 import { HttpClient } from '@angular/common/http';
 import { ServerStatus, VideoStats } from '../../../server/src/shared-types';
 import { clone } from '@tubular/util';
-import { ConfirmationService } from 'primeng/api';
+import { ConfirmationService, PrimeTemplate } from 'primeng/api';
 import { repoll } from '../app.component';
+import { Button, ButtonDirective, ButtonIcon } from 'primeng/button';
+import { NgIf, NgFor } from '@angular/common';
+import { ProgressBar } from 'primeng/progressbar';
+import { Checkbox } from 'primeng/checkbox';
+import { FormsModule } from '@angular/forms';
+import { DatePicker } from 'primeng/datepicker';
+import { InputText } from 'primeng/inputtext';
+import { Dialog } from 'primeng/dialog';
 
 @Component({
   selector: 'app-admin-view',
   templateUrl: './admin-view.component.html',
   styleUrls: ['./admin-view.component.scss'],
-  standalone: false
+  imports: [Button, NgIf, ProgressBar, Checkbox, FormsModule, DatePicker, InputText, NgFor,
+            Dialog, PrimeTemplate, ButtonDirective, ButtonIcon]
 })
 export class AdminViewComponent implements OnInit {
   readonly formatSecondsToDays = formatSecondsToDays;

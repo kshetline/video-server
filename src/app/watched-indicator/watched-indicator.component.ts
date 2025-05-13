@@ -8,12 +8,14 @@ import { webSocketMessagesEmitter } from '../video-ui-utils';
 import { updatedItem } from '../app.component';
 import { isEqual } from '@tubular/util';
 import { min } from '@tubular/math';
+import { NgIf } from '@angular/common';
+import { LongPressDirective } from '../long-press.directive';
 
 @Component({
   selector: 'app-watched-indicator',
   templateUrl: './watched-indicator.component.html',
   styleUrls: ['./watched-indicator.component.scss'],
-  standalone: false
+  imports: [NgIf, LongPressDirective]
 })
 export class WatchedIndicatorComponent implements OnInit {
   private _asAdmin = false;

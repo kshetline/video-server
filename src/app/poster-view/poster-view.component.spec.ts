@@ -8,7 +8,7 @@ describe('PosterViewComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [PosterViewComponent]
+      imports: [PosterViewComponent]
     })
       .compileComponents();
 

@@ -5,6 +5,11 @@ import { HttpClient } from '@angular/common/http';
 import { encodeForUri, isObject, isString, isValidJson, toInt } from '@tubular/util';
 import { max } from '@tubular/math';
 import { AuthService } from '../auth.service';
+import { NgIf } from '@angular/common';
+import { Select } from 'primeng/select';
+import { FormsModule } from '@angular/forms';
+import { Checkbox } from 'primeng/checkbox';
+import { Button } from 'primeng/button';
 
 const languageNames = new Intl.DisplayNames(['en'], { type: 'language' });
 
@@ -43,7 +48,7 @@ function errorText(err: any): string {
   selector: 'app-play-options',
   templateUrl: './play-options.component.html',
   styleUrls: ['./play-options.component.scss'],
-  standalone: false
+  imports: [NgIf, Select, FormsModule, Checkbox, Button]
 })
 export class PlayOptionsComponent implements OnInit {
   private static lastPlayers: MenuItem[] = [];

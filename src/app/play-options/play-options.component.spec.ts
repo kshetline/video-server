@@ -7,7 +7,7 @@ describe('PlayOptionsComponent', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      declarations: [PlayOptionsComponent]
+      imports: [PlayOptionsComponent]
     });
     fixture = TestBed.createComponent(PlayOptionsComponent);
     component = fixture.componentInstance;

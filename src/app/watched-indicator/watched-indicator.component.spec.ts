@@ -7,7 +7,7 @@ describe('WatchedIndicatorComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [WatchedIndicatorComponent]
+      imports: [WatchedIndicatorComponent]
     })
       .compileComponents();
 

@@ -11,6 +11,17 @@ import { debounceTime } from 'rxjs/internal/operators/debounceTime';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { AuthService } from '../auth.service';
 import { AppComponent } from '../app.component';
+import { IconField } from 'primeng/iconfield';
+import { InputIcon } from 'primeng/inputicon';
+import { FormsModule } from '@angular/forms';
+import { InputText } from 'primeng/inputtext';
+import { TreeSelect } from 'primeng/treeselect';
+import { Select } from 'primeng/select';
+import { NgIf, NgFor, NgOptimizedImage } from '@angular/common';
+import { Button } from 'primeng/button';
+import { FaIconComponent } from '@fortawesome/angular-fontawesome';
+import { WatchedIndicatorComponent } from '../watched-indicator/watched-indicator.component';
+import { RatingComponent } from '../rating/rating.component';
 
 function titleAdjust(title: string): string {
   return title.replace(/\s+Season\s+\d/i, '');
@@ -28,7 +39,8 @@ const SORT_CHOICES = [
   selector: 'app-poster-view',
   templateUrl: './poster-view.component.html',
   styleUrls: ['./poster-view.component.scss'],
-  standalone: false
+  imports: [IconField, InputIcon, FormsModule, InputText, TreeSelect, Select, NgIf, Button,
+            NgFor, NgOptimizedImage, FaIconComponent, WatchedIndicatorComponent, RatingComponent]
 })
 export class PosterViewComponent implements OnDestroy, OnInit {
   readonly faFolderOpen = faFolderOpen;

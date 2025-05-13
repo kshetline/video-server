@@ -8,7 +8,7 @@ describe('DashPlayerComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [DashPlayerComponent]
+      imports: [DashPlayerComponent]
     })
       .compileComponents();
 

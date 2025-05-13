@@ -8,7 +8,7 @@ describe('BonusViewComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [BonusViewComponent]
+      imports: [BonusViewComponent]
     })
       .compileComponents();
 

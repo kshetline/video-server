@@ -1,10 +1,11 @@
 import { Component, Input } from '@angular/core';
+import { NgFor } from '@angular/common';
 
 @Component({
   selector: 'app-rating',
   templateUrl: './rating.component.html',
   styleUrls: ['./rating.component.scss'],
-  standalone: false
+  imports: [NgFor]
 })
 export class RatingComponent {
   @Input() value = 0;

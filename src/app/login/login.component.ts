@@ -1,11 +1,15 @@
 import { AfterViewInit, Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { AuthService } from '../auth.service';
+import { FormsModule } from '@angular/forms';
+import { InputText } from 'primeng/inputtext';
+import { Password } from 'primeng/password';
+import { Button } from 'primeng/button';
 
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
-  standalone: false
+  imports: [FormsModule, InputText, Password, Button]
 })
 export class LoginComponent implements AfterViewInit, OnInit {
   error = '';
