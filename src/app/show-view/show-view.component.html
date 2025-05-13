@@ -109,8 +109,8 @@
                                    @if ((badgeExtras[i] || [])[0]) {<span>{{ badgeExtras[i][0] }}</span>}
                             </div>
                           }
-                          @if (!li(badge)) {
-                            <span [style.font-size]="badge?.includes('\n') ? '0.6em' : 'inherited'">{{badge}}</span>
+                          @if (!li(badge)) { <!-- Should be able to do `badge?.includes`, but that triggers a false TS error -->
+                            <span [style.font-size]="(badge || '').includes('\n') ? '0.6em' : 'inherited'">{{badge}}</span>
                           }
                         }
                       }

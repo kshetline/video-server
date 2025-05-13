@@ -8,20 +8,20 @@
   }
 </div>
 <div class="content" [class.show-busy]="stopPending">
-  <p-button label="Refresh Video Library" icon="pi pi-refresh"
-            [styleClass]="lastStatus?.currentOp === 'lib' ? 'p-button-success' : ''"
+  @let videoCount = videoStats?.videoCount || 0;
+  @let buttonStyle = lastStatus?.currentOp === 'lib' ? 'p-button-success' : '';
+  <p-button label="Refresh Video Library" icon="pi pi-refresh" [styleClass]="buttonStyle"
             [disabled]="isProcessing()" (click)="!isProcessing() && (showRefreshDialog = true)"/>
-  <p-button label="Refresh Video Inventory" icon="pi pi-refresh"
-            [styleClass]="lastStatus?.currentOp === 'inv' ? 'p-button-success' : ''"
+  <p-button label="Refresh Video Inventory" icon="pi pi-refresh" [styleClass]="buttonStyle"
             [disabled]="isProcessing()" (click)="!isProcessing() && refreshInventory()"/>
   <table>
     <tr>
       <th>Movie file count</th>
-      <td>{{videoStats?.videoCount ? videoStats.movieCountRaw : ''}}</td>
+      <td>{{videoCount ? videoStats.movieCountRaw : ''}}</td>
     </tr>
     <tr>
       <th>Unique movie titles</th>
-      <td>{{videoStats?.videoCount ? $any(videoStats.movieTitles)?.length : ''}}</td>
+      <td>{{videoCount ? $any(videoStats.movieTitles)?.length : ''}}</td>
       @if ($any(videoStats?.movieTitles)?.length) {
         <td><div class="info-icon" (click)="listToShow = $any(videoStats?.movieTitles)">
           <i class="pi pi-info-circle"></i>
@@ -30,15 +30,15 @@
     </tr>
     <tr>
       <th>Movie storage usage</th>
-      <td>{{videoStats?.videoCount ? formatSize(videoStats.movieBytes) : ''}}</td>
+      <td>{{videoCount ? formatSize(videoStats.movieBytes) : ''}}</td>
     </tr>
     <tr>
       <th>TV file count</th>
-      <td>{{videoStats?.videoCount ? videoStats.tvEpisodesRaw : ''}}</td>
+      <td>{{videoCount ? videoStats.tvEpisodesRaw : ''}}</td>
     </tr>
     <tr>
       <th>Unique TV show titles</th>
-      <td>{{videoStats?.videoCount ? $any(videoStats.tvShowTitles)?.length : ''}}</td>
+      <td>{{videoCount ? $any(videoStats.tvShowTitles)?.length : ''}}</td>
       @if ($any(videoStats?.tvShowTitles)?.length) {
         <td><div class="info-icon" (click)="listToShow = $any(videoStats?.tvShowTitles)">
           <i class="pi pi-info-circle"></i>
@@ -47,11 +47,11 @@
     </tr>
     <tr>
       <th>Unique TV show episodes</th>
-      <td>{{videoStats?.videoCount ? $any(videoStats.tvEpisodeTitles)?.length : ''}}</td>
+      <td>{{videoCount ? $any(videoStats.tvEpisodeTitles)?.length : ''}}</td>
     </tr>
     <tr>
       <th>TV storage usage</th>
-      <td>{{videoStats?.videoCount ? formatSize(videoStats.tvBytes) : ''}}</td>
+      <td>{{videoCount ? formatSize(videoStats.tvBytes) : ''}}</td>
     </tr>
     <tr>
       <th>DVD ISO image count</th>
@@ -63,27 +63,27 @@
     </tr>
     <tr>
       <th>Bonus materials file count</th>
-      <td>{{videoStats?.videoCount ? videoStats.extrasCount : ''}}</td>
+      <td>{{videoCount ? videoStats.extrasCount : ''}}</td>
     </tr>
     <tr>
       <th>Bonus materials storage usage</th>
-      <td>{{videoStats?.videoCount ? formatSize(videoStats.extrasBytes) : ''}}</td>
+      <td>{{videoCount ? formatSize(videoStats.extrasBytes) : ''}}</td>
     </tr>
     <tr>
       <th>Miscellaneous file count</th>
-      <td>{{videoStats?.videoCount ? videoStats.miscFileCount : ''}}</td>
+      <td>{{videoCount ? videoStats.miscFileCount : ''}}</td>
     </tr>
     <tr>
       <th>Miscellaneous storage usage</th>
-      <td>{{videoStats?.videoCount ? formatSize(videoStats.miscFileBytes) : ''}}</td>
+      <td>{{videoCount ? formatSize(videoStats.miscFileBytes) : ''}}</td>
     </tr>
     <tr>
       <th>Streaming file count</th>
-      <td>{{videoStats?.videoCount ? videoStats.streamingFileCount : ''}}</td>
+      <td>{{videoCount ? videoStats.streamingFileCount : ''}}</td>
     </tr>
     <tr>
       <th>Unstreamed video count</th>
-      <td>{{videoStats?.videoCount ? $any(videoStats.unstreamedTitles)?.length : ''}}</td>
+      <td>{{videoCount ? $any(videoStats.unstreamedTitles)?.length : ''}}</td>
       @if ($any(videoStats?.unstreamedTitles)?.length) {
         <td><div class="info-icon" (click)="listToShow = $any(videoStats?.unstreamedTitles)">
           <i class="pi pi-info-circle"></i>
@@ -92,7 +92,7 @@
     </tr>
     <tr>
       <th>Streaming storage usage</th>
-      <td>{{videoStats?.videoCount ? formatSize(videoStats.streamingFileBytes) : ''}}</td>
+      <td>{{videoCount ? formatSize(videoStats.streamingFileBytes) : ''}}</td>
     </tr>
     <tr>
       <td colspan=2><hr></td>
@@ -103,15 +103,15 @@
     </tr>
     <tr>
       <th class="has-footnote">Video file count<span class="star">**</span></th>
-      <td>{{videoStats?.videoCount}}</td>
+      <td>{{videoCount}}</td>
     </tr>
     <tr>
       <th class="has-footnote">Video storage usage<span class="star">**</span></th>
-      <td>{{videoStats?.videoCount ? formatSize(videoStats.movieBytes + videoStats.tvBytes + videoStats.extrasBytes) : ''}}</td>
+      <td>{{videoCount ? formatSize(videoStats.movieBytes + videoStats.tvBytes + videoStats.extrasBytes) : ''}}</td>
     </tr>
     <tr>
       <th>Total storage usage</th>
-      <td>{{videoStats?.videoCount ? formatSize(videoStats.movieBytes + videoStats.tvBytes + videoStats.extrasBytes +
+      <td>{{videoCount ? formatSize(videoStats.movieBytes + videoStats.tvBytes + videoStats.extrasBytes +
             videoStats.miscFileBytes + videoStats.streamingFileBytes) : ''}}</td>
     </tr>
   </table>

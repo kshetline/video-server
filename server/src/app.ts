@@ -370,10 +370,12 @@ function getApp(): Express {
   theApp.use((req, res, next) => {
     const token = (req.cookies as NodeJS.Dict<string>).vs_jwt;
     const userInfo = token?.split('.')[1];
+    const url = (req.url || '').replace('/browser', '');
 
-    if (/^\/(ab2g|ab2h|admin|app|apps|backup|blog|cgi-bin|cms|crm|laravel|lib|panel|password|phpunit|shell|systembc|(test(?!-ws))|V2|workspace|ws|yii|zend)/.test(req.url)) {
+    if (/^\/(ab2g|ab2h|admin(?!-)|app(?!\.)|apps|backup|blog|cgi-bin|cms|crm|laravel|lib|panel|password|phpunit|shell|systembc|(test(?!-ws))|V2|workspace|ws|yii|zend)/.test(url)) {
       const ip = getIp(req);
       const block = blockedIps.get(ip);
+      console.log('%s Bad URL from %s: %s', timeStamp(), ip, url);
 
       if (block == null || block < 0) {
         console.log(timeStamp(), 'Blocking:', ip);
@@ -382,7 +384,7 @@ function getApp(): Express {
 
       unref(setTimeout(() => res.sendStatus(403), BAD_REQUEST_DELAY));
     }
-    else if (!/^\/api\//.test(req.url) || /^\/api\/(login|status|test-ws)\b/.test(req.url))
+    else if (!/^\/api\//.test(url) || /^\/api\/(login|status|test-ws)\b/.test(url))
       next();
     else if (!userInfo)
       res.sendStatus(401);
@@ -418,7 +420,7 @@ function getApp(): Express {
       res.status(403).end();
   });
 
-  theApp.use(express.static('public'));
+  theApp.use(express.static('public/browser'));
   theApp.get('/', (_req, res) => {
     res.send('Static home file not found');
   });

@@ -12,10 +12,10 @@
       <div class="library-item">
         <div class="loading">Loading...</div>
         <div class="video-tags" [style.right]="'0.5em'">
-        @if (item.isSD) {<div class="sd">SD</div>}
-        @if (item.is3d && filter !== '3D') {<div class="d3">3D</div>}
-        @if (item.is4k && filter !== '4K') {<div>4K</div>}
-        @if (item.isTV && filter !== 'TV') {<div class="tv">TV</div>}
+          @if (item.isSD) {<div class="sd">SD</div>}
+          @if (item.is3d && filter !== '3D') {<div class="d3">3D</div>}
+          @if (item.is4k && filter !== '4K') {<div>4K</div>}
+          @if (item.isTV && filter !== 'TV') {<div class="tv">TV</div>}
         </div>
         <img [ngSrc]="getPosterUrl(item)" width=150 height=225 alt="{{item.name}}" priority>
         <div class="progress-wrapper">
