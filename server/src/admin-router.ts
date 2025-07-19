@@ -265,7 +265,7 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
             ++stats.movieCountRaw;
           }
 
-          if (info.isExtra && options.skipExtras || info.isMovie && options.skipMovies || info.isTV && options.skipTV) {
+          if (info.isExtra && options.skipExtras || info.isMovie && options.skipMovies || info.isTV && options.skipTv) {
             ++stats.skippedForType;
             info.skip = true;
           }
@@ -492,7 +492,7 @@ interface UpdateOptions {
   mkvFlagsUpdateBackups?: boolean,
   skipExtras?: boolean;
   skipMovies?: boolean;
-  skipTV?: boolean;
+  skipTv?: boolean;
   stats?: boolean;
   validate?: boolean;
   validateReset?: boolean;
@@ -535,6 +535,9 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
           generateFallbackAudio: options.generateFallbackAudio,
           generateStreaming: options.generateStreaming,
           reportProgress: true,
+          skipExtras: options.skipExtras,
+          skipMovies: options.skipMovies,
+          skipTv: options.skipTv,
           walkStart: options.walkStart,
           walkStop: options.walkStop,
           validate: options.validate
@@ -623,7 +626,7 @@ router.post('/process', async (req, res) => {
       mkvFlagsUpdateBackups: toBoolean(req.body.mkvFlagsUpdateBackups, null, true),
       skipExtras: toBoolean(req.body.skipExtras, null, true),
       skipMovies: toBoolean(req.body.skipMovies, null, true),
-      skipTv: toBoolean(req.body.skipTV, null, true),
+      skipTv: toBoolean(req.body.skipTv, null, true),
       start: req.body.walkStart,
       stop: req.body.walkStop,
       streaming: toBoolean(req.body.generateStreaming, null, true),
@@ -642,7 +645,7 @@ router.post('/process', async (req, res) => {
       mkvFlagsUpdateBackups: processArgs.mkvFlagsUpdateBackups,
       skipExtras: toBoolean(req.body.skipExtras, null, true),
       skipMovies: toBoolean(req.body.skipMovies, null, true),
-      skipTV: toBoolean(req.body.skipTV, null, true),
+      skipTv: toBoolean(req.body.skipTv, null, true),
       stats: true,
       validate: processArgs.validate,
       walkStart: req.body.walkStart,

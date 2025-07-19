@@ -137,7 +137,7 @@
         <label for="skip-movies">Skip movies</label>
       </div>
       <div class="label-pair">
-        <p-checkbox [(ngModel)]="options.skipTV" [binary]="true" inputId="skip-tv-shows" id="skip-tv-shows"></p-checkbox>
+        <p-checkbox [(ngModel)]="options.skipTv" [binary]="true" inputId="skip-tv-shows" id="skip-tv-shows"></p-checkbox>
         <label for="skip-tv-shows">Skip TV shows</label>
       </div>
       <div class="label-pair">
@@ -178,7 +178,7 @@
             [styleClass]="lastStatus?.currentOp === 'proc' ? 'p-button-success' : ''"
             [disabled]="isProcessing() ||
                         (!options.generateFallbackAudio && !options.mkvFlags && !options.generateStreaming && !options.validate) ||
-                        (options.skipMovies && options.skipTV && options.skipExtras)"
+                        (options.skipMovies && options.skipTv && options.skipExtras)"
             (click)="!isProcessing() && runProcess()"/>
   <div>{{currentFile}}<span style="opacity: 0; user-select: none">：</span></div>
   <div class="mono">{{currentFile ? encodeProgress : ''}}</div>

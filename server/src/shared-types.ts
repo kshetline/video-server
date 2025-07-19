@@ -415,7 +415,7 @@ export interface VideoWalkOptions {
   reportStreamingToCallback?: boolean;
   skipExtras?: boolean;
   skipMovies?: boolean;
-  skipTV?: boolean;
+  skipTv?: boolean;
   updateExtraMetadata?: boolean;
   validate?: boolean;
   walkStart?: string;

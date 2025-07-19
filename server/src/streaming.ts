@@ -569,13 +569,19 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
       else if (filter)
         filter = filter.replace('[v0]', '[v]');
 
-      if (filter)
+      const addAudio = (groupedVideoCount === 1 || small) && audioIndex >= 0;
+
+      if (filter) {
         args.push('-filter_complex', filter, '-map', '[v]');
+
+        if (addAudio)
+          args.push('-map', 'a:0');
+      }
 
       if (subtitleIndex < 0)
         args.push('-sn');
 
-      if ((groupedVideoCount === 1 || small) && audioIndex >= 0) {
+      if (addAudio) {
         args.push(...audioArgs);
         hasAudio = true;
 
@@ -646,7 +652,7 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
             const percentDone = progress.percent?.get(task.name) || 0;
 
             // Sometimes an error is thrown at the last moment, but the file generated is perfectly usable
-            if (percentDone > 99.89 && (err?.message || err?.toString())?.includes('pts/dts pair unsupported'))
+            if (percentDone > 99.89 && /error writing trailer|pts\/dts pair unsupported/i.test(err?.message))
               moveOn();
             else {
               --running;
@@ -668,13 +674,19 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
         }
         else if (running === 0 && redoQueue.length > 0) {
           const task = redoQueue.splice(0, 1)[0];
+          const wrapUpTask = (): any => rename(trackTempFile(tmp(task.videoPath), true), task.videoPath).finally(() =>
+            checkAndFixBadDuration(task.videoPath, progress, task.name).finally(() => checkQueue())
+          );
 
           startTask(task);
-          task.promise.then(() => rename(trackTempFile(tmp(task.videoPath), true), task.videoPath).finally(() =>
-            checkAndFixBadDuration(task.videoPath, progress, task.name).finally(() => checkQueue())
-          ))
+          task.promise.then(wrapUpTask)
           .catch(err => {
-            if (++task.tries < maxTries) {
+            const percentDone = progress.percent?.get(task.name) || 0;
+
+            // Sometimes an error is thrown at the last moment, but the file generated is perfectly usable
+            if (percentDone > 99.89 && /error writing trailer|pts\/dts pair unsupported/i.test(err?.message))
+              wrapUpTask();
+            else if (++task.tries < maxTries) {
               task.process = undefined;
               redoQueue.push(task);
               videoProgress('', -1, task.name, true, progress);
