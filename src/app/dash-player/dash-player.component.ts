@@ -209,7 +209,7 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
   }
 
   private findPlayer(id: string, tries = 0): void {
-    this.playerElem = document.querySelector(id) as HTMLVideoElement;
+    this.playerElem = document.querySelector(id);
 
     if (!this.playerElem) {
       if (tries < 120)
@@ -275,7 +275,6 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
 
   private registerTimeChange(force = false): void {
     if (!this.player && !this.playerElem)
-      // eslint-disable-next-line no-useless-return
       return;
     else if (force) {
       if (this.timeChangeTimer) {

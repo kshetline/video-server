@@ -76,6 +76,7 @@ export class AppComponent implements AfterViewInit, OnInit {
     private confirmationService: ConfirmationService,
     private messageService: MessageService
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     This = this;
 
     StatusInterceptor.getHttpStatusUpdates(status => {
@@ -128,7 +129,7 @@ export class AppComponent implements AfterViewInit, OnInit {
 
         let topZRange: number = undefined;
         const elems = document.elementsFromPoint(evt.clientX, evt.clientY);
-        const updates: { elem: Element, type: string, file: string, saveImg?: string }[] = [];
+        const updates: { elem: Element; type: string; file: string; saveImg?: string }[] = [];
 
         for (const elem of elems) {
           const zRange = floor(getZIndex(elem) / 100);

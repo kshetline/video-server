@@ -43,7 +43,7 @@ export class AuthService {
   }
 
   private setSession(session: UserSession): void {
-    const expiration = (session?.expiration as number || 0);
+    const expiration = (session?.expiration || 0);
 
     localStorage.setItem('vs_expires_at', expiration.toString());
     localStorage.setItem('vs_session', btoa(JSON.stringify(session)));

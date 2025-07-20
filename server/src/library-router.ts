@@ -63,17 +63,17 @@ interface Alias {
 }
 
 interface Collection {
-  altNames?: string[],
+  altNames?: string[];
   isTV?: boolean;
   name: string;
   poster?: string;
-  aliases: Alias[]
+  aliases: Alias[];
 }
 
 interface Mappings {
-  aliases?: Alias[],
-  changes?: Alias[],
-  collections?: Collection[]
+  aliases?: Alias[];
+  changes?: Alias[];
+  collections?: Collection[];
 }
 
 function formatAspectRatioNumber(ratio: number): string {
@@ -567,7 +567,7 @@ async function getMediaInfo(items: LibraryItem[]): Promise<void> {
 
     if (isFile(item)) {
       const url = process.env.VS_ZIDOO_CONNECT + `Poster/v2/getVideoInfo?id=${item.aggregationId}`;
-      const data: { addedTime: number, lastWatchTime: number, playPoint: number } = await requestJson(url);
+      const data: { addedTime: number; lastWatchTime: number; playPoint: number } = await requestJson(url);
       const path = paths.join(process.env.VS_VIDEO_SOURCE, item.uri);
       const mediaInfo = await getAugmentedMediaInfo(path);
 
@@ -1382,7 +1382,7 @@ async function updateWatchInfo(items: LibraryItem[], user: string): Promise<void
     if (isFile(item) && item.streamUri) {
       try {
         const db = getDb();
-        const row = await db.get('SELECT * FROM watched WHERE user = ? AND video = ?', user, hashUri(item.streamUri)) as PlaybackProgress;
+        const row: PlaybackProgress = await db.get('SELECT * FROM watched WHERE user = ? AND video = ?', user, hashUri(item.streamUri));
 
         if (row) {
           item.duration = item.duration || row.duration;

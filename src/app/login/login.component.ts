@@ -26,7 +26,7 @@ export class LoginComponent implements AfterViewInit, OnInit {
   }
 
   ngAfterViewInit(): void {
-    const userInput = document.querySelector('#username') as HTMLInputElement;
+    const userInput: HTMLInputElement = document.querySelector('#username');
 
     if (userInput) {
       userInput.focus();

@@ -93,7 +93,7 @@ export class BonusViewComponent implements OnInit {
   @Output() goBack: EventEmitter<void> = new EventEmitter();
   @Output() playing: EventEmitter<boolean> = new EventEmitter();
 
-  @HostListener('window:keydown', ['$event']) onKeyDown(event:KeyboardEvent): void {
+  @HostListener('window:keydown', ['$event']) onKeyDown(event: KeyboardEvent): void {
     if (this.source && event.key === 'Escape')
       this.goBack.emit();
   }

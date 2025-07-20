@@ -5,7 +5,6 @@ import { requestBinary } from 'by-request';
 import { checksum53, isValidJson, regexEscape, toInt } from '@tubular/util';
 import { readdir, writeFile } from 'fs/promises';
 import { cacheDir, thumbnailDir } from './shared-values';
-// eslint-disable-next-line n/no-extraneous-import
 import Jimp from 'jimp';
 
 export const router = Router();

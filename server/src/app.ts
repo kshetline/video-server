@@ -207,11 +207,12 @@ function onError(error: any): void {
   const bind = isString(httpPort) ? 'Pipe ' + port : 'Port ' + port;
 
   // handle specific listen errors with friendly messages
+
   switch (error.code) {
     case 'EACCES':
       console.error(bind + ' requires elevated privileges');
       process.exit(1);
-    // eslint-disable-next-line no-fallthrough
+    // noinspection FallThroughInSwitchStatementJS
     case 'EADDRINUSE':
       console.error(bind + ' is already in use');
 
@@ -270,7 +271,7 @@ function shutdown(signal?: string): void {
       process.exit(0);
   };
 
-  // Make sure that if the orderly clean-up gets stuck, shutdown still happens.
+  // Make sure that if the orderly cleanup gets stuck, shutdown still happens.
   if (insecureServer)
     insecureServer.close(() => closeCheck());
 
@@ -389,7 +390,7 @@ function getApp(): Express {
     else if (!userInfo)
       res.sendStatus(401);
     else {
-      jwt.verify(token, process.env.VS_TOKEN_SECRET as string, (err: any, user: any) => {
+      jwt.verify(token, process.env.VS_TOKEN_SECRET, (err: any, user: any) => {
         if (err) {
           if (err.name === 'TokenExpiredError')
             res.status(440);
@@ -837,7 +838,7 @@ function getApp(): Express {
   theApp.use((req, res) => {
     const token = (req.cookies as NodeJS.Dict<string>).vs_jwt;
 
-    jwt.verify(token, process.env.VS_TOKEN_SECRET as string, (err: any) => {
+    jwt.verify(token, process.env.VS_TOKEN_SECRET, (err: any) => {
       if (!err)
         res.sendStatus(401);
       else {

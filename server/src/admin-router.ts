@@ -191,7 +191,7 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
             (counterpart as Set<string>).forEach(s => (value as Set<string>).add(s));
           else if (value instanceof Map)
             (counterpart as Map<string, number>).forEach((value2, key2) =>
-              value.set(key2, max(value2 as number, value.get(key2) as number || 0))
+              value.set(key2, max(value2, value.get(key2) as number || 0))
             );
         });
         const subStats = await walkVideoDirectoryAux(path, entry.children, depth + 1, options, callback);
@@ -305,7 +305,7 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
               let [w, h] = (info.video[0]?.properties?.pixel_dimensions || '1x1').split('x').map(d => toInt(d));
 
               if (w > 1880 || h > 1000) {
-                const db = (options as VideoWalkOptionsPlus).db;
+                const db = options.db;
                 const key = path.substring(options.videoBasePath.length);
                 const row = await db.get<any>('SELECT * FROM aspects WHERE key = ?', key);
 
@@ -488,8 +488,8 @@ interface UpdateOptions {
   generateFallbackAudio?: boolean;
   generateStreaming?: boolean;
   mkvFlags?: boolean;
-  mkvFlagsDryRun?: boolean,
-  mkvFlagsUpdateBackups?: boolean,
+  mkvFlagsDryRun?: boolean;
+  mkvFlagsUpdateBackups?: boolean;
   skipExtras?: boolean;
   skipMovies?: boolean;
   skipTv?: boolean;

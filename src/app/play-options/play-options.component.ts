@@ -191,7 +191,7 @@ export class PlayOptionsComponent implements OnInit {
           else
             this.closed = true;
         },
-        error: (err) => this.showError(err)
+        error: err => this.showError(err)
       });
     };
 
@@ -213,7 +213,7 @@ export class PlayOptionsComponent implements OnInit {
         else
           this.closed = true;
       },
-      error: (err) => this.showError(err)
+      error: err => this.showError(err)
     });
   }
 }

@@ -303,6 +303,7 @@ function sortForm(s: string): string {
   return s;
 }
 
+// eslint-disable-next-line @typescript-eslint/unbound-method
 export const comparator = new Intl.Collator('en', { caseFirst: 'upper' }).compare;
 
 export function compareCaseInsensitiveIntl(a: string, b: string): number {
@@ -426,7 +427,7 @@ export function removeBackLinks(childrenOrLibOrItem: VideoLibrary | LibraryItem 
     return;
   }
   else
-    children = childrenOrLibOrItem as LibraryItem[];
+    children = childrenOrLibOrItem;
 
   for (const child of children) {
     delete child.parent;
@@ -443,7 +444,7 @@ export interface WatchInfo {
     position: number;
     unwatched: number;
     watched: number;
-  },
+  };
   duration: number;
   incomplete: boolean;
   mixed: boolean;

@@ -605,7 +605,7 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
       let done = false;
       const redoQueue: VideoRender[] = [];
 
-      const cleanUpAndFail = (err: any): void => {
+      const cleanUpAndFail = (err: Error): void => {
         setTimeout(() => {
           videoQueue.push(...redoQueue);
           videoQueue.forEach(task => {
@@ -646,7 +646,7 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
 
           ++running;
           startTask(task);
-          task.promise.then(() => moveOn()).catch((err) => {
+          task.promise.then(() => moveOn()).catch(err => {
             task.process = undefined;
 
             const percentDone = progress.percent?.get(task.name) || 0;

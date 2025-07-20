@@ -91,7 +91,7 @@ export interface LibraryItem {
   aspectRatioOverride?: string;
   audio?: Track[];
   backdropPath?: string;
-  certification?: string
+  certification?: string;
   codec?: string;
   commentaryAudio?: boolean;
   commentaryText?: boolean;
@@ -172,46 +172,46 @@ export interface VideoLibrary {
 
 export interface MediaTrack {
   '@type': string;
-  extra?: {
+  'extra'?: {
     NumberOfDynamicObjects: string;
   };
-  AudioCount: string;
-  BitDepth: string;
-  ChannelLayout: string;
-  ChannelLayout_Original?: string;
-  ChannelPositions?: string;
-  ChannelPositions_Original?: string;
-  Channels: string;
-  CodecID: string;
-  Default: string;
-  Delay?: string;
-  DisplayAspectRatio: string;
-  Duration?: string;
-  Encoded_Library_Name: string;
-  Forced: string;
-  Format: string;
-  Format_AdditionalFeatures?: string;
-  Format_Commercial_IfAny?: string;
-  Format_Profile?: string;
-  Format_Settings_Mode?: string;
-  FrameRate: string;
-  HDR_Format: string;
-  HDR_Format_Compatibility: string;
-  Height: string;
-  ID: string;
-  Language: string;
-  Movie: string;
-  MultiView_Count?: string;
-  ScanType?: string;
-  Title: string;
-  VideoCount: string;
-  Width: string;
+  'AudioCount': string;
+  'BitDepth': string;
+  'ChannelLayout': string;
+  'ChannelLayout_Original'?: string;
+  'ChannelPositions'?: string;
+  'ChannelPositions_Original'?: string;
+  'Channels': string;
+  'CodecID': string;
+  'Default': string;
+  'Delay'?: string;
+  'DisplayAspectRatio': string;
+  'Duration'?: string;
+  'Encoded_Library_Name': string;
+  'Forced': string;
+  'Format': string;
+  'Format_AdditionalFeatures'?: string;
+  'Format_Commercial_IfAny'?: string;
+  'Format_Profile'?: string;
+  'Format_Settings_Mode'?: string;
+  'FrameRate': string;
+  'HDR_Format': string;
+  'HDR_Format_Compatibility': string;
+  'Height': string;
+  'ID': string;
+  'Language': string;
+  'Movie': string;
+  'MultiView_Count'?: string;
+  'ScanType'?: string;
+  'Title': string;
+  'VideoCount': string;
+  'Width': string;
 
   // ffprobe augmentation
-  comment?: boolean;
-  hearing_impaired?: boolean;
-  original?: boolean;
-  visual_impaired?: boolean;
+  'comment'?: boolean;
+  'hearing_impaired'?: boolean;
+  'original'?: boolean;
+  'visual_impaired'?: boolean;
 }
 
 export interface MediaInfo {
@@ -266,21 +266,21 @@ export interface ShowInfo {
       tvName: string;
       voteAverage: number;
       watched?: boolean;
-    },
+    };
     aggregations: ShowAggregation[];
-  },
+  };
   directors: [{
     name: string;
     profilePath: string;
-  }],
+  }];
   actors: [{
     character: string;
     name: string;
     profilePath: string;
-  }],
+  }];
   genres: [{
     name: string;
-  }],
+  }];
   tv: {
     backdropPath: string;
     certification: string;
@@ -290,7 +290,7 @@ export interface ShowInfo {
     overview: string;
     posterPath: string;
     type: string; // Miniseries, etc.
-  }
+  };
 }
 
 export interface User {
@@ -368,7 +368,7 @@ export interface MKVInfo {
       duration: number;
       title?: string;
       writing_application?: string;
-    }
+    };
   };
   tracks: MkvTrack[];
 }
@@ -409,8 +409,8 @@ export interface VideoWalkOptions {
   isStreamingResource?: (file: string) => boolean;
   laxAudioRenaming?: boolean;
   mkvFlags?: boolean;
-  mkvFlagsDryRun?: boolean,
-  mkvFlagsUpdateBackups?: boolean,
+  mkvFlagsDryRun?: boolean;
+  mkvFlagsUpdateBackups?: boolean;
   reportProgress?: boolean;
   reportStreamingToCallback?: boolean;
   skipExtras?: boolean;
@@ -432,7 +432,7 @@ export interface VideoWalkOptionsPlus extends VideoWalkOptions {
   totalFileCount?: number;
   videoBasePath?: string;
   videoDirectory?: DirectoryEntry[];
-  zidooDb? : AsyncDatabase;
+  zidooDb?: AsyncDatabase;
 }
 
 export interface PlaybackProgress {
@@ -452,7 +452,7 @@ export interface PlayStatus {
     duration: number;
     path: string;
     title: string;
-  }
+  };
 }
 
 export interface FFProbeInfo {
@@ -463,6 +463,6 @@ export interface FFProbeInfo {
       hearing_impaired: number;
       original: number;
       visual_impaired: number;
-    }
-  }]
+    };
+  }];
 }

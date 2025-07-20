@@ -77,7 +77,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   @Output() filterChanged: EventEmitter<string> = new EventEmitter();
 
   @Input() get library(): VideoLibrary { return this._library; }
-  set library(value : VideoLibrary) {
+  set library(value: VideoLibrary) {
     if (this._library !== value) {
       this._library = value;
       this.items = value?.array;
@@ -86,7 +86,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   }
 
   @Input() get genres(): string[] { return this._genres; }
-  set genres(value : string[]) {
+  set genres(value: string[]) {
     if (this._genres !== value) {
       this._genres = value;
       this.updateFilterNodes();
@@ -201,7 +201,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   jumpScroll(target: string): void {
     target = target.substring(0, 1);
 
-    const grid = document.querySelector('.poster-grid') as HTMLElement;
+    const grid: HTMLElement = document.querySelector('.poster-grid');
 
     if (target === '0') {
       grid.scrollTop = 0;
@@ -231,7 +231,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
 
   filterShow(): void {
     const filterTree = document.getElementById('filter-tree');
-    const nodes = Array.from(filterTree?.querySelectorAll('.p-treenode-label > span') || []) as HTMLElement[];
+    const nodes: HTMLElement[] = Array.from(filterTree?.querySelectorAll('.p-treenode-label > span') || []);
 
     this.genresLabel = nodes.find(n => n.innerText === 'Genres')?.parentElement;
 
@@ -246,7 +246,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   }
 
   private refilter(): void {
-    const grid = document.querySelector('.poster-grid') as HTMLElement;
+    const grid: HTMLElement = document.querySelector('.poster-grid');
 
     if (!grid)
       return;
@@ -270,7 +270,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   }
 
   private determineLetterNavGroups(): void {
-    const availableHeight = (document.querySelector('.poster-grid') as HTMLElement).clientHeight - 14;
+    const availableHeight = document.querySelector('.poster-grid').clientHeight - 14;
 
     for (let span = 1; span <= 4; ++span) {
       const count = ceil(26 / span) + 1;

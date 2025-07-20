@@ -61,7 +61,6 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
   private _show: LibraryItem;
   private thumbnailMode = false;
 
-  /* eslint-disable no-multi-spaces */
   readonly logoImages = new Map<string, ImageInfo>([
     ['3D',     { file: '3D.svg',     height: 24, alt: '3D' }],
     ['DD',     { file: 'DD.svg',     height: 18, alt: 'Dolby Digital', col: true, reduced: 10 }],
@@ -71,7 +70,6 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
     ['DTS-X',  { file: 'DTS-X.png',  height: 20, alt: 'Dolby Digital' }],
     ['TrueHD', { file: 'TrueHD.svg', height: 18, alt: 'TrueHD', top: 1 }]
   ]);
-  /* eslint-enable no-multi-spaces */
 
   readonly li = (key: string): ImageInfo => this.logoImages.get(key);
 
@@ -461,7 +459,7 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
       img.src = newBackground;
     }
 
-    const focus = document.querySelector(':focus') as HTMLElement;
+    const focus: HTMLElement = document.querySelector(':focus');
 
     if (focus?.getAttribute('type') === 'radio')
       focus.blur();
@@ -504,7 +502,7 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
 
   toggleCast(): void {
     if (!this.showCast) {
-      const overviewContent = document.querySelector('.overview-content') as HTMLElement;
+      const overviewContent: HTMLElement = document.querySelector('.overview-content');
 
       if (overviewContent)
         setCssVariable('--overview-width', overviewContent.getBoundingClientRect().width + 'px');
@@ -538,7 +536,7 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
     const b = this.badges = [];
     const v = this.video;
     const videoTrack = (v.video || [])[0];
-    const codecs = new Map<string, { index: number, count: number }>();
+    const codecs = new Map<string, { index: number; count: number }>();
     const combos = new Set<string>();
 
     this.badgeExtras = [];

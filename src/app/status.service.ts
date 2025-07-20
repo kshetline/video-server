@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpInterceptor, HttpEvent, HttpHandler, HttpRequest, HttpResponse, HttpEventType, HttpClient } from '@angular/common/http';
+import { HttpInterceptor, HttpEvent, HttpHandler, HttpRequest, HttpEventType, HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { BehaviorSubject } from 'rxjs/internal/BehaviorSubject';
@@ -50,7 +50,7 @@ export class StatusInterceptor implements HttpInterceptor {
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     const observer = next.handle(req).pipe(map(evt => {
       if (evt.type === HttpEventType.Response && !/\/api\/(renew|status)$/.test(req.url)) {
-        const status = (evt as HttpResponse<any>).status;
+        const status = evt.status;
 
         StatusInterceptor.httpStatus.next(status);
 

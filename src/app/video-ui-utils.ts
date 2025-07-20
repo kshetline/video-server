@@ -10,6 +10,7 @@ import { floor, round } from '@tubular/math';
 let imageIndex = 0;
 
 export function setCssVariable(name: string, value: string): void {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
   (document.querySelector(':root') as HTMLElement).style.setProperty(name, value);
 }
 

@@ -30,7 +30,7 @@ export async function doZidooDbMaintenance(): Promise<void> {
 
     console.log(missing.length, 'paths for missing files to remove.');
 
-    for await (const id of missing) {
+    for  (const id of missing) {
       await db.run('DELETE FROM VIDEO_INFO WHERE _id = ?', id);
     }
 
