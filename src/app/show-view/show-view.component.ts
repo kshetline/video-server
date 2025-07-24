@@ -398,7 +398,8 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
     return 'url("' + url + '")';
   }
 
-  selectVideo(index: number): void {
+  selectVideo(index: number, vc = this.videoCategory): void {
+    this.videoCategory = vc ?? this.videoCategory;
     this.videoIndex = index;
     this.video = this.videoChoices[this.videoCategory][index];
     this.selection = this.video.parent ?? this.video;

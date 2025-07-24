@@ -50,7 +50,7 @@
           <div class="video-categories">
             @for (label of categoryLabels; track label; let i = $index) {
               <p-radioButton [value]="i" [inputId]="'category=' + i"
-                             [(ngModel)]="videoCategory" (click)="selectVideo(videoIndex)"></p-radioButton>
+                             [(ngModel)]="videoCategory" (click)="selectVideo(videoIndex, i)"></p-radioButton>
               <label [for]="'category=' + i">{{ label }}</label>
             }
           </div>

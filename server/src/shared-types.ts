@@ -385,6 +385,7 @@ export interface VideoStats {
   movieBytes: number;
   movieCountRaw: number;
   movieTitles: Set<string> | string[];
+  movieTitles4k: Set<string> | string[];
   skippedForAge: number;
   skippedForType: number;
   streamingFileBytes: number;
@@ -394,6 +395,7 @@ export interface VideoStats {
   tvEpisodesRaw: number;
   tvEpisodeTitles: Set<string> | string[];
   tvShowTitles: Set<string> | string[];
+  tvShowTitles4k: Set<string> | string[];
   unstreamedTitles: Set<string> | string[];
   videoCount: number;
 }

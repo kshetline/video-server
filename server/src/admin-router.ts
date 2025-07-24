@@ -1,12 +1,12 @@
 import { Request, Response, Router } from 'express';
 import { DirectoryEntry, fileCountFromEntry, getRemoteRecursiveDirectory, isAdmin, jsonOrJsonp, noCache, pathExists, pathToEntry, webSocketSend } from './vs-util';
-import { mappedDurations, updateLibrary } from './library-router';
+import { mappedVideoInfo, updateLibrary } from './library-router';
 import { asLines, clone, forEach, isNumber, isString, last, toBoolean, toInt, toNumber } from '@tubular/util';
 import { getDb, getAugmentedMediaInfo, getValue, setValue } from './settings';
 import { join as pathJoin, sep as pathSep } from 'path';
 import { ErrorMode, monitorProcess } from './process-util';
 import { spawn } from 'child_process';
-import { AudioTrack, MKVInfo, ProcessArgs, SubtitlesTrack, VideoStats, VideoTrack, VideoWalkOptions, VideoWalkOptionsPlus } from './shared-types';
+import { AudioTrack, LibraryItem, MKVInfo, ProcessArgs, SubtitlesTrack, VideoStats, VideoTrack, VideoWalkOptions, VideoWalkOptionsPlus } from './shared-types';
 import { comparator, compareCaseInsensitiveIntl, sorter, toStreamPath } from './shared-utils';
 import { examineAndUpdateMkvFlags } from './mkv-flags';
 import { sendStatus } from './app';
@@ -111,6 +111,18 @@ export async function walkVideoDirectory(options: VideoWalkOptions, callback: Vi
   return await walkVideoDirectoryAux((options as VideoWalkOptionsPlus).videoBasePath, dir, 0, options, callback);
 }
 
+async function isVideo4k(path: string, basePath: string): Promise<boolean> {
+  const info = mappedVideoInfo.get(path.slice(basePath.length));
+
+  if (info)
+    return info?.is4k;
+
+  const mediaInfo = await getAugmentedMediaInfo(path, false, false);
+  const video = (mediaInfo?.media.track ?? []).find(t => t['@type'] === 'Video');
+
+  return toInt(video?.Width) > 1920 || toInt(video?.Height) > 1080;
+}
+
 const entryComparator = (x: DirectoryEntry, y: DirectoryEntry): number => comparator(x.name, y.name);
 
 async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], depth: number, options: VideoWalkOptionsPlus,
@@ -127,6 +139,7 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
     movieBytes: 0,
     movieCountRaw: 0,
     movieTitles: new Set(),
+    movieTitles4k: new Set(),
     skippedForAge: 0,
     skippedForType: 0,
     streamingFileBytes: 0,
@@ -135,6 +148,7 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
     tvEpisodesRaw: 0,
     tvEpisodeTitles: new Set(),
     tvShowTitles: new Set(),
+    tvShowTitles4k: new Set(),
     unstreamedTitles: new Set(),
     videoCount: 0,
   };
@@ -351,14 +365,20 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
             const baseTitle = file.replace(/( ~)?\.mkv$/i, '');
             let title = baseTitle;
             const uri = ('/' + path.substring(options.videoBasePath.length)).replace(/\\/g, '/').replace(/^\/\//, '/');
+            let is4k = await isVideo4k(path, options.videoBasePath);
 
             if (info.isMovie || info.isTV) {
-              title = baseTitle.replace(/\s*\(.*?[a-z].*?\)/gi, '').replace(/^\d{1,2} - /, '').replace(/ - /g, ': ')
+              title = baseTitle.replace(/\s*\(.*?[a-z].*?\)/gi, '')
+                .replace(/\s*\[.*?[a-z].*?\]/gi, '')
+                .replace(/^\d{1,2} - /, '').replace(/ - /g, ': ')
                 .replace(/：/g, ':').replace(/？/g, '?').trim().replace(/(.+), (A|An|The)$/, '$2 $1');
 
               if (info.isMovie) {
                 title = title.replace(/-S\d\dE\d\d-|-M\d-/, ': ').replace('\uFF1A', ':').replace('\uFF1F', '?');
                 (stats.movieTitles as Set<string>).add(title);
+
+                if (is4k)
+                  (stats.movieTitles4k as Set<string>).add(title);
               }
               else {
                 (stats.tvEpisodeTitles as Set<string>).add(title);
@@ -384,25 +404,34 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
                     seriesTitle = file.substring(0, pos - 1) + ': ' + seriesTitle;
 
                   (stats.tvShowTitles as Set<string>).add(seriesTitle);
+
+                  if (is4k)
+                    (stats.tvShowTitles4k as Set<string>).add(seriesTitle);
                 }
               }
             }
             else if (info.isExtra)
               title = uri;
 
-            if (!mappedDurations.has(uri)) {
+            if (!mappedVideoInfo.has(uri)) {
               const mediainfo = await getAugmentedMediaInfo(path);
               const general = mediainfo?.media?.track?.find(t => t['@type'] === 'General');
               const duration = toNumber(general?.Duration);
 
-              if (duration)
-                mappedDurations.set(uri, duration);
+              if (duration) {
+                const info = mappedVideoInfo.get(uri);
+
+                if (info)
+                  info.duration = duration;
+                else
+                  mappedVideoInfo.set(uri, { duration } as LibraryItem);
+              }
             }
 
-            if (mappedDurations.has(uri)) {
+            if (mappedVideoInfo.has(uri)) {
               const lastDuration = stats.durations.get(title) || 0;
 
-              stats.durations.set(title, max(lastDuration, mappedDurations.get(uri)));
+              stats.durations.set(title, max(lastDuration, mappedVideoInfo.get(uri)?.duration));
             }
 
             if (!iso && options.checkStreaming && !dontRecurse && !/[-_(](4K|3D)\)/.test(baseTitle)) {

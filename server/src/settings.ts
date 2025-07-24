@@ -132,7 +132,7 @@ export function setValue(key: string, value: string | number): void {
   db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', key, value).finally();
 }
 
-export async function getAugmentedMediaInfo(path: string, stripAugments = false): Promise<MediaInfo> {
+export async function getAugmentedMediaInfo(path: string, stripAugments = false, onlyFromDb = false): Promise<MediaInfo> {
   const stat = await safeLstat(path);
   const mdate = stat?.mtimeMs || 0;
   const key = path.substring(process.env.VS_VIDEO_SOURCE.length).replaceAll('\\', '/').replace(/^([^/])/, '/$1');
@@ -141,6 +141,8 @@ export async function getAugmentedMediaInfo(path: string, stripAugments = false)
 
   if (row && abs(row.mdate - mdate) < 1)
     mediainfo = JSON.parse(row.json);
+  else if (onlyFromDb)
+    return null;
   else {
     mediainfo = JSON.parse(await monitorProcess(spawn('mediainfo', [path, '--Output=JSON'])));
     const ffprobe = JSON.parse(await monitorProcess(spawn('ffprobe', ['-v', 'quiet', '-print_format', 'json',

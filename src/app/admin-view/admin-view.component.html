@@ -29,6 +29,15 @@
       }
     </tr>
     <tr>
+      <th>Unique 4K movie titles</th>
+      <td>{{videoCount ? $any(videoStats.movieTitles4k)?.length : ''}}</td>
+      @if ($any(videoStats?.movieTitles4k)?.length) {
+        <td><div class="info-icon" (click)="listToShow = $any(videoStats?.movieTitles4k)">
+          <i class="pi pi-info-circle"></i>
+        </div></td>
+      }
+    </tr>
+    <tr>
       <th>Movie storage usage</th>
       <td>{{videoCount ? formatSize(videoStats.movieBytes) : ''}}</td>
     </tr>
@@ -41,6 +50,15 @@
       <td>{{videoCount ? $any(videoStats.tvShowTitles)?.length : ''}}</td>
       @if ($any(videoStats?.tvShowTitles)?.length) {
         <td><div class="info-icon" (click)="listToShow = $any(videoStats?.tvShowTitles)">
+          <i class="pi pi-info-circle"></i>
+        </div></td>
+      }
+    </tr>
+    <tr>
+      <th>Unique 4K TV show titles</th>
+      <td>{{videoCount ? $any(videoStats.tvShowTitles4k)?.length : ''}}</td>
+      @if ($any(videoStats?.tvShowTitles4k)?.length) {
+        <td><div class="info-icon" (click)="listToShow = $any(videoStats?.tvShowTitles4k)">
           <i class="pi pi-info-circle"></i>
         </div></td>
       }

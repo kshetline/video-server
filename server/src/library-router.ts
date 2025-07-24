@@ -39,7 +39,7 @@ const FULL_WATCH_CHECK_INTERVAL = 3600000;
 
 export let cachedLibrary = { status: LibraryStatus.NOT_STARTED, progress: -1 } as VideoLibrary;
 export let pendingLibrary: VideoLibrary;
-export let mappedDurations = new Map<string, number>();
+export let mappedVideoInfo = new Map<string, LibraryItem>();
 export let playerAvailable = true;
 export let currentVideo: string;
 export let currentVideoId = -1;
@@ -1042,7 +1042,7 @@ export async function updateLibrary(quick = false): Promise<void> {
 
     if (cachedLibrary.status === LibraryStatus.NOT_STARTED) {
       cachedLibrary = pendingLibrary;
-      mapDurations();
+      mapVideoInfo();
     }
 
     const directoryMap = new Map<string, string[]>();
@@ -1084,7 +1084,7 @@ export async function updateLibrary(quick = false): Promise<void> {
 
     if (!stopPending) {
       cachedLibrary = pendingLibrary;
-      mapDurations();
+      mapVideoInfo();
     }
 
     sendStatus();
@@ -1111,20 +1111,25 @@ export async function updateLibrary(quick = false): Promise<void> {
   sendStatus();
 }
 
-function mapDurationsAux(items: LibraryItem[]): void {
+function mapVideoInfoAux(items: LibraryItem[]): void {
   for (const item of items) {
     if (item.uri && item.duration)
-      mappedDurations.set(item.uri, item.duration);
+      mappedVideoInfo.set(item.uri, item);
 
     if (item.data)
-      mapDurationsAux(item.data);
+      mapVideoInfoAux(item.data);
+
+    if (item.extras) {
+      for (const extra of item.extras)
+        mappedVideoInfo.set(extra.uri, extra);
+    }
   }
 }
 
-function mapDurations(): void {
-  mappedDurations = new Map<string, number>();
+function mapVideoInfo(): void {
+  mappedVideoInfo = new Map<string, LibraryItem>();
 
-  mapDurationsAux(cachedLibrary?.array || []);
+  mapVideoInfoAux(cachedLibrary?.array || []);
 }
 
 function updateItemWatchedState(item: LibraryItem, state: boolean, position: number): void {
@@ -1337,7 +1342,7 @@ export function initLibrary(): void {
     try {
       cachedLibrary = laxJsonParse(readFileSync(libraryFile).toString('utf8'));
       addBackLinks(cachedLibrary.array);
-      mapDurations();
+      mapVideoInfo();
     }
     catch (e) {
       console.log(e);
