@@ -413,7 +413,7 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
             else if (info.isExtra)
               title = uri;
 
-            if (!mappedVideoInfo.has(uri)) {
+            if (!mappedVideoInfo.get(uri)?.duration) {
               const mediainfo = await getAugmentedMediaInfo(path);
               const general = mediainfo?.media?.track?.find(t => t['@type'] === 'General');
               const duration = toNumber(general?.Duration);
@@ -431,7 +431,7 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
             if (mappedVideoInfo.has(uri)) {
               const lastDuration = stats.durations.get(title) || 0;
 
-              stats.durations.set(title, max(lastDuration, mappedVideoInfo.get(uri)?.duration));
+              stats.durations.set(title, max(lastDuration, mappedVideoInfo.get(uri)?.duration || 0));
             }
 
             if (!iso && options.checkStreaming && !dontRecurse && !/[-_(](4K|3D)\)/.test(baseTitle)) {

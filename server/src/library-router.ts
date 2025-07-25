@@ -1113,7 +1113,7 @@ export async function updateLibrary(quick = false): Promise<void> {
 
 function mapVideoInfoAux(items: LibraryItem[]): void {
   for (const item of items) {
-    if (item.uri && item.duration)
+    if (item.uri)
       mappedVideoInfo.set(item.uri, item);
 
     if (item.data)
