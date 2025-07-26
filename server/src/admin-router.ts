@@ -1,5 +1,5 @@
 import { Request, Response, Router } from 'express';
-import { DirectoryEntry, fileCountFromEntry, getRemoteRecursiveDirectory, isAdmin, jsonOrJsonp, noCache, pathExists, pathToEntry, webSocketSend } from './vs-util';
+import { DirectoryEntry, fileCountFromEntry, getRemoteRecursiveDirectory, has2k2dVersion, isAdmin, jsonOrJsonp, noCache, pathExists, pathToEntry, webSocketSend } from './vs-util';
 import { mappedVideoInfo, updateLibrary } from './library-router';
 import { asLines, clone, forEach, isNumber, isString, last, toBoolean, toInt, toNumber } from '@tubular/util';
 import { getDb, getAugmentedMediaInfo, getValue, setValue } from './settings';
@@ -140,6 +140,8 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
     movieCountRaw: 0,
     movieTitles: new Set(),
     movieTitles4k: new Set(),
+    redundant2KBytes: 0,
+    redundant2KCount: 0,
     skippedForAge: 0,
     skippedForType: 0,
     streamingFileBytes: 0,
@@ -366,6 +368,17 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
             let title = baseTitle;
             const uri = ('/' + path.substring(options.videoBasePath.length)).replace(/\\/g, '/').replace(/^\/\//, '/');
             let is4k = await isVideo4k(path, options.videoBasePath);
+
+            if (is4k) {
+              const alt2k = await has2k2dVersion(path);
+              const altPath = alt2k?.substring(dirPath.length);
+              const altEntry = altPath && pathToEntry(entries, altPath);
+
+              if (alt2k) {
+                stats.redundant2KCount++;
+                stats.redundant2KBytes += altEntry?.size || 0;
+              }
+            }
 
             if (info.isMovie || info.isTV) {
               title = baseTitle.replace(/\s*\(.*?[a-z].*?\)/gi, '')

@@ -72,6 +72,14 @@
       <td>{{videoCount ? formatSize(videoStats.tvBytes) : ''}}</td>
     </tr>
     <tr>
+      <th>Redundant 2K file count</th>
+      <td>{{videoCount ? videoStats.redundant2KCount : ''}}</td>
+    </tr>
+    <tr>
+      <th>Redundant 2K storage usage</th>
+      <td>{{videoCount ? formatSize(videoStats.redundant2KBytes) : ''}}</td>
+    </tr>
+    <tr>
       <th>DVD ISO image count</th>
       <td>{{videoStats?.dvdIsoCount ? videoStats.dvdIsoCount : videoStats ? '0' : ''}}</td>
     </tr>

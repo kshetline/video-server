@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
-import { lstat, open, unlink, utimes } from 'fs/promises';
+import { lstat, open, readdir, unlink, utimes } from 'fs/promises';
 import { existsSync, mkdirSync, Stats } from 'fs';
-import paths from 'path';
+import { basename, dirname, join } from 'path';
 import { LibraryItem } from './shared-types';
 import { comparator, hashTitle } from './shared-utils';
 import { WebSocketServer } from 'ws';
-import { asLines, isArray, isObject, isString, toInt } from '@tubular/util';
+import { asLines, isArray, isObject, isString, regexEscape, toInt } from '@tubular/util';
 import { getDb } from './settings';
 import { setEncodeProgress } from './admin-router';
 import { cacheDir, thumbnailDir } from './shared-values';
@@ -17,10 +17,10 @@ const demoFilter = new Set(process.env.VS_DEMO_FILTER ? process.env.VS_DEMO_FILT
 
 for (const dir of [
   cacheDir, thumbnailDir,
-  paths.join(cacheDir, 'poster'), paths.join(thumbnailDir, 'poster'),
-  paths.join(cacheDir, 'profile'), paths.join(thumbnailDir, 'profile'),
-  paths.join(cacheDir, 'backdrop'),
-  paths.join(cacheDir, 'logo')
+  join(cacheDir, 'poster'), join(thumbnailDir, 'poster'),
+  join(cacheDir, 'profile'), join(thumbnailDir, 'profile'),
+  join(cacheDir, 'backdrop'),
+  join(cacheDir, 'logo')
 ]) {
   if (!existsSync(dir))
     mkdirSync(dir);
@@ -391,4 +391,43 @@ export function fileCountFromEntry(entry: DirectoryEntry | DirectoryEntry[], all
   }
 
   return total;
+}
+
+export async function has2k2dVersion(path: string, threeD = false): Promise<string> {
+  const dir = dirname(path);
+  const altType = threeD ? '2D' : '2K';
+  const file = basename(path, '.mkv').replace(/\s*\((3D|4K)\)$/, '').trim();
+  const altFile = `${file} (${altType}).mkv`;
+  const alt1 = join(dir, altFile);
+  const alt2 = join(dir, altType, file + '.mkv');
+  const alt3 = join(dir, altType, altFile);
+  let match: string;
+
+  if ((await existsAsync(match = alt1)) || (await existsAsync(match = alt2)) || (await existsAsync(match = alt3)))
+    return match;
+
+  const $ = /^(.*)\(\d*#(.*)\b(3D|4K)\b([^)]*)\)$/.exec(file);
+
+  if ($) {
+    let files = (await readdir(dir)).sort(comparator);
+    const matcher = new RegExp('^' + regexEscape($[1]) + '\\(\\d*#' + regexEscape($[2]) + altType + regexEscape($[4]) + '\\)\\.mkv$');
+
+    for (const sib of files) {
+      if (sib !== basename(path) && matcher.test(sib))
+        return join(dir, sib);
+    }
+
+    const dirAlt = join(dir, altType);
+
+    if (await existsAsync(dirAlt)) {
+      files = (await readdir(dirAlt)).sort(comparator);
+
+      for (const sib of files) {
+        if (matcher.test(sib))
+          return join(dirAlt, sib);
+      }
+    }
+  }
+
+  return null;
 }

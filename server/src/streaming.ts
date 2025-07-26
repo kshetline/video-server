@@ -1,14 +1,14 @@
-import { extendDelimited, htmlEscape, regexEscape, toInt, toNumber } from '@tubular/util';
+import { extendDelimited, htmlEscape, toInt, toNumber } from '@tubular/util';
 import { ChildProcess } from 'child_process';
-import { basename, dirname, join } from 'path';
+import {  dirname, join } from 'path';
 import { closeSync, mkdirSync, openSync } from 'fs';
-import { mkdtemp, readdir, readFile, rename, symlink, writeFile } from 'fs/promises';
+import { mkdtemp, readFile, rename, symlink, writeFile } from 'fs/promises';
 import { VideoWalkOptionsPlus } from './shared-types';
-import { existsAsync, safeUnlink, webSocketSend } from './vs-util';
+import { existsAsync, has2k2dVersion, safeUnlink, webSocketSend } from './vs-util';
 import { abs, floor, min, round } from '@tubular/math';
 import { ErrorMode, monitorProcess, ProcessInterrupt, spawn } from './process-util';
 import { stopPending, VideoWalkInfo } from './admin-router';
-import { comparator, toStreamPath } from './shared-utils';
+import { toStreamPath } from './shared-utils';
 import * as os from 'os';
 import { lang2to3 } from './lang';
 import { getAugmentedMediaInfo } from './settings';
@@ -211,44 +211,6 @@ async function checkAndFixBadDuration(path: string, progress: Progress | VideoPr
   }
 }
 
-async function has2k2dVersion(path: string, threeD: boolean): Promise<boolean> {
-  const dir = dirname(path);
-  const altType = threeD ? '2D' : '2K';
-  const file = basename(path, '.mkv').replace(/\s*\((3D|4K)\)$/, '').trim();
-  const altFile = `${file} (${altType}).mkv`;
-  const alt1 = join(dir, altFile);
-  const alt2 = join(dir, altType, file + '.mkv');
-  const alt3 = join(dir, altType, altFile);
-
-  if ((await existsAsync(alt1)) || (await existsAsync(alt2)) || (await existsAsync(alt3)))
-    return true;
-
-  const $ = /^(.*)\(\d*#(.*)\b(3D|4K)\b([^)]*)\)$/.exec(file);
-
-  if ($) {
-    let files = (await readdir(dir)).sort(comparator);
-    const matcher = new RegExp('^' + regexEscape($[1]) + '\\(\\d*#' + regexEscape($[2]) + altType + regexEscape($[4]) + '\\)\\.mkv$');
-
-    for (const sib of files) {
-      if (sib !== basename(path) && matcher.test(sib))
-        return true;
-    }
-
-    const dirAlt = join(dir, altType);
-
-    if (await existsAsync(dirAlt)) {
-      files = (await readdir(dirAlt)).sort(comparator);
-
-      for (const sib of files) {
-        if (matcher.test(sib))
-          return true;
-      }
-    }
-  }
-
-  return false;
-}
-
 async function tryThrice(fn: () => Promise<any>): Promise<void> {
   let err: any;
 
@@ -391,7 +353,7 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
   const threeD = !!video?.properties.stereo_mode;
   const fourK = h > 1100 || w > 1940;
 
-  if (((threeD || fourK) && (await has2k2dVersion(path, threeD)) && !path.includes('(extended edition) (4K)')))
+  if (((threeD || fourK) && !!(await has2k2dVersion(path, threeD)) && !path.includes('(extended edition) (4K)')))
     return false;
 
   const hasDesktopVideo = await existsAsync(mpdPath) || await existsAsync(avPath);
@@ -652,8 +614,11 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
             const percentDone = progress.percent?.get(task.name) || 0;
 
             // Sometimes an error is thrown at the last moment, but the file generated is perfectly usable
-            if (percentDone > 99.89 && /error writing trailer|pts\/dts pair unsupported/i.test(err?.message))
+            if (percentDone > 99.89 && /error writing trailer|pts\/dts pair unsupported/i.test(err?.message)) {
+              progress.percent.set(task.name, 100);
+              progress.errors.set(task.name, Math.max(progress.errors.get(task.name) - 1, 0));
               moveOn();
+            }
             else {
               --running;
 
@@ -684,8 +649,11 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
             const percentDone = progress.percent?.get(task.name) || 0;
 
             // Sometimes an error is thrown at the last moment, but the file generated is perfectly usable
-            if (percentDone > 99.89 && /error writing trailer|pts\/dts pair unsupported/i.test(err?.message))
+            if (percentDone > 99.89 && /error writing trailer|pts\/dts pair unsupported/i.test(err?.message)) {
+              progress.percent.set(task.name, 100);
+              progress.errors.set(task.name, Math.max(progress.errors.get(task.name) - 1, 0));
               wrapUpTask();
+            }
             else if (++task.tries < maxTries) {
               task.process = undefined;
               redoQueue.push(task);

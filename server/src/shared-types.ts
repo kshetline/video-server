@@ -386,6 +386,8 @@ export interface VideoStats {
   movieCountRaw: number;
   movieTitles: Set<string> | string[];
   movieTitles4k: Set<string> | string[];
+  redundant2KBytes: number;
+  redundant2KCount: number;
   skippedForAge: number;
   skippedForType: number;
   streamingFileBytes: number;
