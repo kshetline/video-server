@@ -393,8 +393,8 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
     audio = audios.find(a => a.codec === 'AAC' && a.properties.audio_channels <= 2) ||
       audios.find(a => a.properties.audio_channels <= 2) || audio;
 
-  const mono = audio.properties.audio_channels === 1;
-  const surround = audio.properties.audio_channels > 3;
+  const mono = audio?.properties.audio_channels === 1;
+  const surround = audio?.properties.audio_channels > 3;
   const mixdown = mono || !surround ? [] : ['-af', 'aresample=matrix_encoding=dplii'];
   let audioArgs: string[];
 

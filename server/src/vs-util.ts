@@ -159,13 +159,16 @@ export function username(req: any): string {
 }
 
 export function itemAccessAllowed(item: LibraryItem, role: string): boolean {
+  if (isAdmin(role))
+    return true;
+
   const filters = [guestFilter];
 
   if (isDemo(role))
     filters.push(demoFilter);
 
   for (const filter of filters) {
-    if (filter.has(item.name?.toLowerCase()) || filter.has(hashTitle(item.name)))
+    if (item?.uri?.includes('[ao]') || filter.has(item.name?.toLowerCase()) || filter.has(hashTitle(item.name)))
       return false;
   }
 
