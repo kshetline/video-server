@@ -362,7 +362,10 @@ function getApp(): Express {
       unref(setTimeout(() => res.sendStatus(429), BAD_REQUEST_DELAY));
   });
 
-  theApp.use(logger('[:date[iso]] :remote-addr - :remote-user ":method :url HTTP/:http-version" :status :res[content-length] :response-time'));
+  theApp.use(logger('[:date[iso]] :remote-addr - :remote-user ":method :url HTTP/:http-version" :status :res[content-length] :response-time', {
+    skip: (req, _res) => /\/((api\/(library|status))|backdrop|poster|profile)\b/.test(req.originalUrl),
+  }));
+
   theApp.use(express.json());
   theApp.use(express.urlencoded({ extended: false }));
   theApp.use(cookieParser());
@@ -373,7 +376,7 @@ function getApp(): Express {
     const userInfo = token?.split('.')[1];
     const url = (req.url || '').replace('/browser', '');
 
-    if (/^\/(ab2g|ab2h|admin(?!-)|app(?!\.)|apps|backup|blog|cgi-bin|cms|crm|laravel|lib|panel|password|phpunit|shell|systembc|(test(?!-ws))|V2|workspace|ws|yii|zend)/.test(url)) {
+    if (/^\/(ab2g|ab2h|admin(?!-)|app\b|apps|backup|blog|cgi-bin|cms|crm|laravel|lib|panel|password|phpunit|shell|systembc|(test(?!-ws))|V2|workspace|ws|yii|zend)/.test(url)) {
       const ip = getIp(req);
       const block = blockedIps.get(ip);
       console.log('%s Bad URL from %s: %s', timeStamp(), ip, url);
