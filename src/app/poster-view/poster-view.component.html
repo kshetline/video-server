@@ -38,7 +38,7 @@
 
         <div class="poster-thumbnail-wrapper">
           <div class="video-tags">
-            @if (item.isSD) {<div class="sd">SD</div>}
+            @if (item.isSD && filter !== 'SD') {<div class="sd">SD</div>}
             @if (item.is3d && filter !== '3D') {<div class="d3">3D</div>}
             @if (item.is4k && filter !== '4K') {<div>4K</div>}
             @if (item.isTV && filter !== 'TV') {<div class="tv">TV</div>}

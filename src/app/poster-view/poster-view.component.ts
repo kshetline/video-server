@@ -61,7 +61,7 @@ export class PosterViewComponent implements OnDestroy, OnInit {
   private watchedCache = new Map<number, WatchStatus>();
   private yearAgo = new Date(Date.now() - 31536000000).getTime();
 
-  filterChoices = ['All', 'Movies', 'TV', '4K', '3D'];
+  filterChoices = ['All', 'Movies', 'TV', '4K', '3D', '2K/720', 'SD'];
   filterNodes: any[];
   letterGroups: string[] = [];
   items: LibraryItem[];

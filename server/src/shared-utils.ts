@@ -165,6 +165,12 @@ export function filter(items: LibraryItem[], searchText: string, filter: string,
     case '3D':
       matchFunction = (item: LibraryItem): boolean => item.is3d;
       break;
+    case '2K/720':
+      matchFunction = (item: LibraryItem): boolean => (item.is2k || item.isHD) && !item.is4k && !item.is3d && !item.isSD;
+      break;
+    case 'SD':
+      matchFunction = (item: LibraryItem): boolean => item.isSD && !item.is4k && !item.is3d && !item.is2k && !item.isHD;
+      break;
 
     default:
       matchFunction = (item: LibraryItem): boolean => matchesGenre(item, genre);
