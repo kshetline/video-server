@@ -8,6 +8,7 @@ export enum WatchStatus { WATCHING = 0, UNWATCHED, WATCHED }
 export interface ProcessArgs {
   earliest: string;
   fallback: boolean;
+  fixForced: boolean;
   mkvFlags: boolean;
   mkvFlagsDryRun: boolean;
   mkvFlagsUpdateBackups: boolean;
@@ -407,6 +408,7 @@ export interface VideoWalkOptions {
   checkStreaming?: boolean | string;
   directoryExclude?: (path: string, dir: string, depth: number) => boolean;
   earliest?: Date;
+  fixForcedSubtitles?: boolean;
   generateFallbackAudio?: boolean;
   generateStreaming?: boolean;
   getMetadata?: boolean;

@@ -138,6 +138,7 @@ export class AdminViewComponent implements OnInit {
     if (this.lastStatus?.processing && this.lastStatus.processArgs) {
       const pa = this.lastStatus.processArgs;
       const options = {
+        fixForcedSubtitles: pa.fixForced,
         generateFallbackAudio: pa.fallback,
         generateStreaming: pa.streaming,
         mkvFlags: pa.mkvFlags,

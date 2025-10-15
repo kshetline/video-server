@@ -175,6 +175,10 @@
       <p-checkbox [(ngModel)]="options.generateFallbackAudio" [binary]="true" inputId="gen-fallback" id="gen-fallback"></p-checkbox>
       <label for="gen-fallback">Generate fallback audio</label>
     </div>
+    <div class="label-pair">
+      <p-checkbox [(ngModel)]="options.fixForcedSubtitles" [binary]="true" inputId="fix-forced" id="fix-forced"></p-checkbox>
+      <label for="fix-forced">Fix missing forced subtitles</label>
+    </div>
     <div class="flag-options">
       <div class="label-pair">
         <p-checkbox [(ngModel)]="options.mkvFlags" [binary]="true" inputId="update-flags" id="update-flags"></p-checkbox>
@@ -203,7 +207,8 @@
   <p-button label="Process" icon="pi pi-wrench"
             [styleClass]="lastStatus?.currentOp === 'proc' ? 'p-button-success' : ''"
             [disabled]="isProcessing() ||
-                        (!options.generateFallbackAudio && !options.mkvFlags && !options.generateStreaming && !options.validate) ||
+                        (!options.generateFallbackAudio && !options.mkvFlags && !options.fixForcedSubtitles &&
+                         !options.generateStreaming && !options.validate) ||
                         (options.skipMovies && options.skipTv && options.skipExtras)"
             (click)="!isProcessing() && runProcess()"/>
   <div>{{currentFile}}<span style="opacity: 0; user-select: none">：</span></div>

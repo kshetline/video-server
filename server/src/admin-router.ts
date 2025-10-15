@@ -10,7 +10,7 @@ import { AudioTrack, LibraryItem, MKVInfo, ProcessArgs, SubtitlesTrack, VideoSta
 import { comparator, compareCaseInsensitiveIntl, sorter, toStreamPath } from './shared-utils';
 import { examineAndUpdateMkvFlags } from './mkv-flags';
 import { sendStatus } from './app';
-import { createFallbackAudio, createStreaming, killStreamingProcesses } from './streaming';
+import { createFallbackAudio, createStreaming, fixForcedSubtitles, killStreamingProcesses } from './streaming';
 import { abs, max, min } from '@tubular/math';
 import { mkvValidate } from './mkvalidator';
 import { AsyncDatabase } from 'promised-sqlite3';
@@ -58,6 +58,7 @@ export interface VideoWalkInfo {
   streamingDirectory?: string;
   subtitles?: SubtitlesTrack[];
   title?: string;
+  trackCount?: number;
   video?: VideoTrack[];
   videoDirectory?: string;
   wasModified?: boolean;
@@ -297,6 +298,7 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
                 .replace(/("uid":\s+)(\d+)/g, '$1"$2"');
 
               info.mkvInfo = JSON.parse(mkvJson) as MKVInfo;
+              info.trackCount = info.mkvInfo.tracks.length;
               info.video = info.mkvInfo.tracks.filter(t => t.type === 'video') as VideoTrack[];
               info.audio = info.mkvInfo.tracks.filter(t => t.type === 'audio') as AudioTrack[];
               info.subtitles = info.mkvInfo.tracks.filter(t => t.type === 'subtitles') as SubtitlesTrack[];
@@ -527,6 +529,7 @@ interface UpdateOptions {
   canModify?: boolean;
   checkStreaming?: boolean;
   earliest?: Date;
+  fixForcedSubtitles?: boolean;
   generateFallbackAudio?: boolean;
   generateStreaming?: boolean;
   mkvFlags?: boolean;
@@ -571,9 +574,10 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
           canModify: options.canModify,
           checkStreaming: options.checkStreaming,
           earliest: options.earliest,
-          getMetadata: options.mkvFlags || options.generateFallbackAudio || options.generateStreaming,
+          getMetadata: options.mkvFlags || options.generateFallbackAudio || options.generateStreaming || options.fixForcedSubtitles,
           mkvFlags: options.mkvFlags,
           mkvFlagsDryRun: options.mkvFlagsDryRun,
+          fixForcedSubtitles: options.fixForcedSubtitles,
           generateFallbackAudio: options.generateFallbackAudio,
           generateStreaming: options.generateStreaming,
           reportProgress: true,
@@ -592,6 +596,9 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
 
             currentFile = path.substring(info.videoDirectory.length);
             webSocketSend({ type: 'currentFile', data: currentFile });
+
+            if (options.fixForcedSubtitles && isMkv)
+              await fixForcedSubtitles(path, info);
 
             if (options.generateFallbackAudio && isMkv)
               await createFallbackAudio(path, info);
@@ -663,6 +670,7 @@ router.post('/process', async (req, res) => {
     processArgs = {
       earliest: req.body.earliest,
       fallback: toBoolean(req.body.generateFallbackAudio, null, true),
+      fixForced: toBoolean(req.body.fixForcedSubtitles, null, true),
       mkvFlags: toBoolean(req.body.mkvFlags, null, true),
       mkvFlagsDryRun: toBoolean(req.body.mkvFlagsDryRun, null, true),
       mkvFlagsUpdateBackups: toBoolean(req.body.mkvFlagsUpdateBackups, null, true),
@@ -680,6 +688,7 @@ router.post('/process', async (req, res) => {
       canModify,
       checkStreaming: processArgs.streaming,
       earliest: req.body.earliest ? new Date(req.body.earliest) : undefined,
+      fixForcedSubtitles: processArgs.fixForced,
       generateFallbackAudio: processArgs.fallback,
       generateStreaming: processArgs.streaming,
       mkvFlags: processArgs.mkvFlags,

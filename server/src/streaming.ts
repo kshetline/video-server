@@ -12,6 +12,7 @@ import { toStreamPath } from './shared-utils';
 import * as os from 'os';
 import { lang2to3 } from './lang';
 import { getAugmentedMediaInfo } from './settings';
+import { existsSync, writeFileSync } from 'node:fs';
 
 interface Progress {
   duration?: number;
@@ -37,6 +38,13 @@ interface VideoRender {
   promise?: Promise<string>;
   tries: number;
   videoPath: string;
+}
+
+const SRT = '1\n00:00:01,000 --> 00:00:01,500\n.\n';
+const SRT_FILE = 'dot.srt';
+
+if (!existsSync(SRT_FILE)) {
+  writeFileSync(SRT_FILE, SRT);
 }
 
 let currentProcesses: ChildProcess[] = [];
@@ -290,7 +298,7 @@ export async function createFallbackAudio(path: string, info: VideoWalkInfo): Pr
     for (let i = 0; i < info.video.length + 2; ++i)
       tracks += '0:' + i + ',';
 
-    args2.push('--original-flag', '0', '--track-name', '0:' + aacTrackName,
+    args2.push('--original-flag', '0', '--track-name', '0:' + aacTrackName, '--default-track', '0:no',
       '--language', '0:' + (lang2to3[lang] || lang || 'und'), aacFile, '--track-order', tracks + '1:0');
 
     let percentStr = '';
@@ -328,6 +336,56 @@ export async function createFallbackAudio(path: string, info: VideoWalkInfo): Pr
     webSocketSend({ type: 'audio-progress', data: '' });
 
     return false;
+  }
+
+  return true;
+}
+
+export async function fixForcedSubtitles(path: string, info: VideoWalkInfo): Promise<boolean> {
+  if ((info.subtitles ?? []).filter(t => t.properties?.default_track).length > 0)
+    return false;
+
+  const forced = (info.subtitles ?? []).filter(t => t.properties?.forced_track && t.properties.language_ietf);
+
+  if (forced.length === 0)
+    return false;
+
+  const audioLangs = new Set((info.audio ?? []).filter(t => t.properties?.language_ietf).map(t => t.properties.language_ietf));
+  const forcedLangs = new Set(forced.map(t => t.properties.language_ietf));
+  const addedLangs = Array.from(audioLangs.values()).filter(l => !forcedLangs.has(l));
+  const addedCount = addedLangs.length;
+
+  if (addedCount < 1)
+    return false;
+
+  // const backupPath = path.replace(/\.mkv$/i, '[zni].bak.mkv');
+  const updatePath = path.replace(/\.mkv$/i, '[zni].upd.mkv');
+  const args = ['-o', updatePath, path];
+  const insertAt = forced[0].id;
+  let trackOrder = '';
+
+  try {
+    for (let i = 0; i < info.trackCount + addedCount; ++i) {
+      if (i < insertAt)
+        trackOrder += `0:${i},`;
+      else if (i < insertAt + addedCount) {
+        const index = i - insertAt;
+
+        args.push('--language', `0:${addedLangs[index]}`,
+                  '--track-name', '0:*', '--forced-track', '0:yes', '--default-track', '0:no',
+                  '(', SRT_FILE, ')');
+        trackOrder += `${index + 1}:0,`;
+      }
+      else
+        trackOrder += `0:${i - addedCount},`;
+    }
+
+    args.push('--track-order', trackOrder.slice(0, -1));
+
+    console.log(path, audioLangs, forcedLangs);
+    console.log(args.join(' '));
+  }
+  catch {
   }
 
   return true;

@@ -16,5 +16,6 @@ tsc-out
 /dist/
 /server/db.sqlite
 /server/db.sqlite-journal
+/server/dot.srt
 /server/*.mkv
 /server/*.log
