@@ -2,10 +2,10 @@ import { extendDelimited, htmlEscape, toInt, toNumber } from '@tubular/util';
 import { ChildProcess } from 'child_process';
 import {  dirname, join } from 'path';
 import { closeSync, mkdirSync, openSync } from 'fs';
-import { mkdtemp, readFile, rename, symlink, writeFile } from 'fs/promises';
+import { mkdtemp, readFile, rename, symlink, utimes, writeFile } from 'fs/promises';
 import { VideoWalkOptionsPlus } from './shared-types';
-import { existsAsync, has2k2dVersion, safeUnlink, webSocketSend } from './vs-util';
-import { abs, floor, min, round } from '@tubular/math';
+import { existsAsync, has2k2dVersion, safeLstat, safeUnlink, webSocketSend } from './vs-util';
+import { abs, ceil, floor, min, round } from '@tubular/math';
 import { ErrorMode, monitorProcess, ProcessInterrupt, spawn } from './process-util';
 import { stopPending, VideoWalkInfo } from './admin-router';
 import { toStreamPath } from './shared-utils';
@@ -358,7 +358,11 @@ export async function fixForcedSubtitles(path: string, info: VideoWalkInfo): Pro
   if (addedCount < 1)
     return false;
 
-  // const backupPath = path.replace(/\.mkv$/i, '[zni].bak.mkv');
+  const start = Date.now();
+
+  console.log('    Remuxing %s at %s for subtitle track', path, new Date().toLocaleString());
+
+  const backupPath = path.replace(/\.mkv$/i, '[zni].bak.mkv');
   const updatePath = path.replace(/\.mkv$/i, '[zni].upd.mkv');
   const args = ['-o', updatePath, path];
   const insertAt = forced[0].id;
@@ -382,11 +386,54 @@ export async function fixForcedSubtitles(path: string, info: VideoWalkInfo): Pro
 
     args.push('--track-order', trackOrder.slice(0, -1));
 
-    console.log(path, audioLangs, forcedLangs);
-    console.log(args.join(' '));
+    let percentStr = '';
+    const remuxProgress = (data: string, stream: number): void => {
+      let $: RegExpExecArray;
+
+      if (stream === 0 && ($ = /\bProgress: (\d{1,3}%)/.exec(data)) && percentStr !== $[1]) {
+        if (percentStr)
+          process.stdout.write('%\x1B[' + (percentStr.length + 1) + 'D');
+
+        percentStr = $[1];
+        process.stdout.write(percentStr + '\x1B[K');
+        webSocketSend({ type: 'video-progress', data: 'Remux: ' + percentStr });
+      }
+    };
+
+    await safeUnlink(updatePath);
+    await monitorProcess(spawn('mkvmerge', args), remuxProgress, ErrorMode.DEFAULT, 4096);
+    webSocketSend({ type: 'video-progress', data: '' });
+
+    if (!isWindows)
+      await monitorProcess(spawn('chmod', ['--reference=' + path, updatePath]), null, ErrorMode.IGNORE_ERRORS);
+
+    const oldStats = await safeLstat(path);
+
+    if (oldStats) {
+      // Keep modification time close to old time, just a minute or two later for rsync update purposes.
+      const newDate = new Date(ceil(oldStats.mtime.getTime() + 60000, 1000));
+
+      await utimes(updatePath, newDate, newDate);
+    }
+
+    await tryThrice(() => rename(path, backupPath));
+    await tryThrice(() => rename(updatePath, path));
+    await tryThrice(() => safeUnlink(backupPath));
   }
   catch {
+    if (await existsAsync(backupPath)) {
+      await tryThrice(() => rename(backupPath, path));
+      await tryThrice(() => safeUnlink(updatePath));
+    }
+
+    webSocketSend({ type: 'video-progress', data: '' });
+
+    return false;
   }
+
+  const elapsed = Date.now() - start;
+
+  console.log('    Total time remuxing: %s', formatTime(elapsed * 1000000).slice(0, -3));
 
   return true;
 }

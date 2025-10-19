@@ -171,13 +171,15 @@
         <label for="skip-extras">Skip extras</label>
       </div>
     </div>
-    <div class="label-pair">
-      <p-checkbox [(ngModel)]="options.generateFallbackAudio" [binary]="true" inputId="gen-fallback" id="gen-fallback"></p-checkbox>
-      <label for="gen-fallback">Generate fallback audio</label>
-    </div>
-    <div class="label-pair">
-      <p-checkbox [(ngModel)]="options.fixForcedSubtitles" [binary]="true" inputId="fix-forced" id="fix-forced"></p-checkbox>
-      <label for="fix-forced">Fix missing forced subtitles</label>
+    <div class="fix-options">
+      <div class="label-pair">
+        <p-checkbox [(ngModel)]="options.generateFallbackAudio" [binary]="true" inputId="gen-fallback" id="gen-fallback"></p-checkbox>
+        <label for="gen-fallback">Generate fallback audio</label>
+      </div>
+      <div class="label-pair">
+        <p-checkbox [(ngModel)]="options.fixForcedSubtitles" [binary]="true" inputId="fix-forced" id="fix-forced"></p-checkbox>
+        <label for="fix-forced">Fix missing forced subtitles</label>
+      </div>
     </div>
     <div class="flag-options">
       <div class="label-pair">
