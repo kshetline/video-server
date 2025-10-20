@@ -376,10 +376,10 @@ function getApp(): Express {
     const userInfo = token?.split('.')[1];
     const url = (req.url || '').replace('/browser', '');
     const ip = getIp(req);
+    const local = /\b192.168\b/.test(ip);
 
-    if (/\b192.168\b/.test(ip))
-      next();
-    else if (/^\/(ab2g|ab2h|admin(?!-)|app\b|apps\b|backup|blog|cgi-bin|cms|crm|laravel|lib|panel|password|phpunit|shell|systembc|(test(?!-ws))|V2|workspace|ws|yii|zend)/.test(url)) {
+    if (!local &&
+        /^\/(ab2g|ab2h|admin(?!-)|app\b|apps\b|backup|blog|cgi-bin|cms|crm|laravel|lib|panel|password|phpunit|shell|systembc|(test(?!-ws))|V2|workspace|ws|yii|zend)/.test(url)) {
       const block = blockedIps.get(ip);
       console.log('%s Bad URL from %s: %s', timeStamp(), ip, url);
 

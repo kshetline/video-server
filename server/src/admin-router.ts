@@ -488,8 +488,10 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
 }
 
 router.post('/library-refresh', async (req: Request, res: Response) => {
-  if (!isAdmin(req))
+  if (!isAdmin(req)) {
     res.sendStatus(403);
+    sendStatus();
+  }
   else {
     if (!adminProcessing) {
       adminProcessing = true;
