@@ -143,19 +143,19 @@ export async function deleteIfPossible(path: string): Promise<boolean> {
 }
 
 export function role(req: any): 'admin' | 'demo' | 'guest' {
-  return req.user?.role;
+  return isString(req) ? req as any : req?.user?.role;
 }
 
 export function isAdmin(req: any): boolean {
-  return req.user?.role === 'admin';
+  return role(req) === 'admin';
 }
 
 export function isDemo(req: any): boolean {
-  return req.user?.role === 'demo';
+  return role(req) === 'demo';
 }
 
 export function username(req: any): string {
-  return req.user?.name;
+  return req?.user?.name;
 }
 
 export function itemAccessAllowed(item: LibraryItem, role: string): boolean {

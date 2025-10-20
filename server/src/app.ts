@@ -356,7 +356,7 @@ function getApp(): Express {
     const ip = getIp(req);
     const block = blockedIps.get(ip);
 
-    if (!block || block < 0)
+    if (!block || block < 0 || /\b192.168\b/.test(ip))
       next();
     else
       unref(setTimeout(() => res.sendStatus(429), BAD_REQUEST_DELAY));
@@ -375,9 +375,11 @@ function getApp(): Express {
     const token = (req.cookies as NodeJS.Dict<string>).vs_jwt;
     const userInfo = token?.split('.')[1];
     const url = (req.url || '').replace('/browser', '');
+    const ip = getIp(req);
 
-    if (/^\/(ab2g|ab2h|admin(?!-)|app\b|apps|backup|blog|cgi-bin|cms|crm|laravel|lib|panel|password|phpunit|shell|systembc|(test(?!-ws))|V2|workspace|ws|yii|zend)/.test(url)) {
-      const ip = getIp(req);
+    if (/\b192.168\b/.test(ip))
+      next();
+    else if (/^\/(ab2g|ab2h|admin(?!-)|app\b|apps\b|backup|blog|cgi-bin|cms|crm|laravel|lib|panel|password|phpunit|shell|systembc|(test(?!-ws))|V2|workspace|ws|yii|zend)/.test(url)) {
       const block = blockedIps.get(ip);
       console.log('%s Bad URL from %s: %s', timeStamp(), ip, url);
 
@@ -848,7 +850,8 @@ function getApp(): Express {
         const ip = getIp(req);
         let block = blockedIps.get(ip);
 
-        if (block == null)
+        if (/\b192.168\b/.test(ip)) {}
+        else if (block == null)
           blockedIps.set(ip, -1);
         else if (block < 0) {
           --block;
@@ -857,7 +860,7 @@ function getApp(): Express {
             console.log(timeStamp(), 'Blocking:', ip);
             blockedIps.set(ip, processMillis());
           }
-          else
+          else if (!/\b192.168\b/.test(ip))
             blockedIps.set(ip, block);
         }
 
