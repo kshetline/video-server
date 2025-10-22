@@ -252,7 +252,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
 
       // Subtitle tracks named 'en' which are neither default tracks or forced tracks mirror already-burned-in
       //   subtitles, therefore should not be changed to default or forced.
-      if (nameIsCode && !(name === 'en' && !tp.default_track && !tp.forced_track)) {
+      if ((nameIsCode || name === '*') && !(name === 'en' && !tp.default_track && !tp.forced_track)) {
         if (!tp.forced_track) {
           editArgs.push('--edit', 'track:s' + i, '--set', 'flag-forced=1');
           tp.forced_track = true;

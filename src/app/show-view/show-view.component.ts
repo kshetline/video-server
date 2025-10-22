@@ -306,7 +306,8 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
       else
         this.videoChoices = [this.choices];
 
-      this.videoIndex = keepIndex >= 0 ? keepIndex : max(this.videoChoices[0].findIndex(vc => !vc.watchedByUser), 0);
+      this.videoIndex = keepIndex >= 0 ? keepIndex : max(this.videoChoices[0].findIndex(
+        vc => !(vc.watchedByUser || (this.asAdmin() && vc.watched)), 0));
       this.video = this.videoChoices[0][this.videoIndex];
       this.selection = this.video.parent ?? this.video;
       this.selectVideo(this.videoIndex);
@@ -512,8 +513,12 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
     this.showCast = !this.showCast;
   }
 
+  asAdmin(): boolean {
+    return this.auth.getSession()?.role === 'admin';
+  }
+
   localAccess(): boolean {
-    return this.auth.getSession()?.role === 'admin' && StatusInterceptor.localAccess;
+    return this.asAdmin() && StatusInterceptor.localAccess;
   }
 
   demo(): boolean {

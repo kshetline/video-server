@@ -40,7 +40,7 @@ export function containsMovie(item: LibraryItem): boolean {
 }
 
 export function isTV(item: LibraryItem): boolean {
-  return item.isTV || item.isTvMovie || isTvShow(item) || isTvSeason(item) ||
+  return item.isTV || item.parent?.isTvMovie || item.isTvMovie || isTvShow(item) || isTvSeason(item) ||
       isTvEpisode(item) || isTvCollection(item) ||
       (isCollection(item) && item.data?.length > 0 && !!item.data.find(i => isTV(i)));
 }
@@ -92,7 +92,7 @@ function findItemById(items: LibraryItem[], id: number): LibraryItem {
 }
 
 export function matchesSearch(item: LibraryItem, searchText: string, simpleMatch = false): boolean {
-  if (!searchText)
+  if (!searchText || (simpleMatch && isTvEpisode(item)))
     return true;
   else if ((!item.name && !item.title) || isTvEpisode(item) || isFile(item))
     return false;

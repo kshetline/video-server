@@ -58,10 +58,11 @@
         @if (videoLabels.length > 1) {
           <div class="video-choices">
             @for (label of videoLabels; track label; let i = $index) {
+              @let video = videoChoices[videoCategory][i];
+              @let watched = video.watchedByUser || (asAdmin() && video.watched);
               <span [ngStyle]="i === videoIndex ? { 'background-color': 'rgba(255, 255, 255, 0.75)',
                     'color': 'black', 'box-shadow': '#69F 0 0 3px 3px' } : null"
-                    [style.opacity]="videoChoices[videoCategory][i].watchedByUser ? '0.6' : '1'"
-                    (click)="selectVideo(i)"
+                    [style.opacity]="watched ? '0.6' : '1'" (click)="selectVideo(i)"
               >{{label}}</span>
             }
           </div>
