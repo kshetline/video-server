@@ -138,6 +138,9 @@ export class WatchedIndicatorComponent implements OnInit {
   }
 
   private examineWatchedStates(item: LibraryItem | LibItem): void {
+    if (!item)
+      return;
+
     const wi = getWatchInfo(this.asAdmin, item as LibraryItem);
 
     this.duration = wi.duration;

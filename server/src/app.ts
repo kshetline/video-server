@@ -719,6 +719,33 @@ function getApp(): Express {
     return null;
   }
 
+  async function waitForVideoSync(host: string): Promise<void> {
+    const syncDelay = toInt(process.env.VS_SYNC_DELAY);
+
+    if (!syncDelay)
+      return;
+
+    const start = processMillis();
+    let lastTime = start;
+
+    do {
+      const status = await getPlayStatus(host);
+
+      if (status?.status === 200 && status.video?.path)
+        break;
+
+      const now = processMillis();
+
+      await sleep(max(250 - (now - lastTime), 0));
+      lastTime = now;
+    } while (lastTime < start + 100000);
+
+    await requestJson(`${host}ZidooControlCenter/RemoteControl/sendkey?key=Key.MediaPause`);
+    await requestJson(`${host}ZidooMusicControl/seekTo?time=0`);
+    await sleep(syncDelay);
+    await requestJson(`${host}ZidooControlCenter/RemoteControl/sendkey?key=Key.MediaPlay`);
+  }
+
   theApp.get('/api/play', async (req, res) => {
     noCache(res);
 
@@ -758,6 +785,7 @@ function getApp(): Express {
 
         try {
           res.send(await requestText(url));
+          waitForVideoSync(host).finally();
         }
         catch {
           res.sendStatus(404);

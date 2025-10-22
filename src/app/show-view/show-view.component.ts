@@ -307,7 +307,7 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
         this.videoChoices = [this.choices];
 
       this.videoIndex = keepIndex >= 0 ? keepIndex : max(this.videoChoices[0].findIndex(
-        vc => !(vc.watchedByUser || (this.asAdmin() && vc.watched)), 0));
+        vc => !(vc.watchedByUser || (this.asAdmin() && vc.watched))), 0);
       this.video = this.videoChoices[0][this.videoIndex];
       this.selection = this.video.parent ?? this.video;
       this.selectVideo(this.videoIndex);
