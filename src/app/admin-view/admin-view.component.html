@@ -155,6 +155,8 @@
     </div>
     <div class="row">
       <label>Start<input type="text" pInputText [(ngModel)]="options.walkStart"/></label>
+      <fa-icon [icon]="faPlay" [style.opacity]="options.walkStart ? 1 : 0.25"
+       (click)="options.walkStart && (options.walkStop = options.walkStart)"></fa-icon>
       <label>Stop<input type="text" pInputText [(ngModel)]="options.walkStop"/></label>
     </div>
     <div class="skip-options">

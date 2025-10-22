@@ -6,6 +6,8 @@ import { clone } from '@tubular/util';
 import { ConfirmationService, PrimeTemplate } from 'primeng/api';
 import { repoll } from '../app.component';
 import { Button, ButtonDirective, ButtonIcon } from 'primeng/button';
+import { FaIconComponent } from '@fortawesome/angular-fontawesome';
+import { faPlay } from '@fortawesome/free-solid-svg-icons';
 import { ProgressBar } from 'primeng/progressbar';
 import { Checkbox } from 'primeng/checkbox';
 import { FormsModule } from '@angular/forms';
@@ -18,9 +20,10 @@ import { Dialog } from 'primeng/dialog';
   templateUrl: './admin-view.component.html',
   styleUrls: ['./admin-view.component.scss'],
   imports: [Button, ProgressBar, Checkbox, FormsModule, DatePicker, InputText, Dialog, PrimeTemplate,
-            ButtonDirective, ButtonIcon]
+            ButtonDirective, ButtonIcon, FaIconComponent]
 })
 export class AdminViewComponent implements OnInit {
+  readonly faPlay = faPlay;
   readonly formatSecondsToDays = formatSecondsToDays;
   readonly formatSize = formatSize;
 
