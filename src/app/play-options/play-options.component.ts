@@ -105,7 +105,10 @@ export class PlayOptionsComponent implements OnInit {
       this.canChoose = false;
 
       if (value) {
-        this.audioChoices = this.audio.map((a, i) => ({ label: a.name, id: i.toString() }));
+        this.audioChoices = this.audio.map((a, i) => ({
+          label: a.name || [a.codec, a.channels].join(' ').trim(),
+          id: i.toString()
+        }));
         this.audio.forEach(a => this.audioLangs.add(a.language));
         this.subtitleChoices = this.subtitle.map((a, i) => ({ label: subtitleName(a.name), id: (i + 1).toString() }));
         this.subtitleChoices.splice(0, 0, { label: 'None', id: '0' });

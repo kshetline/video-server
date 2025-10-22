@@ -741,9 +741,8 @@ function getApp(): Express {
     } while (lastTime < start + 100000);
 
     await requestJson(`${host}ZidooControlCenter/RemoteControl/sendkey?key=Key.MediaPause`);
-    await requestJson(`${host}ZidooMusicControl/seekTo?time=0`);
     await sleep(syncDelay);
-    await requestJson(`${host}ZidooControlCenter/RemoteControl/sendkey?key=Key.MediaPlay`);
+    await requestJson(`${host}ZidooVideoPlay/seekTo?positon=0`); // Yeah, the "positon" misspelling is necessary.
   }
 
   theApp.get('/api/play', async (req, res) => {
