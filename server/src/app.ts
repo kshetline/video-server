@@ -720,7 +720,7 @@ function getApp(): Express {
   }
 
   async function waitForVideoSync(host: string): Promise<void> {
-    const syncDelay = toInt(process.env.VS_SYNC_DELAY);
+    const syncDelay = toInt(process.env.VS_VIDEO_SYNC_DELAY);
 
     if (!syncDelay)
       return;

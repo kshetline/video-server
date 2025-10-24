@@ -4,7 +4,7 @@ import {  dirname, join } from 'path';
 import { closeSync, mkdirSync, openSync } from 'fs';
 import { mkdtemp, readFile, rename, symlink, utimes, writeFile } from 'fs/promises';
 import { VideoWalkOptionsPlus } from './shared-types';
-import { existsAsync, has2k2dVersion, safeLstat, safeUnlink, webSocketSend } from './vs-util';
+import { existsAsync, getLanguage, has2k2dVersion, safeLstat, safeUnlink, webSocketSend } from './vs-util';
 import { abs, ceil, floor, min, round } from '@tubular/math';
 import { ErrorMode, monitorProcess, ProcessInterrupt, spawn } from './process-util';
 import { stopPending, VideoWalkInfo } from './admin-router';
@@ -251,11 +251,11 @@ export async function createFallbackAudio(path: string, info: VideoWalkInfo): Pr
   if (!audio || !audio.properties)
     return false;
 
-  const lang = audio.properties.language;
+  const lang = getLanguage(audio);
   const aacTrack = info.audio.findIndex(track => {
     const props = track.properties;
 
-    return (track.codec === 'AAC' && props?.language === lang && props.audio_channels <= 2);
+    return (track.codec === 'AAC' && getLanguage(props) === lang && props.audio_channels <= 2);
   });
 
   if (aacTrack >= 0)
@@ -345,13 +345,13 @@ export async function fixForcedSubtitles(path: string, info: VideoWalkInfo): Pro
   if ((info.subtitles ?? []).filter(t => t.properties?.default_track).length > 0)
     return false;
 
-  const forced = (info.subtitles ?? []).filter(t => t.properties?.forced_track && t.properties.language_ietf);
+  const forced = (info.subtitles ?? []).filter(t => t.properties?.forced_track && getLanguage(t));
 
   if (forced.length === 0)
     return false;
 
-  const audioLangs = new Set((info.audio ?? []).filter(t => t.properties?.language_ietf).map(t => t.properties.language_ietf));
-  const forcedLangs = new Set(forced.map(t => t.properties.language_ietf));
+  const audioLangs = new Set((info.audio ?? []).filter(t => getLanguage(t)).map(t => getLanguage(t)));
+  const forcedLangs = new Set(forced.map(t => getLanguage(t)));
   const addedLangs = Array.from(audioLangs.values()).filter(l => !forcedLangs.has(l));
   const addedCount = addedLangs.length;
 

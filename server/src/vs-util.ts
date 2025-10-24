@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { lstat, open, readdir, unlink, utimes } from 'fs/promises';
 import { existsSync, mkdirSync, Stats } from 'fs';
 import { basename, dirname, join } from 'path';
-import { LibraryItem } from './shared-types';
+import { GeneralTrack, GeneralTrackProperties, LibraryItem } from './shared-types';
 import { comparator, hashTitle } from './shared-utils';
 import { WebSocketServer } from 'ws';
 import { asLines, isArray, isObject, isString, regexEscape, toInt } from '@tubular/util';
@@ -11,6 +11,7 @@ import { setEncodeProgress } from './admin-router';
 import { cacheDir, thumbnailDir } from './shared-values';
 import { spawn } from 'child_process';
 import { linuxEscape } from './process-util';
+import { lang3to2 } from './lang';
 
 const guestFilter = new Set(process.env.VS_GUEST_FILTER ? process.env.VS_GUEST_FILTER.split(';') : []);
 const demoFilter = new Set(process.env.VS_DEMO_FILTER ? process.env.VS_DEMO_FILTER.split(';') : []);
@@ -433,4 +434,14 @@ export async function has2k2dVersion(path: string, threeD = false): Promise<stri
   }
 
   return null;
+}
+
+export function getLanguage(track: GeneralTrack | GeneralTrackProperties): string {
+  const props = (track as GeneralTrack)?.properties || (track as GeneralTrackProperties);
+  let lang = props?.language_ietf;
+
+  if (!lang && props?.language)
+    lang = lang3to2[props.language] || props.language;
+
+  return lang;
 }
