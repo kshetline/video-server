@@ -380,12 +380,18 @@ function getApp(): Express {
 
     if (!local &&
         /^\/(ab2g|ab2h|admin(?!-)|app\b|apps\b|backup|blog|cgi-bin|cms|crm|laravel|lib|panel|password|phpunit|shell|systembc|(test(?!-ws))|V2|workspace|ws|yii|zend)/.test(url)) {
-      const block = blockedIps.get(ip);
+      let block = blockedIps.get(ip);
       console.log('%s Bad URL from %s: %s', timeStamp(), ip, url);
 
-      if (block == null || block < 0) {
-        console.log(timeStamp(), 'Blocking:', ip);
-        blockedIps.set(ip, processMillis());
+      if (block == null)
+        blockedIps.set(ip, -1);
+      else if (block < 0) {
+        --block;
+
+        if (block < -BAD_REQUEST_COUNT) {
+          console.log(timeStamp(), 'Blocking:', ip);
+          blockedIps.set(ip, processMillis());
+        }
       }
 
       unref(setTimeout(() => res.sendStatus(403), BAD_REQUEST_DELAY));
