@@ -440,7 +440,7 @@ export function getLanguage(track: GeneralTrack | GeneralTrackProperties): strin
   const props = (track as GeneralTrack)?.properties || (track as GeneralTrackProperties);
   let lang = props?.language_ietf;
 
-  if (!lang && props?.language)
+  if ((!lang || lang !== 'und') && props?.language)
     lang = lang3to2[props.language] || props.language;
 
   return lang;

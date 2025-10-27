@@ -1,25 +1,13 @@
 import { VideoWalkInfo } from './admin-router';
-import { AudioTrackProperties, GeneralTrack, GeneralTrackProperties, MediaInfo, MediaTrack, VideoWalkOptionsPlus } from './shared-types';
-import { code2Name, lang3to2 } from './lang';
+import { AudioTrackProperties, GeneralTrack, MediaInfo, MediaTrack, VideoWalkOptionsPlus } from './shared-types';
+import { code2Name } from './lang';
 import { toBoolean, toInt } from '@tubular/util';
 import { ErrorMode, linuxEscape, monitorProcess } from './process-util';
 import { spawn } from 'child_process';
-import { safeLstat } from './vs-util';
+import { getLanguage, safeLstat } from './vs-util';
 import { join } from 'path';
 import { abs, ceil, max } from '@tubular/math';
 import { utimes } from 'fs/promises';
-
-function getLanguage(props: GeneralTrackProperties): string {
-  if (!props)
-    return '';
-
-  let lang = (props.language_ietf !== 'und' && props.language_ietf) || props.language || props.language_ietf;
-
-  if (lang !== 'und' && lang?.length > 2)
-    lang = lang3to2[lang] ?? lang;
-
-  return lang;
-}
 
 function getCodec(track: GeneralTrack): string {
   if (!track)
