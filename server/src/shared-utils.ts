@@ -116,7 +116,7 @@ export function matchesSearch(item: LibraryItem, searchText: string, simpleMatch
 
   if (searchForm(itemText).includes(text))
     return true;
-  else if (simpleMatch || item.isAlias)
+  else if (simpleMatch || (item.isAlias && !isCollection(item)))
     return false;
   else { // Does the name of an ancestor collection match?
     let testItem = item.parent?.data && findItemById(item.parent.data, item.id)?.parent;

@@ -281,7 +281,8 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       }
 
       // If flag_original is *explicitly* false, rather than just not set, don't change it.
-      if (!tp.flag_original && primaryLang === 'en' && lang === 'en' && tp.flag_original !== false) {
+      if (!tp.flag_original && primaryLang === 'en' && lang === 'en' && tp.track_name !== '*' &&
+          tp.flag_original !== false) {
         editArgs.push('--edit', 'track:s' + i, '--set', 'flag-original=1');
         tp.flag_original = true;
       }

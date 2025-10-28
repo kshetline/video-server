@@ -374,8 +374,12 @@ export async function fixForcedSubtitles(path: string, info: VideoWalkInfo): Pro
         trackOrder += `0:${i},`;
       else if (i < insertAt + addedCount) {
         const index = i - insertAt;
+        const lang = addedLangs[index];
 
-        args.push('--language', `0:${addedLangs[index]}`,
+        if (i === 0 && lang === 'en')
+          args.push('--original-flag', '0:1');
+
+        args.push('--language', `0:${lang}`,
                   '--track-name', '0:*', '--forced-track', '0:yes', '--default-track', '0:no',
                   '(', SRT_FILE, ')');
         trackOrder += `${index + 1}:0,`;
