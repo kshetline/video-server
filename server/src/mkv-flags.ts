@@ -9,6 +9,8 @@ import { join } from 'path';
 import { abs, ceil, max } from '@tubular/math';
 import { utimes } from 'fs/promises';
 
+const ONE_WEEK = 7 * 86400 * 1000;
+
 function getCodec(track: GeneralTrack): string {
   if (!track)
     return '';
@@ -316,30 +318,35 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
 
       info.wasModified = true;
 
+      const newStats = await safeLstat(path);
+
+      if (options.canModify && !options.mkvFlagsDryRun && newStats) {
+        let oldDate = stats.mtime.getTime();
+
+        if (oldDate < Date.now() - ONE_WEEK)
+          oldDate += 60000; // Preserve something close to, just a little later than, historical timestamp.
+        else
+          oldDate = max(newStats.mtime.getTime(), newDate.getTime());
+
+        // Bump modification time to make rsync time match work better.
+        newDate = new Date(ceil(oldDate, 1000));
+        await utimes(path, newDate, newDate);
+      }
+
       if (options.canModify && options.mkvFlagsUpdateBackups && stats && backups.length) {
-        const newStats = await safeLstat(path);
+        for (const dir of backups) {
+          const backPath = join(dir, path.substring(options.videoDirectory.length));
+          const backStats = await safeLstat(backPath);
 
-        if (newStats) {
-          // Bump modification time to make rsync time match work better.
-          newDate = new Date(ceil(max(newStats.mtime.getTime(), newDate.getTime()), 1000));
+          if (backStats && backStats.size === stats.size && abs(stats.mtimeMs - backStats.mtimeMs) < 2) {
+            editArgs[0] = backPath;
+            lastPath = backPath;
 
-          if (!options.mkvFlagsDryRun)
-            await utimes(path, newDate, newDate);
+            if (editArgs.length > 1 && !options.mkvFlagsDryRun)
+              await monitorProcess(spawn('mkvpropedit', editArgs), null, ErrorMode.FAIL_ON_ANY_ERROR);
 
-          for (const dir of backups) {
-            const backPath = join(dir, path.substring(options.videoDirectory.length));
-            const backStats = await safeLstat(backPath);
-
-            if (backStats && backStats.size === stats.size && abs(stats.mtimeMs - backStats.mtimeMs) < 2) {
-              editArgs[0] = backPath;
-              lastPath = backPath;
-
-              if (editArgs.length > 1 && !options.mkvFlagsDryRun)
-                await monitorProcess(spawn('mkvpropedit', editArgs), null, ErrorMode.FAIL_ON_ANY_ERROR);
-
-              await utimes(backPath, newDate, newDate);
-              console.log('   also updated:', backPath);
-            }
+            await utimes(backPath, newDate, newDate);
+            console.log('   also updated:', backPath);
           }
         }
       }
