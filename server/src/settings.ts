@@ -1,6 +1,6 @@
 import { AsyncDatabase } from 'promised-sqlite3';
 import os from 'os';
-import { toNumber } from '@tubular/util';
+import { sleep, toNumber } from '@tubular/util';
 import { FFProbeInfo, MediaInfo, User } from './shared-types';
 import crypto from 'crypto';
 import { safeLstat } from './vs-util';
@@ -132,11 +132,12 @@ export function setValue(key: string, value: string | number): void {
   db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', key, value).finally();
 }
 
-export async function getAugmentedMediaInfo(path: string, stripAugments = false, onlyFromDb = false): Promise<MediaInfo> {
+export async function getAugmentedMediaInfo(path: string, stripAugments = false,
+                                            onlyFromDb = false, fromDb = true): Promise<MediaInfo> {
   const stat = await safeLstat(path);
   const mdate = stat?.mtimeMs || 0;
   const key = path.substring(process.env.VS_VIDEO_SOURCE.length).replaceAll('\\', '/').replace(/^([^/])/, '/$1');
-  const row = await db.get<any>('SELECT * FROM mediainfo WHERE key = ?', key);
+  const row = fromDb && await db.get<any>('SELECT * FROM mediainfo WHERE key = ?', key);
   let mediainfo: MediaInfo;
 
   if (row && abs(row.mdate - mdate) < 1)
@@ -144,7 +145,9 @@ export async function getAugmentedMediaInfo(path: string, stripAugments = false,
   else if (onlyFromDb)
     return null;
   else {
-    mediainfo = JSON.parse(await monitorProcess(spawn('mediainfo', [path, '--Output=JSON'])));
+    const promises = [monitorProcess(spawn('mediainfo', [path, '--Output=JSON'])), sleep(15000) as Promise<any>];
+
+    mediainfo = JSON.parse((await Promise.race(promises)) ?? 'null');
     const ffprobe = JSON.parse(await monitorProcess(spawn('ffprobe', ['-v', 'quiet', '-print_format', 'json',
                                                                       '-show_streams', path]))) as FFProbeInfo;
 

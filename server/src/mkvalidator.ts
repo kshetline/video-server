@@ -25,44 +25,46 @@ export async function mkvValidate(path: string, options: VideoWalkOptionsPlus, _
     try {
       console.log('Validating:', path);
 
-      const mediainfo = await getAugmentedMediaInfo(path);
+      const mediainfo = await getAugmentedMediaInfo(path, false, false, false);
 
-      if (!mediainfo?.media?.track || mediainfo.media.track.length < 2)
+      if (!mediainfo?.media?.track || mediainfo.media.track.length < 3 ||
+          new Set(mediainfo.media.track.map(t => t['@type']).filter(t => /Audio|General|Video/.test(t))).size < 3)
         error = 'mediainfo problem';
+      else {
+        // mkvalidator is terrible with non-ASCII characters in filenames, so the easiest solution
+        // is using symbolic links
+        linkName = makePlainASCII(basename(path), true).replace(/\.mkv$/i, '.ln.temp.mkv');
+        await monitorProcess(spawn('ln', ['-s', path, linkName]));
 
-      // mkvalidator is terrible with non-ASCII characters in filenames, so the easiest solution
-      // is using symbolic links
-      linkName = makePlainASCII(basename(path), true).replace(/\.mkv$/i, '.ln.temp.mkv');
-      await monitorProcess(spawn('ln', ['-s', path, linkName]));
+        let lastFeedback = 0;
+        let dots = '';
+        const result = (await monitorProcess(spawn('mkvalidator', [linkName]), () => {
+          if (stopPending)
+            throw new ProcessInterrupt();
 
-      let lastFeedback = 0;
-      let dots = '';
-      const result = (await monitorProcess(spawn('mkvalidator', [linkName]), () => {
-        if (stopPending)
-          throw new ProcessInterrupt();
+          const now = processMillis();
 
-        const now = processMillis();
+          if (now > lastFeedback + 250) {
+            lastFeedback = now;
+            dots = dots.length < 40 ? dots + '.' : '.';
+            webSocketSend({ type: 'video-progress', data: dots });
+          }
+        }, ErrorMode.COLLECT_ERROR_STREAM)).replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n+/g, '\n')
+          .replace(/^(\.|\s)+$/gm, '').trim();
 
-        if (now > lastFeedback + 250) {
-          lastFeedback = now;
-          dots = dots.length < 40 ? dots + '.' : '.';
-          webSocketSend({ type: 'video-progress', data: dots });
-        }
-      }, ErrorMode.COLLECT_ERROR_STREAM)).replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n+/g, '\n')
-        .replace(/^(\.|\s)+$/gm, '').trim();
+        if (result && !/appears to be valid/i.test(result)) {
+          const allCount = (result.match(/^(ERR|WRN)[0-9A-F]{3}:/gm) || []).length;
 
-      if (!/appears to be valid/i.test(result)) {
-        const allCount = (result.match(/^(ERR|WRN)[0-9A-F]{3}:/gm) || []).length;
+          if (allCount > 12 || /^ERR[0-9A-F]{3}:/m.test(result) || /^WRN(?!(0B8|0C0|0C2|0D0|0E7|103))[0-9A-F]{3}:/m.test(result)) {
+            const errCount = (result.match(/^ERR[0-9A-F]{3}:/gm) || []).length;
+            const warnCount = (result.match(/^WRN[0-9A-F]{3}:/gm) || []).length;
+            const $0C2Count = (result.match(/^WRN0C2:/gm) || []).length;
+            const $861Count = (result.match(/^WRN861:/gm) || []).length;
 
-        if (allCount > 12 || /^ERR[0-9A-F]{3}:/m.test(result) || /^WRN(?!(0B8|0C0|0C2|0D0|0E7|103))[0-9A-F]{3}:/m.test(result)) {
-          const errCount = (result.match(/^ERR[0-9A-F]{3}:/gm) || []).length;
-          const warnCount = (result.match(/^WRN[0-9A-F]{3}:/gm) || []).length;
-          const $0C2Count = (result.match(/^WRN0C2:/gm) || []).length;
-          const $861Count = (result.match(/^WRN861:/gm) || []).length;
-
-          if (errCount > 0 || $861Count > 0 || warnCount - $0C2Count > 5) {
-            console.log(result);
-            error = (error ? error + '\n' : '') + result;
+            if (errCount > 0 || $861Count > 0 || warnCount - $0C2Count > 5) {
+              console.log(result);
+              error = result;
+            }
           }
         }
       }
