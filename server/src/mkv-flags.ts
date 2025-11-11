@@ -1,7 +1,7 @@
 import { VideoWalkInfo } from './admin-router';
 import { AudioTrackProperties, GeneralTrack, MediaInfo, MediaTrack, VideoWalkOptionsPlus } from './shared-types';
 import { code2Name } from './lang';
-import { toBoolean, toInt } from '@tubular/util';
+import { regexEscape, toBoolean, toInt } from '@tubular/util';
 import { ErrorMode, linuxEscape, monitorProcess } from './process-util';
 import { spawn } from 'child_process';
 import { getLanguage, safeLstat } from './vs-util';
@@ -122,11 +122,12 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       const tp = track.properties;
       const media = tp.media;
       const lang = getLanguage(tp);
-      const language = code2Name[lang];
-      let name = tp.track_name || '';
+      const language = code2Name[lang] || new Intl.DisplayNames(['en'], { type: 'language' }).of(lang);
+      const language2 = new Intl.DisplayNames([lang], { type: 'language' }).of(lang);
+      let origName = tp.track_name || '';
+      let name = origName;
+      const languageStart = ((new RegExp(`^(${regexEscape(language)}|${regexEscape(language2)})\\b`, 'i')).exec(name) ?? [])[1];
       const codecInName = (/\b(AAC|AC-3|DTS-HD MA|DTS-HD HRA|DTS-MA|DTS-HD|DTS|DD EX|E-?AC-?3|MP3|TrueHD)\b/.exec(name) || [])[1];
-      const atmosInName = /\bAtmos\b/i.test(name) && /\b[57]\.1\b/.test(name);
-      let newName: string;
       const cCount = tp.audio_channels;
       const pl2 = /dolby pl(2|ii)/i.test(name) || (cCount === 2 && defaultTrack.properties.audio_channels > 2 &&
         track.codec === 'AAC' && audio.findIndex(t => t.codec === 'AAC') === i - 1);
@@ -141,7 +142,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       if (!da && tp.flag_visual_impaired)
         da = true;
 
-      if (language && (audioLanguages.size > 1 || da))
+      if (language && !languageStart && (audioLanguages.size > 1 || da))
         audioDescr = language + ' ' + audioDescr;
 
       audioDescr = audioDescr.replace(/:/g, '');
@@ -151,49 +152,60 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
 
       if (pl2 && markedAAC)
         reducedDescr = reducedDescr.replace('AAC ', '');
-      else if (/^(AC-3|DD|E-?AC-?3)$/.test(codec) && reducedDescr.includes(codec)) {
+      else if (/^(AC-3|DD|E-?AC-?3)$/.test(codec) && reducedDescr.includes(codec))
         reducedDescr = reducedDescr.replace(new RegExp('\\b' + codec + ' '), '');
 
-        if (/^\d/.test(reducedDescr))
-          reducedDescr = 'Surround ' + reducedDescr;
+      if (codecInName !== codec)
+        name = name.replace(new RegExp('\\b' + codec + '\\b'), codec);
+      else if (oldAudio && oldAudio[i - 1].Title)
+        name = oldAudio[i - 1].Title;
+
+      if (name.includes('(Latinoamericano)'))
+        name = name.replace(/\s*\(Latinoamericano\)/, '');
+
+      if (name === languageStart && (cCount > 2 || pl2)) {
+        if (languages.size > 1 || lang !== 'en')
+          name = languageStart + ' ' + reducedDescr;
+        else
+          name = reducedDescr;
       }
 
-      if (codecInName !== codec)
-        newName = name.replace(new RegExp('\\b' + codec + '\\b'), codec);
-      else if (oldAudio && oldAudio[i - 1].Title)
-        newName = oldAudio[i - 1].Title;
+      const atmosInName = /\bAtmos\b/i.test(name);
 
       if (atmos && !atmosInName && name && name !== 'undefined') // Yes, the string literal 'undefined'.
-        newName = name.replace(/\b([57]\.1\b)/, 'Atmos $1');
+        name = name.replace(/\b([57]\.1\b)/, 'Atmos $1');
       else if (!atmos && atmosInName)
-        newName = name.replace(/\bAtmos\b/i, '').replace(/\s{2,}/g, '').trim();
+        name = name.replace(/\bAtmos\b/i, '').replace(/\s{2,}/g, '').trim();
       else if (name === 'undefined' || (name === audioDescr && audioDescr !== reducedDescr) || (pl2 && markedAAC) ||
-               /\bAC-3\b/.test(name)) {
+               /\bAC-3\b/.test(origName)) {
         if (tp.flag_commentary)
-          newName = 'Commentary' + (audioCommentaries > 1 ? ' ' + ++audioCommentaryIndex : '');
+          name = 'Commentary' + (audioCommentaries > 1 ? ' ' + ++audioCommentaryIndex : '');
         else
-          newName = reducedDescr;
+          name = reducedDescr;
       }
 
-      if (/\b(EAC3|EAC-3|E-AC-3)\b/.test(newName || name))
-        newName = (newName || name).replace(/\bE-?AC-?3\b/, 'E-AC3');
+      if (/\b(EAC3|EAC-3|E-AC-3)\b/.test(name || origName))
+        name = (name || origName).replace(/\bE-?AC-?3\b/, 'E-AC3');
 
-      if (newName && options.laxAudioRenaming !== false &&
-          (language + ' ' + newName === name || newName.replace(/\bDolby PL2$/, 'AAC Stereo') === name ||
-           newName.replace(/^AC-3\b/, 'Surround') === name))
-        newName = undefined;
+      if (name && options.laxAudioRenaming !== false &&
+          (languageStart + ' ' + name === origName || name.replace(/\bDolby PL2$/, 'AAC Stereo') === origName ||
+           name.replace(/^AC-3\b/, 'Surround') === origName))
+        name = origName;
 
-      if (newName && name !== newName) {
-        changedNames.push(name || '(blank)');
-        tp.track_name = name = newName;
+      if (/^\d/.test(name))
+        name = 'Surround ' + name;
+
+      if (name !== origName) {
+        changedNames.push(origName || '(blank)');
+        tp.track_name = name;
         editArgs.push('--edit', 'track:a' + i, '--set', 'name=' + name);
       }
 
-      if (!tp.flag_commentary && /commentary/i.test(name)) {
+      if (!tp.flag_commentary && /commentary/i.test(origName)) {
         editArgs.push('--edit', 'track:a' + i, '--set', 'flag-commentary=1');
         tp.flag_commentary = true;
       }
-      else if (tp.flag_commentary && !/commentary/i.test(name)) {
+      else if (tp.flag_commentary && !/commentary/i.test(origName)) {
         editArgs.push('--edit', 'track:a' + i, '--set', 'flag-commentary=0');
         tp.flag_commentary = false;
       }
@@ -234,9 +246,24 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       const nameIsCode = /^[a-z]{2}$/.test(name);
       const lang = getLanguage(tp);
 
-      if (nameIsCode && lang?.length === 2 && name !== lang) {
-        changedNames.push(name);
-        tp.track_name = name = lang;
+      if (name.includes('[CC]'))
+        name = name.replace(/(\s*)\[CC]/, '$1SDH');
+
+      if (name.includes('(Latinoamericano)'))
+        name = name.replace(/\s*\(Latinoamericano\)/, '');
+
+      if (nameIsCode && lang?.length === 2 && name !== lang)
+        name = lang;
+
+      if (/^[a-z]{2}.*\bforced\b/.test(name))
+        name = name.slice(0, 2);
+
+      if (name?.toLowerCase() === 'description' && lang === 'en')
+        name = 'English SDH';
+
+      if (tp.track_name !== name) {
+        changedNames.push(tp.track_name);
+        tp.track_name = name;
         editArgs.push('--edit', 'track:s' + i, '--set', 'name=' + name);
       }
 
@@ -268,29 +295,21 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
         tp.flag_commentary = false;
       }
 
-      if (tp.track_name?.toLowerCase() === 'description' && lang === 'en') {
-        editArgs.push('--edit', 'track:s' + i, '--set', 'name=English SDH');
-        tp.track_name = 'English SDH';
-      }
-
-      if (!tp.flag_hearing_impaired && /(\bSDH\b)|\[CC]/.test(tp.track_name)) {
+      if (!tp.flag_hearing_impaired && /\bSDH\b/.test(name)) {
         editArgs.push('--edit', 'track:s' + i, '--set', 'flag-hearing-impaired=1');
         tp.flag_hearing_impaired = true;
       }
-      else if (tp.flag_hearing_impaired && !/(\bSDH\b)|\[CC]/.test(tp.track_name)) {
+      else if (tp.flag_hearing_impaired && !/\bSDH\b/.test(name)) {
         editArgs.push('--edit', 'track:s' + i, '--set', 'flag-hearing-impaired=0');
         tp.flag_hearing_impaired = false;
       }
 
       // If flag_original is *explicitly* false, rather than just not set, don't change it.
-      if (!tp.flag_original && primaryLang === 'en' && lang === 'en' && tp.track_name !== '*' &&
+      if (!tp.flag_original && primaryLang === 'en' && lang === 'en' && name !== '*' &&
           tp.flag_original !== false) {
         editArgs.push('--edit', 'track:s' + i, '--set', 'flag-original=1');
         tp.flag_original = true;
       }
-
-      if (lang?.length === 2 && tp.track_name?.length === 2 && tp.track_name !== lang)
-        editArgs.push('--edit', 'track:s' + i, '--set', 'name=' + lang);
     }
   }
 

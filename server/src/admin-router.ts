@@ -6,7 +6,7 @@ import { getDb, getAugmentedMediaInfo, getValue, setValue } from './settings';
 import { join as pathJoin, sep as pathSep } from 'path';
 import { ErrorMode, monitorProcess } from './process-util';
 import { spawn } from 'child_process';
-import { AudioTrack, LibraryItem, MKVInfo, ProcessArgs, SubtitlesTrack, VideoStats, VideoTrack, VideoWalkOptions, VideoWalkOptionsPlus } from './shared-types';
+import { AudioTrack, LibraryItem, MediaTrack, MKVInfo, ProcessArgs, SubtitlesTrack, VideoStats, VideoTrack, VideoWalkOptions, VideoWalkOptionsPlus } from './shared-types';
 import { comparator, compareCaseInsensitiveIntl, sorter, toStreamPath } from './shared-utils';
 import { examineAndUpdateMkvFlags } from './mkv-flags';
 import { sendStatus } from './app';
@@ -50,6 +50,7 @@ export interface VideoWalkInfo {
   audio?: AudioTrack[];
   createdStreaming?: boolean;
   error?: string;
+  general?: MediaTrack;
   isExtra?: boolean;
   isMovie?: boolean;
   isTV?: boolean;
@@ -312,10 +313,14 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
                 const index = (typeIndices[type] ?? -1) + 1;
                 const mkvSet = (type === 'video' ? info.video : type === 'audio' ? info.audio : []);
 
-                typeIndices[type] = index;
+                if (type === 'general')
+                  info.general = track;
+                else {
+                  typeIndices[type] = index;
 
-                if (mkvSet[index]?.properties)
-                  mkvSet[index].properties.media = track;
+                  if (mkvSet[index]?.properties)
+                    mkvSet[index].properties.media = track;
+                }
               }
 
               const duration = info.mkvInfo.container.properties.duration / 1E9;
