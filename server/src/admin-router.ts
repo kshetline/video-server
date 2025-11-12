@@ -55,6 +55,7 @@ export interface VideoWalkInfo {
   isMovie?: boolean;
   isTV?: boolean;
   mkvInfo?: MKVInfo;
+  seriesTitle?: string;
   skip?: boolean;
   streamingDirectory?: string;
   subtitles?: SubtitlesTrack[];
@@ -418,6 +419,8 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
                   seriesTitle = $[1];
 
                 if (seriesTitle) {
+                  info.seriesTitle = seriesTitle;
+
                   const pos = file.indexOf(seriesTitle);
 
                   if (pos > 0)

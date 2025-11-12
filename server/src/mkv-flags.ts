@@ -83,6 +83,26 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
   let oldAudio: MediaTrack[];
   const changedNames: string[] = [];
 
+  if (info.isTV) {
+    const origTitle = info.general?.Title;
+    const name = path.replace(/.*[/\\]/, '').replace(/\.\w{2,4}$/, '');
+    const episode = ((/\b(S\d\dE\d\d)\b/i.exec(name) ?? [])[1] || '').toUpperCase();
+    let title = origTitle;
+
+    if (!title || !title.includes('•')) {
+      if (!title)
+        title = name.replace(' - ', ': ').replace('？', '?').replace('：', ':').replace('／', '/')
+          .replace(/\s*\([234][DK]\)/i, '').replace(/\s*\(\d*#[-a-z]+\)/i, '');
+
+      title = `${info.seriesTitle} • ${episode} • ${title}`;
+    }
+
+    if (title !== origTitle) {
+      changedNames.push(origTitle || '(blank title)');
+      editArgs.push('--edit', 'info', '--set', 'title=' + title);
+    }
+  }
+
   if (options.zidooDb && toBoolean(process.env.VS_RESTORE_AUDIO_TRACK_NAMES_FROM_DB)) {
     const key = '/' + path.substring(options.videoDirectory.length).normalize();
     const row = await options.zidooDb.get<any>('SELECT * FROM VIDEO_INFO WHERE URI = ?', key);
@@ -132,7 +152,8 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       const pl2 = /dolby pl(2|ii)/i.test(name) || (cCount === 2 && defaultTrack.properties.audio_channels > 2 &&
         track.codec === 'AAC' && audio.findIndex(t => t.codec === 'AAC') === i - 1);
       const dolbySurround = /\bDolby Surround\b/.test(media?.Format_Settings_Mode);
-      const atmos = /\bJOC\b/i.test(media?.Format_AdditionalFeatures) || /\bAtmos\b/i.test(media?.Format_Commercial_IfAny);
+      const atmos = /\bJOC\b/i.test(media?.Format) || /\bJOC\b/i.test(media?.Format_AdditionalFeatures) ||
+                    /\bAtmos\b/i.test(media?.Format_Commercial_IfAny);
       const codec = getCodec(track);
       const channels = (cCount === 2 && pl2) ? 'Dolby PL2' : (cCount === 2 && dolbySurround) ? 'Dolby Surround' :
         (atmos ? 'Atmos ' : '') + channelString(tp);
@@ -156,7 +177,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
         reducedDescr = reducedDescr.replace(new RegExp('\\b' + codec + ' '), '');
 
       if (codecInName !== codec)
-        name = name.replace(new RegExp('\\b' + codec + '\\b'), codec);
+        name = name.replace(new RegExp('\\b' + regexEscape(codec) + '\\b'), codec);
       else if (oldAudio && oldAudio[i - 1].Title)
         name = oldAudio[i - 1].Title;
 
@@ -175,7 +196,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       if (atmos && !atmosInName && name && name !== 'undefined') // Yes, the string literal 'undefined'.
         name = name.replace(/\b([57]\.1\b)/, 'Atmos $1');
       else if (!atmos && atmosInName)
-        name = name.replace(/\bAtmos\b/i, '').replace(/\s{2,}/g, '').trim();
+        name = name.replace(/\bAtmos\b/i, '').replace(/\s{2,}/g, ' ').trim();
       else if (name === 'undefined' || (name === audioDescr && audioDescr !== reducedDescr) || (pl2 && markedAAC) ||
                /\bAC-3\b/.test(origName)) {
         if (tp.flag_commentary)
