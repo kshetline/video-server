@@ -186,7 +186,7 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
       }
     }
     else if (!options.walkStartArray && options.walkStopArray?.length > depth &&
-             (depth === 0 || options.walkStopArray[depth - 1] === null) &&
+             (depth === 0 || options.walkStopArray[depth - 1] !== null) &&
              (options.walkStopArray[depth] === null ||
                ((comp = compareCaseInsensitiveIntl(file, options.walkStopArray[depth])) > 0 &&
                  !file.toLowerCase().startsWith(options.walkStopArray[depth])))) {
