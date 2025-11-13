@@ -263,7 +263,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
     for (let i = 1; i <= subtitles.length; ++i) {
       const track = subtitles[i - 1];
       const tp = track.properties;
-      let name = tp.track_name;
+      let name = tp.track_name || '';
       const nameIsCode = /^[a-z]{2}$/.test(name);
       const lang = getLanguage(tp);
 
@@ -282,7 +282,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       if (name?.toLowerCase() === 'description' && lang === 'en')
         name = 'English SDH';
 
-      if (tp.track_name !== name) {
+      if (name !== (tp.track_name || '')) {
         changedNames.push(tp.track_name);
         tp.track_name = name;
         editArgs.push('--edit', 'track:s' + i, '--set', 'name=' + name);
