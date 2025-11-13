@@ -373,7 +373,11 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
   }
 
   hasYear(): boolean {
-    return this.show.year && isMovie(this.show);
+    return isMovie(this.show) && (!!this.show.year || /^\d\d\d\d\b/.test(this.show.releaseDate));
+  }
+
+  getYear(): string {
+    return (this.show?.year || '').toString() || (this.show.releaseDate || '').substring(0, 4);
   }
 
   hasAirDate(): boolean {

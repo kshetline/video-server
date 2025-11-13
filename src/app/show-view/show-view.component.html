@@ -32,7 +32,7 @@
         <div class="show-title" [title]="video.id">{{getSeasonTitle(show)}}</div>
         <div class="info-line">
           @if (getVoteAverage()) {<app-rating [value]="getVoteAverage()" [topValue]="10"></app-rating>}
-          @if (hasYear()) {<span>{{selection.year}}</span>}
+          @if (hasYear()) {<span>{{getYear()}}</span>}
           @if (hasAirDate()) {<span class="air-date">{{selection.airDate}}</span>}
           @if (show.certification) {<span class="rating">{{show.certification}}</span>}
           @if (video?.duration || video?.parent?.duration) {<span class="duration">{{getDuration()}}</span>}
