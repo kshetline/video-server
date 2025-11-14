@@ -400,11 +400,12 @@ export function fileCountFromEntry(entry: DirectoryEntry | DirectoryEntry[], all
 export async function has2k2dVersion(path: string, threeD = false): Promise<string> {
   const dir = dirname(path);
   const altType = threeD ? '2D' : '2K';
+  const dm = threeD ? '' : '_';
   const file = basename(path, '.mkv').replace(/\s*\((3D|4K)\)$/, '').trim();
   const altFile = `${file} (${altType}).mkv`;
   const alt1 = join(dir, altFile);
-  const alt2 = join(dir, altType, file + '.mkv');
-  const alt3 = join(dir, altType, altFile);
+  const alt2 = join(dir, dm + altType + dm, file + '.mkv');
+  const alt3 = join(dir, dm + altType + dm, altFile);
   let match: string;
 
   if ((await existsAsync(match = alt1)) || (await existsAsync(match = alt2)) || (await existsAsync(match = alt3)))

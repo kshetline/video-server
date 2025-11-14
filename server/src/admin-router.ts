@@ -463,15 +463,14 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
             if (!iso && options.checkStreaming && !dontRecurse && !/[-_(](4K|3D)\)/.test(baseTitle)) {
               title = toStreamPath(baseTitle);
 
-              const sDir = pathToEntry(options.streamingDirectory, dirPath.substring(options.videoBasePath.length))?.children;
+              const sDir = dirPath.replace(/[\//]_2K_$/i, '');
+              const sDirEntry = pathToEntry(options.streamingDirectory, sDir.substring(options.videoBasePath.length))?.children;
               const stream1 = title + '.mpd';
               const stream2 = title + '.av.webm';
-              const stream3 = '_2K_/' + title + '.mpd';
-              const stream4 = '_2K_/' + title + '.av.webm';
 
               info.title = title = title.replace(/\s*\((\d*)#([-_.a-z0-9]+)\)/i, '');
 
-              if (!pathExists(sDir, stream1) && !pathExists(sDir, stream2) && !pathExists(sDir, stream3) && !pathExists(sDir, stream4))
+              if (!pathExists(sDirEntry, stream1) && !pathExists(sDirEntry, stream2))
                 (stats.unstreamedTitles as Set<string>).add(title);
             }
 
