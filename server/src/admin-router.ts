@@ -418,6 +418,9 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
                 if (!seriesTitle && ($ = /(.*?): S\d\dE\d\d:/.exec(title)))
                   seriesTitle = $[1];
 
+                if (/\bStar Trek\b/.test(path) && !/Star Trek/.test(seriesTitle))
+                  seriesTitle = 'Star Trek: ' + seriesTitle;
+
                 if (seriesTitle) {
                   info.seriesTitle = seriesTitle;
 
@@ -463,8 +466,8 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
               const sDir = pathToEntry(options.streamingDirectory, dirPath.substring(options.videoBasePath.length))?.children;
               const stream1 = title + '.mpd';
               const stream2 = title + '.av.webm';
-              const stream3 = '2K/' + title + '.mpd';
-              const stream4 = '2K/' + title + '.av.webm';
+              const stream3 = '_2K_/' + title + '.mpd';
+              const stream4 = '_2K_/' + title + '.av.webm';
 
               info.title = title = title.replace(/\s*\((\d*)#([-_.a-z0-9]+)\)/i, '');
 

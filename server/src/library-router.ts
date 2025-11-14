@@ -793,7 +793,7 @@ function fixVideoFlagsAndEncoding(items: LibraryItem[]): void {
       if (!item.is3d || /\b2D\)\.mkv$/i.test(item.uri))
         delete item.is3d;
 
-      if (item.uri.endsWith('(2K).mkv') || item.uri.includes('/2K/'))
+      if (item.uri.endsWith('(2K).mkv') || item.uri.includes('/_2K_/'))
         item.resolution = 'FHD';
 
       delete item.hdr;

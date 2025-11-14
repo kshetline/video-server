@@ -85,21 +85,24 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
 
   if (info.isTV) {
     const origTitle = info.general?.Title;
+    const hasDisc = /\bDisc \d+\b/i.test(origTitle);
     const name = path.replace(/.*[/\\]/, '').replace(/\.\w{2,4}$/, '');
-    const episode = ((/\b(S\d\dE\d\d)\b/i.exec(name) ?? [])[1] || '').toUpperCase();
+    const match = /^(.*) - (\bS\d\dE\d\d\b) - (.*)$/i.exec(name) ?? [];
+    const episode = (match[2] || '').toUpperCase();
+    const series = info.seriesTitle || match[1] || '';
     let title = origTitle;
 
-    if (!title || !title.includes('•')) {
-      if (!title)
-        title = name.replace(' - ', ': ').replace('？', '?').replace('：', ':').replace('／', '/')
+    if (episode && (!title || !origTitle.includes('•')) || hasDisc) {
+      if (!title || hasDisc)
+        title = (match[3] || '').replace(' - ', ': ').replace('？', '?').replace('：', ':').replace('／', '/')
           .replace(/\s*\([234][DK]\)/i, '').replace(/\s*\(\d*#[-a-z]+\)/i, '');
 
-      title = `${info.seriesTitle} • ${episode} • ${title}`;
+      title = `${series} • ${episode} • ${title}`;
     }
 
     if (title !== origTitle) {
       changedNames.push(origTitle || '(blank title)');
-      editArgs.push('--edit', 'info', '--set', 'title=' + title);
+      editArgs.push('--edit', 'info', '--set', 'title=' + title, '--tags', 'global:');
     }
   }
 
@@ -194,7 +197,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       const atmosInName = /\bAtmos\b/i.test(name);
 
       if (atmos && !atmosInName && name && name !== 'undefined') // Yes, the string literal 'undefined'.
-        name = name.replace(/\b([57]\.1\b)/, 'Atmos $1');
+        name = name.replace(/\b([57]\.1\b)/, 'Atmos $1').replace(/^Surround Atmos\b/i, 'Atmos');
       else if (!atmos && atmosInName)
         name = name.replace(/\bAtmos\b/i, '').replace(/\s{2,}/g, ' ').trim();
       else if (name === 'undefined' || (name === audioDescr && audioDescr !== reducedDescr) || (pl2 && markedAAC) ||
@@ -212,6 +215,11 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
           (languageStart + ' ' + name === origName || name.replace(/\bDolby PL2$/, 'AAC Stereo') === origName ||
            name.replace(/^AC-3\b/, 'Surround') === origName))
         name = origName;
+
+      if (/^root\s+/i.test(name))
+        name = name.replace(/^root\s+/i, '');
+      else if (/^Surround Atmos\b/i.test(name))
+        name = name.replace(/^Surround Atmos\b/i, 'Atmos');
 
       if (/^\d/.test(name))
         name = 'Surround ' + name;

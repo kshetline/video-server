@@ -523,7 +523,7 @@ export function getWatchInfo(asAdmin: boolean, item: LibraryItem, wi?: WatchInfo
       if (!i.streamUri && !i.uri && i.data?.length === 1)
         i = i.data[0];
 
-      const path = i.streamUri || i.uri?.replace('/2K/', '/') || '';
+      const path = i.streamUri || i.uri?.replace('/_2K_/', '/') || '';
       const key = isMovie(i.parent) ? '#' + i.parent.id : path || n.toString();
       const list = getOrSet(uniqueVideos, key, []);
 
