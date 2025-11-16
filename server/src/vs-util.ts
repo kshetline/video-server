@@ -422,7 +422,7 @@ export async function has2k2dVersion(path: string, threeD = false): Promise<stri
         return join(dir, sib);
     }
 
-    const dirAlt = join(dir, altType);
+    const dirAlt = join(dir, dm + altType + dm);
 
     if (await existsAsync(dirAlt)) {
       files = (await readdir(dirAlt)).sort(comparator);

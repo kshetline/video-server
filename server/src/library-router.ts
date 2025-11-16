@@ -5,7 +5,7 @@ import { abs, ceil, floor, max, min } from '@tubular/math';
 import { requestJson } from 'by-request';
 import paths from 'path';
 import { readFile, writeFile } from 'fs/promises';
-import { DirectoryEntry, existsAsync, fileCountFromEntry, getRemoteRecursiveDirectory, isAdmin, isDemo, itemAccessAllowed, jsonOrJsonp, noCache, role, unref, username, webSocketSend } from './vs-util';
+import { DirectoryEntry, existsAsync, fileCountFromEntry, getRemoteRecursiveDirectory, has2k2dVersion, isAdmin, isDemo, itemAccessAllowed, jsonOrJsonp, noCache, role, unref, username, webSocketSend } from './vs-util';
 import { existsSync, lstatSync, readFileSync } from 'fs';
 import { addBackLinks, findAliases as _findAliases, hashUri, isAnyCollection, isCollection, isFile, isMovie, isTV, isTvCollection, isTvEpisode, isTvSeason, isTvShow, librarySorter, removeBackLinks, setWatched, sleep, stripBackLinks, syncValues, toStreamPath } from './shared-utils';
 import { sendStatus } from './app';
@@ -875,7 +875,7 @@ function matchAliases(aliases: Alias[], changeInfo = false): LibraryItem[] {
     let item: LibraryItem;
 
     if (alias.path)
-      item = findMatchingUri(pendingLibrary.array, alias.path);
+      item = findMatchingUri(pendingLibrary.array, alias.path.normalize());
     else if (alias.collection)
       item = pendingLibrary.array.find(i => (isAnyCollection(i) || isTvShow(i)) && i.name === alias.collection);
     else if (alias.season) {
@@ -976,6 +976,67 @@ async function addMappings(): Promise<void> {
   pendingLibrary.array.push(...aliasedItems);
 }
 
+async function addRedundant2KVideos(item: LibraryItem | VideoLibrary = pendingLibrary): Promise<void> {
+  const data = ((item as VideoLibrary).array || (item as LibraryItem).data);
+
+  if (data.length > 0 && data[0].type === VType.FILE) {
+    const twoKs: LibraryItem[] = [];
+
+    for (let i = data.length - 1; i >= 0; --i) {
+      const child = data[i];
+
+      if (child.redundant2K)
+        data.splice(i, 1);
+      else if (child.type === VType.FILE && child.is4k && child.uri) {
+        const path = paths.join(process.env.VS_VIDEO_SOURCE, child.uri);
+        const twoKVersion = await has2k2dVersion(path);
+
+        if (twoKVersion) {
+          const mediainfo = await getAugmentedMediaInfo(twoKVersion);
+
+          if (mediainfo) {
+            const data2k = clone(child, true);
+
+            data2k.redundant2K = true;
+            data2k.id += 0.5;
+            data2k.uri = twoKVersion.substring(process.env.VS_VIDEO_SOURCE.length);
+            data2k.is2k = true;
+            data2k.resolution = 'FHD';
+            delete data2k.is4k;
+            data2k.video = undefined;
+            data2k.audio = undefined;
+            data2k.subtitle = undefined;
+
+            const file = (/^.*?([^\\/]*)$/.exec(data2k.uri) || [])[1] || data2k.uri;
+            const $ = /\((\d*)#([-_.a-z0-9]+)\)/i.exec(file);
+
+            if ($) {
+              data2k.cut = $[2];
+              data2k.cutSort = toInt($[1]);
+            }
+            else if (data2k.cut) {
+              data2k.cut = data2k.cut.replace(/\b4K\b/, '2K');
+              data2k.cutSort += 16;
+            }
+
+            if (mediainfo.media?.track)
+              await mediaTrackToTrack(mediainfo.media.track, data2k);
+
+            twoKs.push(data2k);
+          }
+        }
+      }
+    }
+
+    data.push(...twoKs.reverse());
+  }
+  else if (data) {
+    for (const child of data) {
+      await addRedundant2KVideos(child);
+    }
+  }
+}
+
 function findVideoAux(asFile: boolean, id: number, item: LibraryItem, canBeAlias?: boolean): LibraryItem {
   if ((!asFile || isFile(item)) && item.id === id && !item.isAlias)
     return item;
@@ -1074,8 +1135,10 @@ export async function updateLibrary(quick = false): Promise<void> {
 
     await addMappings();
 
-    if (!quick)
+    if (!quick) {
+      await addRedundant2KVideos();
       fixVideoFlagsAndEncoding(pendingLibrary.array);
+    }
 
     pendingLibrary.array.sort(librarySorter);
     pendingLibrary.status = LibraryStatus.DONE;

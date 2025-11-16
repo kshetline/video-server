@@ -135,6 +135,7 @@ export interface LibraryItem {
   positionUser?: number;
   posterPath?: string;
   ratingTomatoes?: string;
+  redundant2K?: boolean;
   releaseDate?: string;
   resolution?: string;
   sampleUri?: string;

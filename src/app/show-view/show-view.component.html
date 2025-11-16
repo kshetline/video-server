@@ -25,10 +25,14 @@
       <div class="show-info">
         <div class="progress-wrapper">
           <div class="playback-progress" id="prog-show"><div></div></div>
-          <div class="playback-progress admin" id="prog-show-a"><div></div></div>
+          @if (!video.redundant2K) {
+            <div class="playback-progress admin" id="prog-show-a"><div></div></div>
+          }
         </div>
         <app-watched-indicator progressBar="prog-show" [video]="video" class="show-watched" (onUpdate)="getPlaybackInfo()"></app-watched-indicator>
-        <app-watched-indicator progressBar="prog-show-a" [video]="video" class="show-watched-admin" [asAdmin]="true"></app-watched-indicator>
+        @if (!video.redundant2K) {
+          <app-watched-indicator progressBar="prog-show-a" [video]="video" class="show-watched-admin" [asAdmin]="true"></app-watched-indicator>
+        }
         <div class="show-title" [title]="video.id">{{getSeasonTitle(show)}}</div>
         <div class="info-line">
           @if (getVoteAverage()) {<app-rating [value]="getVoteAverage()" [topValue]="10"></app-rating>}
@@ -144,11 +148,11 @@
         </div>
         <div class="file-wrapper">
           <div class="file">
-            @if (!localAccess() && !demo()) {
-              <button pButton type="button" pButtonLabel="Play" pButtonIcon="pi pi-play" class="p-button-sm"
-                      [disabled]="!this.streamUri" (click)="play()"></button>
+            @if ((!localAccess() && !demo()) || video.redundant2K) {
+              <p-button label="Play" size="small" icon="pi pi-play" class="p-button-sm" [disabled]="!this.streamUri"
+                        (click)="play()"></p-button>
             }
-            @if (localAccess() || demo()) {
+            @else {
               <p-splitbutton label="Play" icon="pi pi-play" size="small"
                              [model]="playOptions" [class.dim]="!streamUri" (onClick)="play()"></p-splitbutton>
             }

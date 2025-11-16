@@ -10,7 +10,7 @@ import { AuthService } from '../auth.service';
 import { MenuItem, MessageService } from 'primeng/api';
 import { ItemStreamPair, DashPlayerComponent } from '../dash-player/dash-player.component';
 import { updatedItem } from '../app.component';
-import { Button, ButtonDirective, ButtonLabel, ButtonIcon } from 'primeng/button';
+import { Button } from 'primeng/button';
 import { NgOptimizedImage, NgStyle } from '@angular/common';
 import { WatchedIndicatorComponent } from '../watched-indicator/watched-indicator.component';
 import { RatingComponent } from '../rating/rating.component';
@@ -45,7 +45,7 @@ interface ImageInfo {
   styleUrls: ['./show-view.component.scss'],
   providers: [MessageService],
   imports: [Button, NgOptimizedImage, WatchedIndicatorComponent, RatingComponent, RadioButton, FormsModule, NgStyle,
-            ButtonDirective, ButtonLabel, ButtonIcon, SplitButton, PlayOptionsComponent, DashPlayerComponent, Toast]
+            SplitButton, PlayOptionsComponent, DashPlayerComponent, Toast]
 })
 export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
   readonly getSeasonTitle = getSeasonTitle;

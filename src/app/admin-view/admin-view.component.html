@@ -215,8 +215,8 @@
                          !options.generateStreaming && !options.validate) ||
                         (options.skipMovies && options.skipTv && options.skipExtras)"
             (click)="!isProcessing() && runProcess()"/>
-  <div>{{currentFile}}<span style="opacity: 0; user-select: none">：</span></div>
-  <div class="mono">{{currentFile ? encodeProgress : ''}}</div>
+  <div class="file">{{currentFile}}<span style="opacity: 0; user-select: none">：</span></div>
+  <div class="progress">{{currentFile ? encodeProgress : ''}}</div>
 </div>
 @if (listToShow) {
   <div class="show-list" id="show-list">

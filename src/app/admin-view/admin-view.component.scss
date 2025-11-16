@@ -43,8 +43,13 @@
     }
   }
 
-  .mono {
+  .file {
+    min-height: 1.5em;
+  }
+
+  .progress {
     font-family: "Courier New", monospace;
+    min-height: 1.2em;
   }
 
   table {

@@ -476,8 +476,10 @@ function mostRecentAddedTime(item: LibraryItem): number {
 
   let addedTime = item.addedTime ?? 0;
 
-  for (const child of item.data || [])
-    addedTime = Math.max(addedTime, mostRecentAddedTime(child));
+  for (const child of item.data || []) {
+    if (!child.redundant2K)
+      addedTime = Math.max(addedTime, mostRecentAddedTime(child));
+  }
 
   return (item.addedTimeCached = addedTime);
 }
@@ -485,7 +487,9 @@ function mostRecentAddedTime(item: LibraryItem): number {
 export function getWatchInfo(asAdmin: boolean, item: LibraryItem, wi?: WatchInfo, unique = true): WatchInfo {
   let atTop = false;
 
-  if (!wi) {
+  if (item.redundant2K)
+    return wi;
+  else if (!wi) {
     atTop = true;
     wi = {
       addedTime: mostRecentAddedTime(item),

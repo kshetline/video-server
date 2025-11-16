@@ -11,6 +11,7 @@ import { getAugmentedMediaInfo } from './settings';
 export async function mkvValidate(path: string, options: VideoWalkOptionsPlus, _info: VideoWalkInfo): Promise<boolean> {
   let linkName = '';
   let error: string = null;
+  let warning: string = null;
   const db = options.db;
   const key = path.substring(options.videoBasePath.length).normalize();
   const stat = await safeLstat(path);
@@ -53,18 +54,22 @@ export async function mkvValidate(path: string, options: VideoWalkOptionsPlus, _
           .replace(/^(\.|\s)+$/gm, '').trim();
 
         if (result && !/appears to be valid/i.test(result)) {
-          const allCount = (result.match(/^(ERR|WRN)[0-9A-F]{3}:/gm) || []).length;
+          let errCount = (result.match(/^ERR[0-9A-F]{3}:/gm) || []).length;
+          let warnCount = (result.match(/^WRN[0-9A-F]{3}:/gm) || []).length;
+          const safeWarnCount = (result.match(/^WRN(0B8|0C0|0C2|0D0|0E7|103):/gm) || []).length;
+          const $0C2Count = (result.match(/^WRN0C2:/gm) || []).length;
+          const $861Count = (result.match(/^WRN861:/gm) || []).length; // treat as error
 
-          if (allCount > 12 || /^ERR[0-9A-F]{3}:/m.test(result) || /^WRN(?!(0B8|0C0|0C2|0D0|0E7|103))[0-9A-F]{3}:/m.test(result)) {
-            const errCount = (result.match(/^ERR[0-9A-F]{3}:/gm) || []).length;
-            const warnCount = (result.match(/^WRN[0-9A-F]{3}:/gm) || []).length;
-            const $0C2Count = (result.match(/^WRN0C2:/gm) || []).length;
-            const $861Count = (result.match(/^WRN861:/gm) || []).length;
+          warnCount -= safeWarnCount + $861Count;
+          errCount += $861Count;
 
-            if (errCount > 0 || $861Count > 0 || warnCount - $0C2Count > 5) {
-              console.log(result);
-              error = result;
-            }
+          if (errCount > 0) {
+            console.error(result);
+            error = result;
+          }
+          else if (warnCount > 12 || warnCount - $0C2Count > 5) {
+            console.warn(result);
+            warning = result;
           }
         }
       }
@@ -81,7 +86,7 @@ export async function mkvValidate(path: string, options: VideoWalkOptionsPlus, _
     await safeUnlink(linkName);
 
   if (!stopPending)
-    await db.run('INSERT OR REPLACE INTO validation (key, mdate, error) VALUES (?, ?, ?)', key, stat?.mtimeMs || Date.now(), error);
+    await db.run('INSERT OR REPLACE INTO validation (key, mdate, error, warning) VALUES (?, ?, ?, ?)', key, stat?.mtimeMs || Date.now(), error, warning);
 
   return !error;
 }

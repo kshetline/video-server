@@ -47,6 +47,7 @@ export async function openSettings(): Promise<void> {
       "key" TEXT NOT NULL UNIQUE,
       "mdate" REAL NOT NULL,
       "error" TEXT,
+      "warning" TEXT,
       PRIMARY KEY ("key")
     )`);
 
