@@ -335,7 +335,7 @@ export function librarySorter(a: LibraryItem, b: LibraryItem): number {
 }
 
 export function toStreamPath(s: string, volumeBase?: string, streamBase?: string): string {
-  s = s.replace(/\b_2K_[\//]/i, '');
+  s = s.replace(/\b_2K_[\\/]/i, '');
 
   let parent = '';
   const $ = /^(.*[\\/])(.*)$/.exec(s);

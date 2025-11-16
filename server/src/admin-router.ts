@@ -463,7 +463,7 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
             if (!iso && options.checkStreaming && !dontRecurse && !/[-_(](4K|3D)\)/.test(baseTitle)) {
               title = toStreamPath(baseTitle);
 
-              const sDir = dirPath.replace(/[\//]_2K_$/i, '');
+              const sDir = dirPath.replace(/[\\/]_2K_$/i, '');
               const sDirEntry = pathToEntry(options.streamingDirectory, sDir.substring(options.videoBasePath.length))?.children;
               const stream1 = title + '.mpd';
               const stream2 = title + '.av.webm';
