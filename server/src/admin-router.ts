@@ -333,9 +333,8 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
                 const key = path.substring(options.videoBasePath.length);
                 const row = await db.get<any>('SELECT * FROM aspects WHERE key = ?', key);
 
-                if (row && abs(row.mdate - +entry.mdate) < 1) {
+                if (row && (row.mdate === 0 || abs(row.mdate - +entry.mdate) < 1))
                   info.video[0].properties.aspect = row.aspect;
-                }
                 else {
                   [w, h] = (info.video[0]?.properties?.display_dimensions || '1x1').split('x').map(d => toInt(d));
                   let newAspect = w / h;
