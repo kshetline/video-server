@@ -294,8 +294,7 @@ async function mediaTrackToTrack(tracks: MediaTrack[], item: LibraryItem): Promi
         if (item.aspectRatioOverride)
           item.aspectRatio = item.aspectRatioOverride;
         else if (item.uri) {
-          const key = item.uri.replace(/^[\\/]/, '');
-          const row = await db.get<any>('SELECT * FROM aspects WHERE key = ?', key);
+          const row = await db.get<any>('SELECT * FROM aspects WHERE key = ?', item.uri);
 
           if (row?.aspect)
             item.aspectRatio = formatAspectRatioNumber(row.aspect);
