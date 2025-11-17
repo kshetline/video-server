@@ -751,6 +751,36 @@ function getApp(): Express {
     await requestJson(`${host}ZidooVideoPlay/seekTo?positon=0`); // Yeah, the "positon" misspelling is necessary.
   }
 
+  const hostRoots = new Map<string, string>();
+
+  async function rootForHost(host: string): Promise<string> {
+    const root = process.env.VS_ZIDOO_SOURCE_ROOT;
+
+    if (!root.includes('[SMB]'))
+      return root;
+    else if (hostRoots.has(host))
+      return hostRoots.get(host);
+    else {
+      try {
+        const hostIp = (/\d{1,3}(\.\d{1,3}){3}/.exec(root) || [])[0];
+        const hosts = (await requestJson(`${host}ZidooFileControl/getHost?path=/tmp/ramfs/mnt/&type=1005`)).hosts;
+
+        for (const host of hosts) {
+          if (host.name.endsWith('/smb/' + hostIp)) {
+            const rootForHost = root.replace('[SMB]/' + hostIp, host.name);
+
+            hostRoots.set(host, rootForHost);
+
+            return rootForHost;
+          }
+        }
+      }
+      catch {}
+    }
+
+    return root;
+  }
+
   theApp.get('/api/play', async (req, res) => {
     noCache(res);
 
@@ -770,7 +800,7 @@ function getApp(): Express {
       const status = await getPlayStatus(host);
 
       if (uri) {
-        uri = process.env.VS_ZIDOO_SOURCE_ROOT + uri;
+        uri = await rootForHost(host) + uri;
 
         if (status?.video?.path === uri) {
           res.json({ alreadyPlaying: true });
