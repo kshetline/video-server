@@ -1,7 +1,7 @@
 import { Component, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { MediaPlayer, MediaPlayerClass } from 'dashjs';
 import { encodeForUri, toNumber } from '@tubular/util';
-import { max, min } from '@tubular/math';
+import { max } from '@tubular/math';
 import { AuthService } from '../auth.service';
 import { StatusInterceptor } from '../status.service';
 import { HttpClient } from '@angular/common/http';
@@ -74,7 +74,7 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
   }
 
   onKeyDown = (evt: KeyboardEvent): void => {
-    let newQuality = -1;
+    // let newQuality = -1;
 
     if (this.lastPlayTime && evt.key === 'Escape') {
       evt.preventDefault();
@@ -84,18 +84,18 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
       evt.preventDefault();
       this.yesContinue();
     }
-    else if (this.player) {
-      if (evt.key === ']')
-        newQuality = min(this.player.getQualityFor('video') + 1, 2);
-      else if (evt.key === '[')
-        newQuality = max(this.player.getQualityFor('video') - 1, 0);
-    }
-
-    if (newQuality >= 0) {
-      this.player.setQualityFor('video', newQuality);
-      evt.stopPropagation();
-      evt.preventDefault();
-    }
+    // else if (this.player) {
+    //   if (evt.key === ']')
+    //     newQuality = min(this.player.getQualityFor('video') + 1, 2);
+    //   else if (evt.key === '[')
+    //     newQuality = max(this.player.getQualityFor('video') - 1, 0);
+    // }
+    //
+    // if (newQuality >= 0) {
+    //   this.player.setQualityFor('video', newQuality);
+    //   evt.stopPropagation();
+    //   evt.preventDefault();
+    // }
   };
 
   @Output() onClose = new EventEmitter<void>();
