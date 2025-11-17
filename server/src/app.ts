@@ -379,7 +379,7 @@ function getApp(): Express {
     const local = /\b192.168\b/.test(ip);
 
     if (!local &&
-        /^\/(ab2g|ab2h|admin(?!-)|app\b|apps\b|backup|blog|cgi-bin|cms|crm|laravel|lib|panel|password|phpunit|shell|systembc|(test(?!-ws))|V2|workspace|ws|yii|zend)/.test(url)) {
+        /^\/(ab2g|ab2h|admin(?!-)|app\b|apps\b|backup|blog|cgi-bin|cms|crm|laravel|lib|panel|password|phpunit|shell|systembc|(test(?!-ws))|vendor|V2|workspace|ws|yii|zend)/.test(url)) {
       let block = blockedIps.get(ip);
       console.log('%s Bad URL from %s: %s', timeStamp(), ip, url);
 
