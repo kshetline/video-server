@@ -387,6 +387,7 @@ function getApp(): Express {
         blockedIps.set(ip, -1);
       else if (block < 0) {
         --block;
+        blockedIps.set(ip, block);
 
         if (block < -BAD_REQUEST_COUNT) {
           console.log(timeStamp(), 'Blocking:', ip);
@@ -918,6 +919,7 @@ function getApp(): Express {
           blockedIps.set(ip, -1);
         else if (block < 0) {
           --block;
+          blockedIps.set(ip, block);
 
           if (block <= -BAD_REQUEST_COUNT) {
             console.log(timeStamp(), 'Blocking:', ip);
