@@ -225,7 +225,7 @@ function incrementProgress(phase: number): void {
 
     for (let i = 0; i < lus.t.length; ++i) {
       lus.percents[i] = (lus.t[i] - (lus.t[i - 1] || 0)) / lus.time * 100;
-      lus.perStep[i] = lus.percents[i] / lus.steps[i];
+      lus.perStep[i] = lus.percents[i] / max(lus.steps[i], 1);
       lus.cumulativePercent[i] = lus.percents[i] + (i === 0 ? 0 : lus.cumulativePercent[i - 1]);
       lus.newSteps[i] = 0;
     }
@@ -1088,7 +1088,7 @@ export async function updateLibrary(quick = false): Promise<void> {
   currentFileCount = fileCountFromEntry(dir);
 
   try {
-    const url = process.env.VS_ZIDOO_CONNECT + 'Poster/v2/getFilterAggregations?type=0&start=0';
+    const url = process.env.VS_ZIDOO_CONNECT + 'Poster/v2/getFilterAggregations?type=0&start=0&count=999999';
     const bonusDirs = new Set(['_Extras_']);
 
     pendingLibrary = await requestJson(url) as VideoLibrary;

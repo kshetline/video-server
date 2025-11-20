@@ -316,25 +316,8 @@ function getStatus(remote?: string): ServerStatus {
   return status;
 }
 
-let statusTimer: any;
-let statusTime = 0;
-
 export function sendStatus(): void {
-  if (wsServer) {
-    if (statusTimer) {
-      clearTimeout(statusTimer);
-      statusTimer = undefined;
-    }
-
-    if (!statusTime)
-      statusTime = processMillis();
-
-    statusTimer = setTimeout(() => {
-      statusTimer = undefined;
-      statusTime = 0;
-      webSocketSend({ type: 'status', data: getStatus() });
-    }, max(1000 + statusTime - processMillis(), 0));
-  }
+  webSocketSend({ type: 'status', data: getStatus() });
 }
 
 function getApp(): Express {

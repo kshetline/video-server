@@ -5,7 +5,7 @@ import { basename, dirname, join } from 'path';
 import { GeneralTrack, GeneralTrackProperties, LibraryItem } from './shared-types';
 import { comparator, hashTitle } from './shared-utils';
 import { WebSocketServer } from 'ws';
-import { asLines, isArray, isObject, isString, regexEscape, toInt } from '@tubular/util';
+import { asLines, isArray, isObject, isString, regexEscape, throttle, toInt } from '@tubular/util';
 import { getDb } from './settings';
 import { setEncodeProgress } from './admin-router';
 import { cacheDir, thumbnailDir } from './shared-values';
@@ -33,7 +33,16 @@ export function setWebSocketServer(wss: WebSocketServer): void {
   wsServer = wss;
 }
 
-export function webSocketSend(message: string | object): void {
+function sendToAll(message: string): void {
+  if (wsServer)
+    wsServer.clients.forEach(client => client.send(message));
+}
+
+const webSocketThrottle = throttle(-250, (message: string) => {
+  sendToAll(message);
+});
+
+export function webSocketSend(message: string | object, immediate = false): void {
   if (isObject(message)) {
     switch (message.type) {
       case 'audio-progress':
@@ -45,8 +54,10 @@ export function webSocketSend(message: string | object): void {
     message = JSON.stringify(message);
   }
 
-  if (wsServer)
-    wsServer.clients.forEach(client => client.send(message as string));
+  if (immediate)
+    sendToAll(message as string);
+  else
+    webSocketThrottle(message as string);
 }
 
 export function noCache(res: Response): void {
