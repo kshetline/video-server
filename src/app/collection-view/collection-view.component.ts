@@ -39,6 +39,9 @@ export class CollectionViewComponent {
 
   @Input() get collection(): LibraryItem { return this._collection; }
   set collection(value: LibraryItem) {
+    if (value?.data && value.data.length === 0)
+      return;
+
     if (this._collection !== value) {
       StatusInterceptor.alive();
       this._collection = value;
