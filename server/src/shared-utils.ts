@@ -92,7 +92,7 @@ function findItemById(items: LibraryItem[], id: number): LibraryItem {
 }
 
 export function matchesSearch(item: LibraryItem, searchText: string, simpleMatch = false): boolean {
-  if (!searchText || (simpleMatch && isTvEpisode(item)))
+  if (!searchText || isIsolatedTvSeason(item) || (simpleMatch && isTvEpisode(item)))
     return true;
   else if ((!item.name && !item.title) || isTvEpisode(item) || isFile(item))
     return false;
@@ -131,9 +131,11 @@ export function matchesSearch(item: LibraryItem, searchText: string, simpleMatch
     }
   }
 
-  for (const child of (item.data || [])) {
-    if (matchesSearch(child, searchText))
-      return true;
+  if (!isTvShow(item) && !isTvSeason(item)) {
+    for (const child of (item.data || [])) {
+      if (matchesSearch(child, searchText))
+        return true;
+    }
   }
 
   return false;
@@ -285,6 +287,10 @@ export function isTvEpisode(x: LibraryItem | number): boolean {
 
 export function isTvSeason(x: LibraryItem | number): boolean {
   return (isObject(x) ? x?.type : x) === VType.TV_SEASON;
+}
+
+export function isIsolatedTvSeason(x: LibraryItem | number): boolean {
+  return isTvSeason(x) && isObject(x) && isTvShow(x?.parent);
 }
 
 export function isTvShow(x: LibraryItem | number): boolean {
