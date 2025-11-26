@@ -5,29 +5,41 @@ import { toBoolean } from '@tubular/util';
 import { getAugmentedMediaInfo } from './settings';
 import { basename, dirname, join } from 'path';
 import { safeLstat } from './vs-util';
-import { hashUri } from './shared-utils';
+import { hashUri, toStreamPath } from './shared-utils';
 
-export async function doZidooDbMaintenance(): Promise<void> {
+export async function doMaintenance(): Promise<void> {
+  const streamingVideos = new Set<string>();
+
+  await doLocalDbMaintenance(streamingVideos);
+  await doZidooDbMaintenance();
+  await doStreamingDbMaintenance(streamingVideos);
+}
+
+export async function doLocalDbMaintenance(streamingVideos?: Set<string>): Promise<void> {
   let dbPath = process.env.VS_DB_PATH || 'db.sqlite';
+  const videos = await getRemoteRecursiveDirectory(true);
 
-  if (toBoolean(process.env.VS_DO_DB_MAINTENANCE) && await existsAsync(dbPath)) {
-    const videos = await getRemoteRecursiveDirectory(true);
-    const lookup = new Map<string, string>();
+  const lookup = new Map<string, string>();
 
-    function walkDirs(dirs = videos, basePath = ''): void {
-      for (const file of dirs) {
-        if (file.isDir)
-          walkDirs(file.children, basePath + '/' + file.name);
-        else if (/\.(mpd|av\.webm)$/i.test(file.name)) {
-          const path = basePath + '/' + file.name;
+  function walkDirs(dirs = videos, basePath = ''): void {
+    for (const file of dirs) {
+      if (file.isDir)
+        walkDirs(file.children, basePath + '/' + file.name);
+      else if (/\.(mpd|webm)$/i.test(file.name)) {
+        const path = basePath + '/' + file.name;
 
+        if (/\.(mpd|av\.webm)$/i.test(file.name))
           lookup.set(hashUri(path), path);
-        }
+
+        if (streamingVideos)
+          streamingVideos.add(path);
       }
     }
+  }
 
-    walkDirs();
+  walkDirs();
 
+  if (toBoolean(process.env.VS_DO_DB_MAINTENANCE) && await existsAsync(dbPath)) {
     const db = await AsyncDatabase.open(dbPath);
     const tables = ['validation', 'aspects', 'mediainfo', 'watched'];
 
@@ -74,8 +86,10 @@ export async function doZidooDbMaintenance(): Promise<void> {
       }
     }
   }
+}
 
-  dbPath = process.env.VS_ZIDOO_DB;
+export async function doZidooDbMaintenance(): Promise<void> {
+  const dbPath = process.env.VS_ZIDOO_DB;
 
   if (!dbPath || !await existsAsync(dbPath))
     return;
@@ -128,4 +142,35 @@ export async function doZidooDbMaintenance(): Promise<void> {
     console.log('doZidooDbMaintenance:');
     console.log(e);
   }
+}
+
+export async function doStreamingDbMaintenance(streamingVideos?: Set<string>): Promise<void> {
+  if (!toBoolean(process.env.VS_DO_STREAMING_MAINTENANCE) || !streamingVideos)
+    return;
+
+  const videos = await getRemoteRecursiveDirectory();
+
+  function walkDirs(dirs = videos, basePath = ''): void {
+    for (const file of dirs) {
+      if (file.name.endsWith('~') || (file.isDir && file.name === '_2K_'))
+        continue;
+      else if (file.isDir)
+        walkDirs(file.children, basePath + '/' + file.name);
+      else if (/\.mkv$/i.test(file.name)) {
+        const stem = toStreamPath(basePath + '/' + file.name, '/Volumes/video/', '/Volumes/streaming/');
+        const exts = ['mpd', 'av.webm', 'audio.webm', 'v480.webm', 'v720.webm', 'v1080.webm', 'sample.mp4', 'mobile.mp4'];
+
+        for (const ext of exts) {
+          const path = stem + '.' + ext;
+
+          if (streamingVideos.has(path))
+            streamingVideos.delete(path);
+        }
+      }
+    }
+  }
+
+  walkDirs();
+
+  console.log(streamingVideos);
 }

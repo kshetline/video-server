@@ -63,7 +63,7 @@ import { isFile, sleep, toStreamPath } from './shared-utils';
 import { readdir } from 'fs/promises';
 import { requestJson, requestText } from 'by-request';
 import { closeSettings, getDb, openSettings, users } from './settings';
-import { doZidooDbMaintenance } from './zidoo-db-maintenance';
+import { doMaintenance } from './maintenance';
 import { cacheDir } from './shared-values';
 import { max } from '@tubular/math';
 
@@ -196,7 +196,7 @@ function createAndStartServer(): void {
   httpServer.listen(httpPort);
   cacheCheckTimer = setTimeout(() => cacheCheck(), CACHE_CHECK_INTERVAL);
 
-  doZidooDbMaintenance().finally();
+  doMaintenance().finally();
 }
 
 function onError(error: any): void {
