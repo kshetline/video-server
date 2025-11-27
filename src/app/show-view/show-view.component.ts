@@ -187,7 +187,7 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
       let count2k = 0;
       let count4k = 0;
       let count3d = 0;
-      let countOSE = 0;
+      let countOSE = -1;
       const cutSorts = new Map<string, number>();
       const episodes = new Set<number>();
       let hasDuplicateEpisodes = false;
@@ -201,7 +201,7 @@ export class ShowViewComponent implements AfterViewInit, OnDestroy, OnInit {
           count2k += item.is2k && !item.is3d ? 1 : 0;
           count4k += item.is4k ? 1 : 0;
           count3d += item.is3d ? 1 : 0;
-          countOSE += /Original Special Effects/i.test(item.uri) ? 1 : 0;
+          // countOSE += /Original Special Effects/i.test(item.uri) ? 1 : 0;
 
           const episode = item.parent.episode + (item.cutSort || 0) / 100;
 
