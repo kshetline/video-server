@@ -1,5 +1,5 @@
 import * as paths from 'path';
-import { existsAsync, getRemoteRecursiveDirectory } from './vs-util';
+import { DirectoryEntry, existsAsync, getRemoteRecursiveDirectory } from './vs-util';
 import { AsyncDatabase } from 'promised-sqlite3';
 import { toBoolean } from '@tubular/util';
 import { getAugmentedMediaInfo } from './settings';
@@ -8,16 +8,20 @@ import { safeLstat } from './vs-util';
 import { hashUri, toStreamPath } from './shared-utils';
 
 export async function doMaintenance(): Promise<void> {
+  let videos: DirectoryEntry[];
+
+  if (toBoolean(process.env.VS_DO_DB_MAINTENANCE) || toBoolean(process.env.VS_DO_STREAMING_MAINTENANCE))
+    videos = await getRemoteRecursiveDirectory(true);
+
   const streamingVideos = new Set<string>();
 
-  await doLocalDbMaintenance(streamingVideos);
+  await doLocalDbMaintenance(videos, streamingVideos);
   await doZidooDbMaintenance();
   await doStreamingDbMaintenance(streamingVideos);
 }
 
-export async function doLocalDbMaintenance(streamingVideos?: Set<string>): Promise<void> {
+export async function doLocalDbMaintenance(videos: DirectoryEntry[], streamingVideos?: Set<string>): Promise<void> {
   let dbPath = process.env.VS_DB_PATH || 'db.sqlite';
-  const videos = await getRemoteRecursiveDirectory(true);
 
   const lookup = new Map<string, string>();
 
@@ -37,7 +41,8 @@ export async function doLocalDbMaintenance(streamingVideos?: Set<string>): Promi
     }
   }
 
-  walkDirs();
+  if (videos)
+    walkDirs();
 
   if (toBoolean(process.env.VS_DO_DB_MAINTENANCE) && await existsAsync(dbPath)) {
     const db = await AsyncDatabase.open(dbPath);
@@ -114,7 +119,7 @@ export async function doZidooDbMaintenance(): Promise<void> {
 
     console.log(missing.length, 'paths for missing files to remove.');
 
-    for  (const id of missing) {
+    for (const id of missing) {
       await db.run('DELETE FROM VIDEO_INFO WHERE _id = ?', id);
     }
 
