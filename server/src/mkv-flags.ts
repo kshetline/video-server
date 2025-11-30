@@ -1,13 +1,13 @@
 import { VideoWalkInfo } from './admin-router';
 import { AudioTrackProperties, GeneralTrack, MediaInfo, MediaTrack, VideoWalkOptionsPlus } from './shared-types';
 import { code2Name } from './lang';
-import { regexEscape, toBoolean, toInt } from '@tubular/util';
+import { isWindows, regexEscape, toBoolean, toInt } from '@tubular/util';
 import { ErrorMode, linuxEscape, monitorProcess } from './process-util';
 import { spawn } from 'child_process';
-import { getLanguage, safeLstat } from './vs-util';
+import { existsAsync, formatTime, getLanguage, safeLstat, safeUnlink, tryThrice, webSocketSend } from './vs-util';
 import { join } from 'path';
 import { abs, ceil, max } from '@tubular/math';
-import { utimes } from 'fs/promises';
+import { rename, utimes } from 'fs/promises';
 
 const ONE_WEEK = 7 * 86400 * 1000;
 
@@ -383,20 +383,21 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
     }
   }
 
+  let lastPath: string;
+
   if (badDate || (editArgs.length > 1 && (!info.isExtra || options.updateExtraMetadata))) {
     if (badDate)
       console.log('Fixing invalid modification time:', path);
-
-    const backups = process.env.VS_VIDEO_BACKUPS ? process.env.VS_VIDEO_BACKUPS.split(',') : [];
-    let lastPath: string;
 
     try {
       if (options.canModify) {
         lastPath = path;
 
         if (editArgs.length > 1) {
-          if (!options.mkvFlagsDryRun)
+          if (!options.mkvFlagsDryRun) {
             await monitorProcess(spawn('mkvpropedit', editArgs), null, ErrorMode.FAIL_ON_ANY_ERROR);
+            info.wasModified = true;
+          }
 
           console.log('mkvpropedit ' + editArgs.map(arg => linuxEscape(arg)).join(' '));
 
@@ -404,9 +405,81 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
             console.log('   Original names:', changedNames.join('; '));
         }
       }
+    }
+    catch (e) {
+      info.error = `Update of ${lastPath} failed: ${e.message}`;
+      console.error(info.error);
+    }
+  }
 
-      info.wasModified = true;
+  if (!info.error && options.mkvTrackReorder) {
+    const order = Array.from({ length: info.mkvInfo?.tracks?.length || 0 }, (_, index) => index);
+    let orderChanged = false;
+    const audioSort: string[] = [];
 
+    for (let i = 1; i <= audio?.length || 0; ++i) {
+      const track = audio[i - 1];
+      const tp = track.properties;
+      const lang = getLanguage(tp);
+      let sort = (tp.flag_commentary ? '1' : '0') + (tp.default_track ? '0' : '1');
+
+      switch (lang) {
+        case primaryLang: sort += '00'; break;
+        case 'en': sort += '01'; break;
+        case 'es': sort += '02'; break;
+        case 'fr': sort += '03'; break;
+        default: sort += lang;
+      }
+
+      sort += ':' + i.toString().padStart(2, '0') + ':' + track.id.toString().padStart(2, '0');
+      audioSort.push(sort);
+    }
+
+    if (audioSort.sort().find((s, i) => toInt(s.substring(5, 7)) !== i + 1)) {
+      const base = audio[0].id;
+
+      audioSort.forEach((s, i) => order[i + base] = toInt(s.substring(8)));
+      orderChanged = true;
+    }
+
+    const subSort: string[] = [];
+
+    for (let i = 1; i <= subtitles?.length || 0; ++i) {
+      const track = subtitles[i - 1];
+      const tp = track.properties;
+      const lang = getLanguage(tp);
+      let sort = (tp.forced_track ? '2' : (tp.flag_commentary ? '1' : '0'));
+
+      switch (lang) {
+        case primaryLang: sort += '00'; break;
+        case 'en': sort += '01'; break;
+        case 'es': sort += '02'; break;
+        case 'fr': sort += '03'; break;
+        default: sort += lang;
+      }
+
+      sort += (tp.flag_hearing_impaired ? '1' : '0');
+      sort += ':' + i.toString().padStart(2, '0') + ':' + track.id.toString().padStart(2, '0');
+      subSort.push(sort);
+    }
+
+    if (subSort.sort().find((s, i) => toInt(s.substring(5, 7)) !== i + 1)) {
+      const base = subtitles[0].id;
+
+      subSort.forEach((s, i) => order[i + base] = toInt(s.substring(8)));
+      orderChanged = true;
+    }
+
+    if (orderChanged) {
+      console.log(order.join(' '));
+
+      if (options.canModify && !options.mkvFlagsDryRun && !(await reorderTracks(path, order)))
+        return false;
+    }
+  }
+
+  if (!info.error && info.wasModified) {
+    try {
       const newStats = await safeLstat(path);
 
       if (options.canModify && !options.mkvFlagsDryRun && newStats) {
@@ -422,7 +495,10 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
         await utimes(path, newDate, newDate);
       }
 
-      if (options.canModify && options.mkvFlagsUpdateBackups && stats && backups.length) {
+      const backups = process.env.VS_VIDEO_BACKUPS ? process.env.VS_VIDEO_BACKUPS.split(',') : [];
+
+      if (options.canModify && !options.mkvTrackReorder && !options.mkvFlagsDryRun &&
+          options.mkvFlagsUpdateBackups && stats && backups.length) {
         for (const dir of backups) {
           const backPath = join(dir, path.substring(options.videoDirectory.length));
           const backStats = await safeLstat(backPath);
@@ -453,6 +529,59 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
     if (row)
       await options.db.run('UPDATE validation SET mdate = ? WHERE key = ?', newDate.getTime(), key);
   }
+
+  return true;
+}
+
+export async function reorderTracks(path: string, order: number[]): Promise<boolean> {
+  console.log('    Remuxing %s at %s to reorder tracks', path, new Date().toLocaleString());
+
+  const start = Date.now();
+  const backupPath = path.replace(/\.mkv$/i, '[zni].bak.mkv');
+  const updatePath = path.replace(/\.mkv$/i, '[zni].upd.mkv');
+  const args = ['-o', updatePath, '--track-order', order.map(n => `0:${n}`).join(),
+                path];
+
+  try {
+    let percentStr = '';
+    const remuxProgress = (data: string, stream: number): void => {
+      let $: RegExpExecArray;
+
+      if (stream === 0 && ($ = /\bProgress: (\d{1,3}%)/.exec(data)) && percentStr !== $[1]) {
+        if (percentStr)
+          process.stdout.write('%\x1B[' + (percentStr.length + 1) + 'D');
+
+        percentStr = $[1];
+        process.stdout.write(percentStr + '\x1B[K');
+        webSocketSend({ type: 'video-progress', data: 'Track order remux: ' + percentStr });
+      }
+    };
+
+    await safeUnlink(updatePath);
+    await monitorProcess(spawn('mkvmerge', args), remuxProgress, ErrorMode.DEFAULT, 4096);
+    webSocketSend({ type: 'video-progress', data: '' });
+
+    if (!isWindows())
+      await monitorProcess(spawn('chmod', ['--reference=' + path, updatePath]), null, ErrorMode.IGNORE_ERRORS);
+
+    await tryThrice(() => rename(path, backupPath));
+    await tryThrice(() => rename(updatePath, path));
+    await tryThrice(() => safeUnlink(backupPath));
+  }
+  catch {
+    if (await existsAsync(backupPath)) {
+      await tryThrice(() => rename(backupPath, path));
+      await tryThrice(() => safeUnlink(updatePath));
+    }
+
+    webSocketSend({ type: 'video-progress', data: '' });
+
+    return false;
+  }
+
+  const elapsed = Date.now() - start;
+
+  console.log('    Total time remuxing: %s', formatTime(elapsed * 1000000).slice(0, -3));
 
   return true;
 }

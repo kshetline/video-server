@@ -12,6 +12,7 @@ import { cacheDir, thumbnailDir } from './shared-values';
 import { spawn } from 'child_process';
 import { linuxEscape } from './process-util';
 import { lang3to2 } from './lang';
+import { floor, round } from '@tubular/math';
 
 const guestFilter = new Set(process.env.VS_GUEST_FILTER ? process.env.VS_GUEST_FILTER.split(';') : []);
 const demoFilter = new Set(process.env.VS_DEMO_FILTER ? process.env.VS_DEMO_FILTER.split(';') : []);
@@ -38,13 +39,15 @@ function sendToAll(message: string): void {
     wsServer.clients.forEach(client => client.send(message));
 }
 
-const webSocketThrottle = throttle(-250, (message: string) => {
-  sendToAll(message);
-});
+const socketThrottles = new Map<string, ReturnType<typeof throttle>>();
 
 export function webSocketSend(message: string | object, immediate = false): void {
+  let msgType = '';
+
   if (isObject(message)) {
-    switch (message.type) {
+    msgType = message.type;
+
+    switch (msgType) {
       case 'audio-progress':
         setEncodeProgress(message.data ? 'Audio: ' + message.data : ''); break;
       case 'video-progress':
@@ -56,8 +59,12 @@ export function webSocketSend(message: string | object, immediate = false): void
 
   if (immediate)
     sendToAll(message as string);
-  else
-    webSocketThrottle(message as string);
+  else {
+    if (!socketThrottles.has(msgType))
+      socketThrottles.set(msgType, throttle(-250, (message: string) => sendToAll(message)));
+
+    socketThrottles.get(msgType)(message as string);
+  }
 }
 
 export function noCache(res: Response): void {
@@ -456,4 +463,33 @@ export function getLanguage(track: GeneralTrack | GeneralTrackProperties): strin
     lang = lang3to2[props.language] || props.language;
 
   return lang;
+}
+
+export async function tryThrice(fn: () => Promise<any>): Promise<void> {
+  let err: any;
+
+  for (let i = 0; i < 3; ++i) {
+    if (i > 0)
+      await new Promise<void>(resolve => { setTimeout(resolve, 1000); });
+
+    try {
+      await fn();
+      return;
+    }
+    catch (e) {
+      err = e;
+    }
+  }
+
+  throw err;
+}
+
+export function formatTime(nanos: number): string {
+  let secs = round(nanos / 10_000_000 + 0.5) / 100;
+  const hours = floor(secs / 3600);
+  secs -= hours * 3600;
+  const minutes = floor(secs / 60);
+  secs -= minutes * 60;
+
+  return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toFixed(2).padStart(5, '0')}`;
 }

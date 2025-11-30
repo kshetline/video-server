@@ -189,14 +189,20 @@
         <label for="update-flags">Update MKV flags</label>
       </div>
       <div class="label-pair">
-        <p-checkbox [(ngModel)]="options.mkvFlagsUpdateBackups" [binary]="true" inputId="update-backups" id="update-backups"
+        <p-checkbox [(ngModel)]="options.mkvTrackReorder" [binary]="true" inputId="track-ro" id="track-ro"
                     [disabled]="!options.mkvFlags"></p-checkbox>
-        <label for="update-backups" [class.dis-faded]="!options.mkvFlags">Update Backups</label>
+        <label for="track-ro" [class.dis-faded]="!options.mkvFlags">Track reordering</label>
       </div>
       <div class="label-pair">
         <p-checkbox [(ngModel)]="options.mkvFlagsDryRun" [binary]="true" inputId="dry-run" id="dry-run"
                     [disabled]="!options.mkvFlags"></p-checkbox>
         <label for="dry-run" [class.dis-faded]="!options.mkvFlags">Dry Run</label>
+      </div>
+      <div class="label-pair">
+        @let disableUB = !options.mkvFlags || options.mkvTrackReorder || options.mkvFlagsDryRun;
+        <p-checkbox [(ngModel)]="options.mkvFlagsUpdateBackups" [binary]="true" inputId="update-backups" id="update-backups"
+                    [disabled]="disableUB"></p-checkbox>
+        <label for="update-backups" [class.dis-faded]="disableUB">Update Backups</label>
       </div>
     </div>
     <div class="label-pair">

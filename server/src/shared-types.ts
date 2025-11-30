@@ -12,6 +12,7 @@ export interface ProcessArgs {
   mkvFlags: boolean;
   mkvFlagsDryRun: boolean;
   mkvFlagsUpdateBackups: boolean;
+  mkvTrackReorder: boolean;
   skipExtras: boolean;
   skipMovies: boolean;
   skipTv: boolean;
@@ -419,6 +420,7 @@ export interface VideoWalkOptions {
   mkvFlags?: boolean;
   mkvFlagsDryRun?: boolean;
   mkvFlagsUpdateBackups?: boolean;
+  mkvTrackReorder?: boolean;
   reportProgress?: boolean;
   reportStreamingToCallback?: boolean;
   skipExtras?: boolean;

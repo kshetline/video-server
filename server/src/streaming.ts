@@ -4,8 +4,8 @@ import {  dirname, join } from 'path';
 import { closeSync, mkdirSync, openSync } from 'fs';
 import { mkdtemp, readFile, rename, symlink, utimes, writeFile } from 'fs/promises';
 import { VideoWalkOptionsPlus } from './shared-types';
-import { existsAsync, getLanguage, has2k2dVersion, safeLstat, safeUnlink, webSocketSend } from './vs-util';
-import { abs, ceil, floor, min, round } from '@tubular/math';
+import { existsAsync, formatTime, getLanguage, has2k2dVersion, safeLstat, safeUnlink, tryThrice, webSocketSend } from './vs-util';
+import { abs, ceil, min, round } from '@tubular/math';
 import { ErrorMode, monitorProcess, ProcessInterrupt, spawn } from './process-util';
 import { stopPending, VideoWalkInfo } from './admin-router';
 import { toStreamPath } from './shared-utils';
@@ -185,16 +185,6 @@ function tmp(file: string): string {
   return file.replace(/(\.\w+)$/, '.tmp$1');
 }
 
-function formatTime(nanos: number): string {
-  let secs = round(nanos / 10_000_000 + 0.5) / 100;
-  const hours = floor(secs / 3600);
-  secs -= hours * 3600;
-  const minutes = floor(secs / 60);
-  secs -= minutes * 60;
-
-  return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toFixed(2).padStart(5, '0')}`;
-}
-
 async function checkAndFixBadDuration(path: string, progress: Progress | VideoProgress, name?: string): Promise<void> {
   const mediainfo = await getAugmentedMediaInfo(path);
 
@@ -217,25 +207,6 @@ async function checkAndFixBadDuration(path: string, progress: Progress | VideoPr
 
     await safeUnlink(tmp);
   }
-}
-
-async function tryThrice(fn: () => Promise<any>): Promise<void> {
-  let err: any;
-
-  for (let i = 0; i < 3; ++i) {
-    if (i > 0)
-      await new Promise<void>(resolve => { setTimeout(resolve, 1000); });
-
-    try {
-      await fn();
-      return;
-    }
-    catch (e) {
-      err = e;
-    }
-  }
-
-  throw err;
 }
 
 export async function createFallbackAudio(path: string, info: VideoWalkInfo): Promise<boolean> {

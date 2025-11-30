@@ -147,6 +147,7 @@ export class AdminViewComponent implements OnInit {
         mkvFlags: pa.mkvFlags,
         mkvFlagsDryRun: pa.mkvFlagsDryRun,
         mkvFlagsUpdateBackups: pa.mkvFlagsUpdateBackups,
+        mkvTrackReorder: pa.mkvTrackReorder,
         skipExtras: pa.skipExtras,
         skipMovies: pa.skipMovies,
         skipTv: pa.skipTv,

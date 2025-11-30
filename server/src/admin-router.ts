@@ -546,6 +546,7 @@ interface UpdateOptions {
   mkvFlags?: boolean;
   mkvFlagsDryRun?: boolean;
   mkvFlagsUpdateBackups?: boolean;
+  mkvTrackReorder?: boolean;
   skipExtras?: boolean;
   skipMovies?: boolean;
   skipTv?: boolean;
@@ -588,6 +589,7 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
           getMetadata: options.mkvFlags || options.generateFallbackAudio || options.generateStreaming || options.fixForcedSubtitles,
           mkvFlags: options.mkvFlags,
           mkvFlagsDryRun: options.mkvFlagsDryRun,
+          mkvTrackReorder: options.mkvTrackReorder,
           fixForcedSubtitles: options.fixForcedSubtitles,
           generateFallbackAudio: options.generateFallbackAudio,
           generateStreaming: options.generateStreaming,
@@ -685,6 +687,7 @@ router.post('/process', async (req, res) => {
       mkvFlags: toBoolean(req.body.mkvFlags, null, true),
       mkvFlagsDryRun: toBoolean(req.body.mkvFlagsDryRun, null, true),
       mkvFlagsUpdateBackups: toBoolean(req.body.mkvFlagsUpdateBackups, null, true),
+      mkvTrackReorder: toBoolean(req.body.mkvTrackReorder, null, true),
       skipExtras: toBoolean(req.body.skipExtras, null, true),
       skipMovies: toBoolean(req.body.skipMovies, null, true),
       skipTv: toBoolean(req.body.skipTv, null, true),
@@ -705,6 +708,7 @@ router.post('/process', async (req, res) => {
       mkvFlags: processArgs.mkvFlags,
       mkvFlagsDryRun: processArgs.mkvFlagsDryRun,
       mkvFlagsUpdateBackups: processArgs.mkvFlagsUpdateBackups,
+      mkvTrackReorder: processArgs.mkvTrackReorder,
       skipExtras: toBoolean(req.body.skipExtras, null, true),
       skipMovies: toBoolean(req.body.skipMovies, null, true),
       skipTv: toBoolean(req.body.skipTv, null, true),
