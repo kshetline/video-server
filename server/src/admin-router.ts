@@ -610,20 +610,20 @@ async function videoWalk(options: UpdateOptions): Promise<VideoStats> {
             currentFile = path.substring(info.videoDirectory.length);
             webSocketSend({ type: 'currentFile', data: currentFile });
 
+            if (options.mkvFlags && isMkv)
+              await examineAndUpdateMkvFlags(path, options, info);
+
             if (options.fixForcedSubtitles && isMkv)
               await fixForcedSubtitles(path, info);
 
             if (options.generateFallbackAudio && isMkv)
               await createFallbackAudio(path, info);
 
-            if (options.mkvFlags && isMkv)
-              await examineAndUpdateMkvFlags(path, options, info);
+            if (options.validate && isMkv)
+              await mkvValidate(path, options, info);
 
             if (options.generateStreaming && isMkv)
               await createStreaming(path, options, info);
-
-            if (options.validate && isMkv)
-              await mkvValidate(path, options, info);
           });
 
         if ((options.generateStreaming || options.checkStreaming) && !options.walkStart && !options.walkStart) {

@@ -173,16 +173,6 @@
         <label for="skip-extras">Skip extras</label>
       </div>
     </div>
-    <div class="fix-options">
-      <div class="label-pair">
-        <p-checkbox [(ngModel)]="options.generateFallbackAudio" [binary]="true" inputId="gen-fallback" id="gen-fallback"></p-checkbox>
-        <label for="gen-fallback">Generate fallback audio</label>
-      </div>
-      <div class="label-pair">
-        <p-checkbox [(ngModel)]="options.fixForcedSubtitles" [binary]="true" inputId="fix-forced" id="fix-forced"></p-checkbox>
-        <label for="fix-forced">Fix missing forced subtitles</label>
-      </div>
-    </div>
     <div class="flag-options">
       <div class="label-pair">
         <p-checkbox [(ngModel)]="options.mkvFlags" [binary]="true" inputId="update-flags" id="update-flags"></p-checkbox>
@@ -205,13 +195,23 @@
         <label for="update-backups" [class.dis-faded]="disableUB">Update Backups</label>
       </div>
     </div>
-    <div class="label-pair">
-      <p-checkbox [(ngModel)]="options.generateStreaming" [binary]="true" inputId="generate-streaming" id="generate-streaming"></p-checkbox>
-      <label for="generate-streaming">Generate streaming files</label>
+    <div class="fix-options">
+      <div class="label-pair">
+        <p-checkbox [(ngModel)]="options.generateFallbackAudio" [binary]="true" inputId="gen-fallback" id="gen-fallback"></p-checkbox>
+        <label for="gen-fallback">Generate fallback audio</label>
+      </div>
+      <div class="label-pair">
+        <p-checkbox [(ngModel)]="options.fixForcedSubtitles" [binary]="true" inputId="fix-forced" id="fix-forced"></p-checkbox>
+        <label for="fix-forced">Fix missing forced subtitles</label>
+      </div>
     </div>
     <div class="label-pair">
       <p-checkbox [(ngModel)]="options.validate" [binary]="true" inputId="mkv-validate" id="mkv-validate"></p-checkbox>
       <label for="mkv-validate">MKV validate</label>
+    </div>
+    <div class="label-pair">
+      <p-checkbox [(ngModel)]="options.generateStreaming" [binary]="true" inputId="generate-streaming" id="generate-streaming"></p-checkbox>
+      <label for="generate-streaming">Generate streaming files</label>
     </div>
   </div>
   <p-button label="Process" icon="pi pi-wrench"
