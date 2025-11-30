@@ -82,6 +82,14 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
   const badDate = stats && stats.mtime.getTime() < 100000;
   let oldAudio: MediaTrack[];
   const changedNames: string[] = [];
+  let allBlankNames = true;
+
+  for (const track of [...audio, ...subtitles]) {
+    if (track.properties?.track_name) {
+      allBlankNames = false;
+      break;
+    }
+  }
 
   if (info.isTV) {
     const origTitle = info.general?.Title;
@@ -115,6 +123,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
   }
 
   if (audio?.length > 0) {
+    const hasDefault = audio.findIndex(t => t.properties.default_track) >= 0;
     const defaultTrack = audio.find(t => t.properties.default_track) ?? audio[0];
     const languages = new Set<string>();
     const audioLanguages = new Set<string>();
@@ -137,7 +146,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
         ++audioCommentaries;
     }
 
-    for (const track of subtitles)
+    for (const track of subtitles ?? [])
       languages.add(getLanguage(track.properties));
 
     for (let i = 1; i <= audio?.length || 0; ++i) {
@@ -179,10 +188,12 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       else if (/^(AC-3|DD|E-?AC-?3)$/.test(codec) && reducedDescr.includes(codec))
         reducedDescr = reducedDescr.replace(new RegExp('\\b' + codec + ' '), '');
 
-      if (codecInName !== codec)
+      if (codecInName && codecInName !== codec)
         name = name.replace(new RegExp('\\b' + regexEscape(codec) + '\\b'), codec);
       else if (oldAudio && oldAudio[i - 1].Title)
         name = oldAudio[i - 1].Title;
+      else if (!name)
+        name = reducedDescr;
 
       if (name.includes('(Latinoamericano)'))
         name = name.replace(/\s*\(Latinoamericano\)/, '');
@@ -230,6 +241,11 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
         editArgs.push('--edit', 'track:a' + i, '--set', 'name=' + name);
       }
 
+      if (i === 1 && !hasDefault && !tp.default_track) {
+        editArgs.push('--edit', 'track:a' + i, '--set', 'flag-default=1');
+        tp.default_track = true;
+      }
+
       if (!tp.flag_commentary && /commentary/i.test(origName)) {
         editArgs.push('--edit', 'track:a' + i, '--set', 'flag-commentary=1');
         tp.flag_commentary = true;
@@ -256,13 +272,14 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
   }
 
   if (subtitles?.length > 0) {
+    const hasForced = subtitles.findIndex(t => t.properties.forced_track) >= 0;
     let defaultSubs = -1;
 
     for (let i = 1; i <= subtitles.length; ++i) {
       const track = subtitles[i - 1];
       const tp = track.properties;
 
-      if (tp.enabled_track) {
+      if (tp.default_track) {
         defaultSubs = i;
         break;
       }
@@ -272,8 +289,22 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       const track = subtitles[i - 1];
       const tp = track.properties;
       let name = tp.track_name || '';
-      const nameIsCode = /^[a-z]{2}$/.test(name);
+      let nameIsCode = /^[a-z]{2}$/.test(name);
       const lang = getLanguage(tp);
+      const languageName = new Intl.DisplayNames([lang], { type: 'language' }).of(lang);
+
+      if (!name) {
+        if (hasForced && tp.forced_track) {
+          name = lang;
+          nameIsCode = true;
+        }
+        else {
+          name = languageName.substring(0, 1).toUpperCase() + languageName.substring(1);
+
+          if (tp.flag_hearing_impaired && lang === 'en')
+            name += ' SDH';
+        }
+      }
 
       if (name.includes('[CC]'))
         name = name.replace(/(\s*)\[CC]/, '$1SDH');
@@ -284,8 +315,10 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       if (nameIsCode && lang?.length === 2 && name !== lang)
         name = lang;
 
-      if (/^[a-z]{2}.*\bforced\b/.test(name))
-        name = name.slice(0, 2);
+      if (/^[a-z]{2}.*\bforced\b/.test(name) || /\[forced]$/i.test(name)) {
+        name = lang;
+        nameIsCode = true;
+      }
 
       if (name?.toLowerCase() === 'description' && lang === 'en')
         name = 'English SDH';
@@ -298,21 +331,29 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
 
       // Subtitle tracks named 'en' which are neither default tracks or forced tracks mirror already-burned-in
       //   subtitles, therefore should not be changed to default or forced.
-      if ((nameIsCode || name === '*') && !(name === 'en' && !tp.default_track && !tp.forced_track)) {
+      if (nameIsCode || name === '*') {
         if (!tp.forced_track) {
           editArgs.push('--edit', 'track:s' + i, '--set', 'flag-forced=1');
           tp.forced_track = true;
         }
 
-        if (!tp.default_track && name === primaryLang && defaultSubs < 0) {
+        if (!tp.default_track && name === primaryLang && (defaultSubs < 0 || allBlankNames)) {
           editArgs.push('--edit', 'track:s' + i, '--set', 'flag-default=1');
           tp.default_track = true;
+        }
+        else if (tp.default_track && allBlankNames && getLanguage(tp) !== primaryLang) {
+          editArgs.push('--edit', 'track:s' + i, '--set', 'flag-default=0');
+          tp.default_track = false;
         }
 
         if (tp.default_track && name !== primaryLang) {
           editArgs.push('--edit', 'track:s' + i, '--set', 'flag-default=0');
           tp.default_track = false;
         }
+      }
+      else if (tp.default_track && allBlankNames && !tp.forced_track) {
+        editArgs.push('--edit', 'track:s' + i, '--set', 'flag-default=0');
+        tp.default_track = false;
       }
 
       if (!tp.flag_commentary && /commentary|info/i.test(name)) {
