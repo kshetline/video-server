@@ -141,12 +141,11 @@ export async function getAugmentedMediaInfo(path: string, stripAugments = false,
   const row = fromDb && await db.get<any>('SELECT * FROM mediainfo WHERE key = ?', key);
   let mediainfo: MediaInfo;
 
-  if (row && abs(row.mdate - mdate) < 1)
+  if (row?.json && abs(row.mdate - mdate) < 1)
     mediainfo = JSON.parse(row.json);
-  else if (onlyFromDb)
-    return null;
-  else {
-    const promises = [monitorProcess(spawn('mediainfo', [path, '--Output=JSON'])), sleep(15000) as Promise<any>];
+
+  if (!onlyFromDb && !mediainfo) {
+    const promises = [monitorProcess(spawn('mediainfo', [path, '--Output=JSON'])), sleep(30000) as Promise<any>];
 
     mediainfo = JSON.parse((await Promise.race(promises)) ?? 'null');
     const ffprobe = JSON.parse(await monitorProcess(spawn('ffprobe', ['-v', 'quiet', '-print_format', 'json',

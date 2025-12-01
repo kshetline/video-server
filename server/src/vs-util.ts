@@ -7,10 +7,10 @@ import { comparator, hashTitle } from './shared-utils';
 import { WebSocketServer } from 'ws';
 import { asLines, isArray, isObject, isString, regexEscape, throttle, toInt } from '@tubular/util';
 import { getDb } from './settings';
-import { setEncodeProgress } from './admin-router';
+import { setEncodeProgress, stopPending } from './admin-router';
 import { cacheDir, thumbnailDir } from './shared-values';
 import { spawn } from 'child_process';
-import { linuxEscape } from './process-util';
+import { linuxEscape, ProcessInterrupt } from './process-util';
 import { lang3to2 } from './lang';
 import { floor, round } from '@tubular/math';
 
@@ -492,4 +492,25 @@ export function formatTime(nanos: number): string {
   secs -= minutes * 60;
 
   return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toFixed(2).padStart(5, '0')}`;
+}
+
+export class ProgressReporter {
+  private percentStr = '';
+
+  constructor(private type: string, private message: string) {}
+
+  report = (data: string, stream: number): void => {
+    if (stopPending) {
+      process.stdout.write('\n');
+      throw new ProcessInterrupt();
+    }
+
+    let $: RegExpExecArray;
+
+    if (stream === 0 && ($ = /\bProgress: (\d{1,3}%)/.exec(data)) && this.percentStr !== $[1]) {
+      this.percentStr = $[1];
+      process.stdout.write(this.percentStr + '\x1B[K\n\x1B[A');
+      webSocketSend({ type: this.type, data: `${this.message}: ${this.percentStr}` });
+    }
+  };
 }

@@ -306,7 +306,7 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
               info.subtitles = info.mkvInfo.tracks.filter(t => t.type === 'subtitles') as SubtitlesTrack[];
 
               const mediaJson = await getAugmentedMediaInfo(path);
-              const mediaTracks = mediaJson.media?.track || [];
+              const mediaTracks = mediaJson?.media?.track || [];
               const typeIndices = {} as Record<string, number>;
 
               for (const track of mediaTracks) {

@@ -4,7 +4,7 @@ import {  dirname, join } from 'path';
 import { closeSync, mkdirSync, openSync } from 'fs';
 import { mkdtemp, readFile, rename, symlink, utimes, writeFile } from 'fs/promises';
 import { VideoWalkOptionsPlus } from './shared-types';
-import { existsAsync, formatTime, getLanguage, has2k2dVersion, safeLstat, safeUnlink, tryThrice, webSocketSend } from './vs-util';
+import { existsAsync, formatTime, getLanguage, has2k2dVersion, ProgressReporter, safeLstat, safeUnlink, tryThrice, webSocketSend } from './vs-util';
 import { abs, ceil, min, round } from '@tubular/math';
 import { ErrorMode, monitorProcess, ProcessInterrupt, spawn } from './process-util';
 import { stopPending, VideoWalkInfo } from './admin-router';
@@ -272,21 +272,9 @@ export async function createFallbackAudio(path: string, info: VideoWalkInfo): Pr
     args2.push('--original-flag', '0', '--track-name', '0:' + aacTrackName, '--default-track', '0:no',
       '--language', '0:' + (lang2to3[lang] || lang || 'und'), aacFile, '--track-order', tracks + '1:0');
 
-    let percentStr = '';
-    const mergeProgress = (data: string, stream: number): void => {
-      let $: RegExpExecArray;
-
-      if (stream === 0 && ($ = /\bProgress: (\d{1,3}%)/.exec(data)) && percentStr !== $[1]) {
-        if (percentStr)
-          process.stdout.write('%\x1B[' + (percentStr.length + 1) + 'D');
-
-        percentStr = $[1];
-        process.stdout.write(percentStr + '\x1B[K');
-      }
-    };
-
     await safeUnlink(updatePath);
-    await monitorProcess(spawn('mkvmerge', args2), mergeProgress, ErrorMode.DEFAULT, 4096);
+    await monitorProcess(spawn('mkvmerge', args2), new ProgressReporter('audio-progress', 'Merging').report,
+                         ErrorMode.DEFAULT, 4096);
     webSocketSend({ type: 'audio-progress', data: '' });
 
     if (!isWindows)
@@ -298,11 +286,10 @@ export async function createFallbackAudio(path: string, info: VideoWalkInfo): Pr
     await safeUnlink(aacFile);
   }
   catch {
-    if (await existsAsync(backupPath)) {
+    if (await existsAsync(backupPath))
       await tryThrice(() => rename(backupPath, path));
-      await tryThrice(() => safeUnlink(updatePath));
-    }
 
+    await tryThrice(() => safeUnlink(updatePath));
     await safeUnlink(aacFile);
     webSocketSend({ type: 'audio-progress', data: '' });
 
@@ -361,22 +348,9 @@ export async function fixForcedSubtitles(path: string, info: VideoWalkInfo): Pro
 
     args.push('--track-order', trackOrder.slice(0, -1));
 
-    let percentStr = '';
-    const remuxProgress = (data: string, stream: number): void => {
-      let $: RegExpExecArray;
-
-      if (stream === 0 && ($ = /\bProgress: (\d{1,3}%)/.exec(data)) && percentStr !== $[1]) {
-        if (percentStr)
-          process.stdout.write('%\x1B[' + (percentStr.length + 1) + 'D');
-
-        percentStr = $[1];
-        process.stdout.write(percentStr + '\x1B[K');
-        webSocketSend({ type: 'video-progress', data: 'Remux: ' + percentStr });
-      }
-    };
-
     await safeUnlink(updatePath);
-    await monitorProcess(spawn('mkvmerge', args), remuxProgress, ErrorMode.DEFAULT, 4096);
+    await monitorProcess(spawn('mkvmerge', args), new ProgressReporter('video-progress', 'Subtitle merge').report,
+                         ErrorMode.DEFAULT, 4096);
     webSocketSend({ type: 'video-progress', data: '' });
 
     if (!isWindows)
@@ -396,11 +370,10 @@ export async function fixForcedSubtitles(path: string, info: VideoWalkInfo): Pro
     await tryThrice(() => safeUnlink(backupPath));
   }
   catch {
-    if (await existsAsync(backupPath)) {
+    if (await existsAsync(backupPath))
       await tryThrice(() => rename(backupPath, path));
-      await tryThrice(() => safeUnlink(updatePath));
-    }
 
+    await tryThrice(() => safeUnlink(updatePath));
     webSocketSend({ type: 'video-progress', data: '' });
 
     return false;

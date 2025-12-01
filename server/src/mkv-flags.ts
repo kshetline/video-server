@@ -4,7 +4,7 @@ import { code2Name } from './lang';
 import { isWindows, regexEscape, toBoolean, toInt } from '@tubular/util';
 import { ErrorMode, linuxEscape, monitorProcess } from './process-util';
 import { spawn } from 'child_process';
-import { existsAsync, formatTime, getLanguage, safeLstat, safeUnlink, tryThrice, webSocketSend } from './vs-util';
+import { existsAsync, formatTime, getLanguage, ProgressReporter, safeLstat, safeUnlink, tryThrice, webSocketSend } from './vs-util';
 import { join } from 'path';
 import { abs, ceil, max } from '@tubular/math';
 import { rename, utimes } from 'fs/promises';
@@ -543,22 +543,9 @@ export async function reorderTracks(path: string, order: number[]): Promise<bool
                 path];
 
   try {
-    let percentStr = '';
-    const remuxProgress = (data: string, stream: number): void => {
-      let $: RegExpExecArray;
-
-      if (stream === 0 && ($ = /\bProgress: (\d{1,3}%)/.exec(data)) && percentStr !== $[1]) {
-        if (percentStr)
-          process.stdout.write('%\x1B[' + (percentStr.length + 1) + 'D');
-
-        percentStr = $[1];
-        process.stdout.write(percentStr + '\x1B[K');
-        webSocketSend({ type: 'video-progress', data: 'Track order remux: ' + percentStr });
-      }
-    };
-
     await safeUnlink(updatePath);
-    await monitorProcess(spawn('mkvmerge', args), remuxProgress, ErrorMode.DEFAULT, 4096);
+    await monitorProcess(spawn('mkvmerge', args), new ProgressReporter('video-progress', 'Track order remux').report,
+                         ErrorMode.DEFAULT, 4096);
     webSocketSend({ type: 'video-progress', data: '' });
 
     if (!isWindows())
@@ -569,11 +556,10 @@ export async function reorderTracks(path: string, order: number[]): Promise<bool
     await tryThrice(() => safeUnlink(backupPath));
   }
   catch {
-    if (await existsAsync(backupPath)) {
+    if (await existsAsync(backupPath))
       await tryThrice(() => rename(backupPath, path));
-      await tryThrice(() => safeUnlink(updatePath));
-    }
 
+    await tryThrice(() => safeUnlink(updatePath));
     webSocketSend({ type: 'video-progress', data: '' });
 
     return false;
