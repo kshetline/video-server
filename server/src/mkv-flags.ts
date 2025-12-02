@@ -4,7 +4,7 @@ import { code2Name } from './lang';
 import { isWindows, regexEscape, toBoolean, toInt } from '@tubular/util';
 import { ErrorMode, linuxEscape, monitorProcess } from './process-util';
 import { spawn } from 'child_process';
-import { existsAsync, formatTime, getLanguage, ProgressReporter, safeLstat, safeUnlink, tryThrice, webSocketSend } from './vs-util';
+import { existsAsync, formatTime, getLanguage, getMkvWalkInfo, ProgressReporter, safeLstat, safeUnlink, tryThrice, webSocketSend } from './vs-util';
 import { join } from 'path';
 import { abs, ceil, max } from '@tubular/math';
 import { rename, utimes } from 'fs/promises';
@@ -475,6 +475,8 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
 
       if (options.canModify && !options.mkvFlagsDryRun && !(await reorderTracks(path, order)))
         return false;
+      else
+        await getMkvWalkInfo(info, path, true);
     }
   }
 

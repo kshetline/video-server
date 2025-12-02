@@ -4,7 +4,7 @@ import {  dirname, join } from 'path';
 import { closeSync, mkdirSync, openSync } from 'fs';
 import { mkdtemp, readFile, rename, symlink, utimes, writeFile } from 'fs/promises';
 import { VideoWalkOptionsPlus } from './shared-types';
-import { existsAsync, formatTime, getLanguage, has2k2dVersion, ProgressReporter, safeLstat, safeUnlink, tryThrice, webSocketSend } from './vs-util';
+import { existsAsync, formatTime, getLanguage, getMkvWalkInfo, has2k2dVersion, ProgressReporter, safeDeleteDirectory, safeLstat, safeUnlink, tryThrice, webSocketSend } from './vs-util';
 import { abs, ceil, min, round } from '@tubular/math';
 import { ErrorMode, monitorProcess, ProcessInterrupt, spawn } from './process-util';
 import { stopPending, VideoWalkInfo } from './admin-router';
@@ -236,7 +236,10 @@ export async function createFallbackAudio(path: string, info: VideoWalkInfo): Pr
   const args = ['-i', path, '-map', '0:1', '-c', 'aac', '-ac', min(mainChannels, 2).toString(),
                 '-b:a', mainChannels < 2 ? '96k' : '192k'];
   const progress: Progress = {};
+  const tmpName = await mkdtemp('tmp-'); // Creates an unwanted directory as a side effect.
   const aacFile = join(os.tmpdir(), await mkdtemp('tmp-') + '.tmp.aac');
+
+  await safeDeleteDirectory(tmpName);
 
   if (mainChannels > 3)
     args.push('-af', 'aresample=matrix_encoding=dplii');
@@ -379,9 +382,8 @@ export async function fixForcedSubtitles(path: string, info: VideoWalkInfo): Pro
     return false;
   }
 
-  const elapsed = Date.now() - start;
-
-  console.log('    Total time remuxing: %s', formatTime(elapsed * 1000000).slice(0, -3));
+  await getMkvWalkInfo(info, path, true);
+  console.log('    Total time remuxing: %s', formatTime((Date.now() - start) * 1000000).slice(0, -3));
 
   return true;
 }

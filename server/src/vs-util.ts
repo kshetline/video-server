@@ -1,16 +1,16 @@
 import { Request, Response } from 'express';
-import { lstat, open, readdir, unlink, utimes } from 'fs/promises';
+import { lstat, open, readdir, rm, unlink, utimes } from 'fs/promises';
 import { existsSync, mkdirSync, Stats } from 'fs';
 import { basename, dirname, join } from 'path';
-import { GeneralTrack, GeneralTrackProperties, LibraryItem } from './shared-types';
+import { AudioTrack, GeneralTrack, GeneralTrackProperties, LibraryItem, MKVInfo, SubtitlesTrack, VideoTrack } from './shared-types';
 import { comparator, hashTitle } from './shared-utils';
 import { WebSocketServer } from 'ws';
 import { asLines, isArray, isObject, isString, regexEscape, throttle, toInt } from '@tubular/util';
-import { getDb } from './settings';
-import { setEncodeProgress, stopPending } from './admin-router';
+import { getAugmentedMediaInfo, getDb } from './settings';
+import { setEncodeProgress, stopPending, VideoWalkInfo } from './admin-router';
 import { cacheDir, thumbnailDir } from './shared-values';
 import { spawn } from 'child_process';
-import { linuxEscape, ProcessInterrupt } from './process-util';
+import { linuxEscape, monitorProcess, ProcessInterrupt } from './process-util';
 import { lang3to2 } from './lang';
 import { floor, round } from '@tubular/math';
 
@@ -141,6 +141,19 @@ export async function safeLstat(path: string): Promise<Stats | null> {
 export async function safeUnlink(path: string): Promise<boolean> {
   try {
     await unlink(path);
+    return true;
+  }
+  catch (e) {
+    if (e.code !== 'ENOENT')
+      throw e;
+  }
+
+  return false;
+}
+
+export async function safeDeleteDirectory(path: string): Promise<boolean> {
+  try {
+    await rm(path, { recursive: true, force: true });
     return true;
   }
   catch (e) {
@@ -513,4 +526,35 @@ export class ProgressReporter {
       webSocketSend({ type: this.type, data: `${this.message}: ${this.percentStr}` });
     }
   };
+}
+
+export async function getMkvWalkInfo(info: VideoWalkInfo, path: string, fresh = false): Promise<void> {
+  const mkvJson = (await monitorProcess(spawn('mkvmerge', ['-J', path])))
+  // uid values exceed available numeric precision. Turn into strings instead.
+    .replace(/("uid":\s+)(\d+)/g, '$1"$2"');
+
+  info.mkvInfo = JSON.parse(mkvJson) as MKVInfo;
+  info.trackCount = info.mkvInfo.tracks.length;
+  info.video = info.mkvInfo.tracks.filter(t => t.type === 'video') as VideoTrack[];
+  info.audio = info.mkvInfo.tracks.filter(t => t.type === 'audio') as AudioTrack[];
+  info.subtitles = info.mkvInfo.tracks.filter(t => t.type === 'subtitles') as SubtitlesTrack[];
+
+  const mediaJson = await getAugmentedMediaInfo(path, undefined, !fresh, !fresh);
+  const mediaTracks = mediaJson?.media?.track || [];
+  const typeIndices = {} as Record<string, number>;
+
+  for (const track of mediaTracks) {
+    const type = track['@type'].toLowerCase();
+    const index = (typeIndices[type] ?? -1) + 1;
+    const mkvSet = (type === 'video' ? info.video : type === 'audio' ? info.audio : []);
+
+    if (type === 'general')
+      info.general = track;
+    else {
+      typeIndices[type] = index;
+
+      if (mkvSet[index]?.properties)
+        mkvSet[index].properties.media = track;
+    }
+  }
 }

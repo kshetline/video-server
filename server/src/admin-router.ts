@@ -1,5 +1,5 @@
 import { Request, Response, Router } from 'express';
-import { DirectoryEntry, fileCountFromEntry, getRemoteRecursiveDirectory, has2k2dVersion, isAdmin, jsonOrJsonp, noCache, pathExists, pathToEntry, webSocketSend } from './vs-util';
+import { DirectoryEntry, fileCountFromEntry, getMkvWalkInfo, getRemoteRecursiveDirectory, has2k2dVersion, isAdmin, jsonOrJsonp, noCache, pathExists, pathToEntry, webSocketSend } from './vs-util';
 import { mappedVideoInfo, updateLibrary } from './library-router';
 import { asLines, clone, forEach, isNumber, isString, last, toBoolean, toInt, toNumber } from '@tubular/util';
 import { getDb, getAugmentedMediaInfo, getValue, setValue } from './settings';
@@ -295,34 +295,7 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
 
           try {
             if (!iso && options.getMetadata && !info.skip) {
-              const mkvJson = (await monitorProcess(spawn('mkvmerge', ['-J', path])))
-              // uid values exceed available numeric precision. Turn into strings instead.
-                .replace(/("uid":\s+)(\d+)/g, '$1"$2"');
-
-              info.mkvInfo = JSON.parse(mkvJson) as MKVInfo;
-              info.trackCount = info.mkvInfo.tracks.length;
-              info.video = info.mkvInfo.tracks.filter(t => t.type === 'video') as VideoTrack[];
-              info.audio = info.mkvInfo.tracks.filter(t => t.type === 'audio') as AudioTrack[];
-              info.subtitles = info.mkvInfo.tracks.filter(t => t.type === 'subtitles') as SubtitlesTrack[];
-
-              const mediaJson = await getAugmentedMediaInfo(path);
-              const mediaTracks = mediaJson?.media?.track || [];
-              const typeIndices = {} as Record<string, number>;
-
-              for (const track of mediaTracks) {
-                const type = track['@type'].toLowerCase();
-                const index = (typeIndices[type] ?? -1) + 1;
-                const mkvSet = (type === 'video' ? info.video : type === 'audio' ? info.audio : []);
-
-                if (type === 'general')
-                  info.general = track;
-                else {
-                  typeIndices[type] = index;
-
-                  if (mkvSet[index]?.properties)
-                    mkvSet[index].properties.media = track;
-                }
-              }
+              await getMkvWalkInfo(info, path);
 
               const duration = info.mkvInfo.container.properties.duration / 1E9;
               const step = min(600, duration / 5);
