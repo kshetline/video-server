@@ -442,8 +442,12 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
 
               info.title = title = title.replace(/\s*\((\d*)#([-_.a-z0-9]+)\)/i, '');
 
+              if (!info.isExtra)
+                options.titleContext = info.title;
+
               if (!pathExists(sDirEntry, stream1) && !pathExists(sDirEntry, stream2))
-                (stats.unstreamedTitles as Set<string>).add(title);
+                (stats.unstreamedTitles as Set<string>).add(info.isExtra && options.titleContext ?
+                  options.titleContext + ': ' + title : title);
             }
 
             info.streamingDirectory = options.streamingBasePath;

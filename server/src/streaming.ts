@@ -571,10 +571,26 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
 
           if (/[',\\]/.test(path)) {
             if (!sublink) {
-              await safeUnlink(symlinkName);
-              await symlink(path, symlinkName);
-              sublink = symlinkName;
-              trackTempFile(sublink, true);
+              try {
+                await safeUnlink(symlinkName);
+                await symlink(path, symlinkName);
+                sublink = symlinkName;
+                trackTempFile(sublink, true);
+              }
+              catch {
+                // If creating a symlink fails, attempt the horribly obnoxious character escaping needed to (hopefully) make this work.
+                let path2 = path;
+                let $ = /^([a-z]):/.exec(path);
+
+                if ($) {
+                  sublink = $[1] + "\\'\\:\\\\\\\\";
+                  path2 = path2.slice(2);
+                }
+                else
+                  sublink = '';
+
+                sublink += path2.replace(/\\/g, '\\\\\\\\').replace(/'/g, "\\\\\\'");
+              }
             }
 
             subpath = sublink;

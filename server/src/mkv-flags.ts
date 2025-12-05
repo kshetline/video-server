@@ -172,6 +172,9 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       let da = /\bda(\s+([0-9.]+|stereo|mono|atmos))?$/i.test(name);
       let audioDescr = `:${codec}: ${channels}`;
 
+      if (/^[a-z]{2}(-[a-zA-Z]{2})?$/.test(name)) // Blank out names like 'en-GB'.
+        name = '';
+
       if (!da && tp.flag_visual_impaired)
         da = true;
 

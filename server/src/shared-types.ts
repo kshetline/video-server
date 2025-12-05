@@ -426,6 +426,7 @@ export interface VideoWalkOptions {
   skipExtras?: boolean;
   skipMovies?: boolean;
   skipTv?: boolean;
+  titleContext?: string;
   updateExtraMetadata?: boolean;
   validate?: boolean;
   walkStart?: string;
