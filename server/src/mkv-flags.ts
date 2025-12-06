@@ -198,8 +198,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       else if (!name)
         name = reducedDescr;
 
-      if (name.includes('(Latinoamericano)'))
-        name = name.replace(/\s*\(Latinoamericano\)/, '');
+      name = name.replace(/\s*(\((Latinoamericano|Latin America)\)|\[Original])/gi, '');
 
       if (name === languageStart && (cCount > 2 || pl2)) {
         if (languages.size > 1 || lang !== 'en')
@@ -247,6 +246,10 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       if (i === 1 && !hasDefault && !tp.default_track) {
         editArgs.push('--edit', 'track:a' + i, '--set', 'flag-default=1');
         tp.default_track = true;
+      }
+      else if (i > 1 && options.mkvTrackReorder) {
+        editArgs.push('--edit', 'track:a' + i, '--set', 'flag-default=0');
+        tp.default_track = false;
       }
 
       if (!tp.flag_commentary && /commentary/i.test(origName)) {
@@ -309,16 +312,13 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
         }
       }
 
-      if (name.includes('[CC]'))
-        name = name.replace(/(\s*)\[CC]/, '$1SDH');
-
-      if (name.includes('(Latinoamericano)'))
-        name = name.replace(/\s*\(Latinoamericano\)/, '');
+      name = name.replace(/(\s*)\[CC]/, '$1SDH');
+      name = name.replace(/\s*(\((Latinoamericano|Latin America)\)|\[Original])/gi, '');
 
       if (nameIsCode && lang?.length === 2 && name !== lang)
         name = lang;
 
-      if (/^[a-z]{2}.*\bforced\b/.test(name) || /\[forced]$/i.test(name)) {
+      if (/^[a-z]{2}.*\bforced\b/.test(name) || /\[(forced|ForcedNarrative)]$/i.test(name)) {
         name = lang;
         nameIsCode = true;
       }
