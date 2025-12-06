@@ -237,7 +237,7 @@ export async function createFallbackAudio(path: string, info: VideoWalkInfo): Pr
                 '-b:a', mainChannels < 2 ? '96k' : '192k'];
   const progress: Progress = {};
   const tmpName = await mkdtemp('tmp-'); // Creates an unwanted directory as a side effect.
-  const aacFile = join(os.tmpdir(), await mkdtemp('tmp-') + '.tmp.aac');
+  const aacFile = join(os.tmpdir(), tmpName + '.tmp.aac');
 
   await safeDeleteDirectory(tmpName);
 
