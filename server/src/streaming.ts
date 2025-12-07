@@ -264,12 +264,12 @@ export async function createFallbackAudio(path: string, info: VideoWalkInfo): Pr
 
     webSocketSend({ type: 'audio-progress', data: 'Remuxing fallback audio...' });
 
-    const nameStart = (/^(\w)\s+(AAC|DTS|E-AC3|FLAC|Surround|TrueHD)\b/.exec(audio.properties.track_name) || [])[1];
+    const nameStart = (/^(\w+)\s+(AAC|DTS|E-AC3|FLAC|Surround|TrueHD|[0-9.]+)\b/.exec(audio.properties.track_name) || [])[1];
     const aacTrackName = (nameStart ? nameStart + ' ' : '') + (mainChannels > 3 ? 'Dolby PL2' : mainChannels > 1 ? 'AAC Stereo' : 'AAC Mono');
     const args2 = ['-o', updatePath, path];
     let tracks = '';
 
-    for (let i = 0; i < info.video.length + 2; ++i)
+    for (let i = 0; i < info.video.length + 1; ++i)
       tracks += '0:' + i + ',';
 
     args2.push('--original-flag', '0', '--track-name', '0:' + aacTrackName, '--default-track', '0:no',

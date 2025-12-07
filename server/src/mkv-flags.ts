@@ -149,6 +149,8 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
     for (const track of subtitles ?? [])
       languages.add(getLanguage(track.properties));
 
+    let eeCount = 0;
+
     for (let i = 1; i <= audio?.length || 0; ++i) {
       const track = audio[i - 1];
       const tp = track.properties;
@@ -169,6 +171,14 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       const codec = getCodec(track);
       const channels = (cCount === 2 && pl2) ? 'Dolby PL2' : (cCount === 2 && dolbySurround) ? 'Dolby Surround' :
         (atmos ? 'Atmos ' : '') + channelString(tp);
+
+      if (name === 'English' && lang === 'en' && ++eeCount === 2) {
+        name = 'English DA';
+
+        if (cCount !== 2)
+          name += ' ' + channelString(tp);
+      }
+
       let da = /\bda(\s+([0-9.]+|stereo|mono|atmos))?$/i.test(name);
       let audioDescr = `:${codec}: ${channels}`;
 
@@ -198,7 +208,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       else if (!name)
         name = reducedDescr;
 
-      name = name.replace(/\s*(\((Latinoamericano|Latin America)\)|\[Original])/gi, '');
+      name = name.replace(/\s*(\((Latinoamericano|Latin America|Latinoamérica|France)\)|\[Original])/gi, '');
 
       if (name === languageStart && (cCount > 2 || pl2)) {
         if (languages.size > 1 || lang !== 'en')
@@ -313,7 +323,7 @@ export async function examineAndUpdateMkvFlags(path: string, options: VideoWalkO
       }
 
       name = name.replace(/(\s*)\[CC]/, '$1SDH');
-      name = name.replace(/\s*(\((Latinoamericano|Latin America)\)|\[Original])/gi, '');
+      name = name.replace(/\s*(\((Latinoamericano|Latin America|Latinoamérica|France)\)|\[Original])/gi, '');
 
       if (nameIsCode && lang?.length === 2 && name !== lang)
         name = lang;
