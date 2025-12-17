@@ -362,7 +362,7 @@ async function walkVideoDirectoryAux(dirPath: string, dir: DirectoryEntry[], dep
 
             if (info.isMovie || info.isTV) {
               title = baseTitle.replace(/\s*\(.*?[a-z].*?\)/gi, '')
-                .replace(/\s*\[.*?[a-z].*?\]/gi, '')
+                .replace(/\s*\[.*?[a-z].*?]/gi, '')
                 .replace(/^\d{1,2} - /, '').replace(/ - /g, ': ')
                 .replace(/：/g, ':').replace(/？/g, '?').trim().replace(/(.+), (A|An|The)$/, '$2 $1');
 

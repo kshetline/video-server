@@ -27,6 +27,25 @@ export interface ItemStreamPair {
   stream: string;
 }
 
+function isFullScreen(elem?: HTMLElement): boolean {
+  if (elem)
+    return (document.fullscreenElement === elem || (elem as any).webkitDisplayingFullscreen);
+  else
+    return !!document.fullscreenElement || !!(document as any).webkitFullscreenElement;
+}
+
+function exitFullscreen(elem?: HTMLElement): void {
+  if (document.exitFullscreen)
+    document.exitFullscreen().finally();
+  else if ((elem as any)?.webkitDisplayingFullscreen)
+    (elem as any).webkitExitFullscreen();
+
+  if (elem) {
+    elem.style.display = 'none';
+    setTimeout(() => elem.style.display = null, 1000);
+  }
+}
+
 @Component({
   selector: 'app-dash-player',
   templateUrl: './dash-player.component.html',
@@ -218,18 +237,29 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
       return;
     }
 
+    console.log('DASH player:', this.playerElem);
     const lastVolume = localStorage.getItem('vs_player_volume');
 
     if (lastVolume)
       this.playerElem.volume = max(toNumber(lastVolume), 0.05);
 
     this.playerElem.addEventListener('loadedmetadata', () => {
-      this.aspectRatio = this.playerElem.videoWidth / this.playerElem.videoHeight;
-      this.onResize();
+      let tries = 0;
+
+      const getAspectRatio = (): void => {
+        if (this.playerElem?.videoWidth > 0 && this.playerElem?.videoHeight > 0) {
+          this.aspectRatio = this.playerElem.videoWidth / this.playerElem.videoHeight;
+          this.onResize();
+        }
+        else if (tries++ < 10)
+          setTimeout(getAspectRatio, 200);
+      };
+
+      getAspectRatio();
     });
     this.playerElem.addEventListener('playing', () => this.monitorDelay());
     this.playerElem.addEventListener('seeking', () => this.monitorDelay());
-    this.playerElem.addEventListener('ended', () => { this.registerTimeChange(true); this.onMouseMove(); });
+    this.playerElem.addEventListener('ended', () => this.videoEnded());
     this.playerElem.addEventListener('pause', () => { this.registerTimeChange(true); this.onMouseMove(); });
     this.playerElem.addEventListener('seeked', () => { this.registerTimeChange(); this.onMouseMove(); });
     this.playerElem.addEventListener('progress', () => {
@@ -244,12 +274,30 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
       StatusInterceptor.alive();
     });
     this.playerElem.addEventListener('volumechange', this.volumeChange);
+    this.playerElem.addEventListener('dblclick', () => isFullScreen(this.playerElem) && exitFullscreen(this.playerElem));
+    this.playerElem.addEventListener('fullscreenchange', () => this.onMouseMove());
+    this.playerElem.addEventListener('error', (evt: Event) => {
+      console.error('DASH player error:', (evt.target as HTMLVideoElement).error);
+      this.closeVideo();
+    });
+
     setTimeout(() => {
       if (this.player)
         this.player.play();
       else
         this.playerElem.play().catch(err => console.error(err));
     }, 1000);
+  }
+
+  private videoEnded(): void {
+    if (isFullScreen(this.playerElem) && Date.now() > 0)
+      setTimeout(() => exitFullscreen(this.playerElem), 2000);
+
+    this.registerTimeChange(true);
+    this.onMouseMove();
+    // I'd think time 0 should work fine, but (at least with iOS Safari) the player gets
+    // stuck at that time without using control intervention to skip forward.
+    setTimeout(() => this.playerElem.currentTime = 0.05, 1000);
   }
 
   private sendTimeChange(): void {
