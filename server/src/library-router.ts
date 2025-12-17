@@ -1201,7 +1201,7 @@ function updateItemWatchedState(item: LibraryItem, state: boolean, position: num
     const aliases = findAliases(item.id);
 
     aliases.forEach(a => setWatched(a, state, true, position));
-    webSocketSend({ type: 'idUpdate', data: item.id });
+    webSocketSend({ type: 'idUpdate', data: item.id }, true);
     updateCache(item.id).finally();
   }
 }

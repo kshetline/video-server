@@ -24,13 +24,13 @@ async function setWatchedDb(item: LibraryItem, username: string, progress: Playb
 
     if (item) {
       setWatched(item, wasWatched, false, null, findId);
-      webSocketSend({ type: 'idUpdate', data: item.id });
+      webSocketSend({ type: 'idUpdate', data: item.id }, true);
 
       const parent = item.parent || findId(item.parentId);
 
       if (parent?.data && item.streamUri && isFile(item) &&
           parent.data.reduce((sum, sibling) => sum + (sibling.streamUri === item.streamUri ? 1 : 0), 0) > 1)
-        webSocketSend({ type: 'idUpdate', data: parent.id });
+        webSocketSend({ type: 'idUpdate', data: parent.id }, true);
     }
 
     return true;

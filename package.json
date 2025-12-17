@@ -33,7 +33,7 @@
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@primeng/themes": "^19.1.2",
     "@tubular/math": "^3.4.0",
-    "@tubular/util": "^4.18.1",
+    "@tubular/util": "^4.19.0",
     "canvas": "^2.11.2",
     "dashjs": "^5.0.3",
     "jimp": "^0.22.10",

@@ -544,7 +544,7 @@ function saveVideoStats(stats: VideoStats): void {
 
   if (!stopPending) {
     setValue('videoStats', statsStr);
-    webSocketSend({ type: 'videoStats', data: statsStr });
+    webSocketSend({ type: 'videoStats', data: statsStr }, true);
   }
 }
 

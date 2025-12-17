@@ -57,8 +57,12 @@ export function webSocketSend(message: string | object, immediate = false): void
     message = JSON.stringify(message);
   }
 
-  if (immediate)
+  if (immediate) {
+    if (socketThrottles.has(msgType))
+      socketThrottles.get(msgType).cancel();
+
     sendToAll(message as string);
+  }
   else {
     if (!socketThrottles.has(msgType))
       socketThrottles.set(msgType, throttle(-250, (message: string) => sendToAll(message)));

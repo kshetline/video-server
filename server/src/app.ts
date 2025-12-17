@@ -317,7 +317,7 @@ function getStatus(remote?: string): ServerStatus {
 }
 
 export function sendStatus(): void {
-  webSocketSend({ type: 'status', data: getStatus() });
+  webSocketSend({ type: 'status', data: getStatus() }, true);
 }
 
 function getApp(): Express {
@@ -527,7 +527,7 @@ function getApp(): Express {
         }
       }
 
-      webSocketSend({ type: 'idUpdate', data: id });
+      webSocketSend({ type: 'idUpdate', data: id }, true);
     }
     else
       res.send('No match for ' + id);

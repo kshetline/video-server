@@ -245,7 +245,7 @@ export async function createFallbackAudio(path: string, info: VideoWalkInfo): Pr
     args.push('-af', 'aresample=matrix_encoding=dplii');
 
   args.push('-ar', '44100', aacFile);
-  webSocketSend({ type: 'audio-progress', data: '    Generating AAC fallback audio started at ' + new Date().toLocaleString() });
+  webSocketSend({ type: 'audio-progress', data: '    Generating AAC fallback audio started at ' + new Date().toLocaleString() }, true);
 
   const backupPath = path.replace(/\.mkv$/i, '[zni].bak.mkv');
   const updatePath = path.replace(/\.mkv$/i, '[zni].upd.mkv');
@@ -262,7 +262,7 @@ export async function createFallbackAudio(path: string, info: VideoWalkInfo): Pr
       return false;
     }
 
-    webSocketSend({ type: 'audio-progress', data: 'Remuxing fallback audio...' });
+    webSocketSend({ type: 'audio-progress', data: 'Remuxing fallback audio...' }, true);
 
     const nameStart = (/^(\w+)\s+(AAC|DTS|E-AC3|FLAC|Surround|TrueHD|[0-9.]+)\b/.exec(audio.properties.track_name) || [])[1];
     const aacTrackName = (nameStart ? nameStart + ' ' : '') + (mainChannels > 3 ? 'Dolby PL2' : mainChannels > 1 ? 'AAC Stereo' : 'AAC Mono');
@@ -772,7 +772,7 @@ export async function createStreaming(path: string, options: VideoWalkOptionsPlu
     }
 
     args.push('-f', 'webm_dash_manifest', '-adaptation_sets', sets, trackTempFile(tmp(mpdPath)));
-    webSocketSend({ type: 'video-progress', data: 'Generating DASH manifest' });
+    webSocketSend({ type: 'video-progress', data: 'Generating DASH manifest' }, true);
 
     try {
       await monitorProcess(trackProcess(spawn('ffmpeg', args)), null, ErrorMode.DEFAULT);
