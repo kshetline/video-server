@@ -152,14 +152,16 @@ export class WatchedIndicatorComponent implements OnInit {
     this.updateProgressBar();
   }
 
-  private updateProgressBar(): void {
+  private updateProgressBar(count = 0): void {
     if (this.progressBar) {
       const bar = document.getElementById(this.progressBar);
       const inner = bar?.firstElementChild as HTMLElement;
       const visible = (this.showIndicator() && this.progress > 0 && this.progress < 100);
 
       if (!bar || !inner) {
-        setTimeout(() => this.updateProgressBar(), 250);
+        if (count < 8)
+          setTimeout(() => this.updateProgressBar(count + 1), 250);
+
         return;
       }
 

@@ -64,6 +64,7 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
   countdown: number;
   countdownTimer: any;
   currentResolution = '';
+  isPlaying = false;
   lastPlayTime = 0;
   narrow = false;
   player: MediaPlayerClass;
@@ -257,10 +258,10 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
 
       getAspectRatio();
     });
-    this.playerElem.addEventListener('playing', () => this.monitorDelay());
+    this.playerElem.addEventListener('playing', () => { this.isPlaying = true; this.monitorDelay(); });
     this.playerElem.addEventListener('seeking', () => this.monitorDelay());
     this.playerElem.addEventListener('ended', () => this.videoEnded());
-    this.playerElem.addEventListener('pause', () => { this.registerTimeChange(true); this.onMouseMove(); });
+    this.playerElem.addEventListener('pause', () => { this.isPlaying = false; this.registerTimeChange(true); this.onMouseMove(); });
     this.playerElem.addEventListener('seeked', () => { this.registerTimeChange(); this.onMouseMove(); });
     this.playerElem.addEventListener('progress', () => {
       this.registerTimeChange();
@@ -293,6 +294,7 @@ export class DashPlayerComponent implements OnDestroy, OnInit {
     if (isFullScreen(this.playerElem) && Date.now() > 0)
       setTimeout(() => exitFullscreen(this.playerElem), 2000);
 
+    this.isPlaying = false;
     this.registerTimeChange(true);
     this.onMouseMove();
     // I'd think time 0 should work fine, but (at least with iOS Safari) the player gets

@@ -3,7 +3,7 @@
   <p-button label="No" styleClass="p-button-sm" (click)="dontContinue()"></p-button>
   <p-button label="Yes" styleClass="p-button-sm" (click)="yesContinue()"></p-button>
 </div>
-<div class="info-line" [style.opacity]="showHeader ? 1 : 0">
+<div class="info-line" [style.opacity]="showHeader || !isPlaying ? 1 : 0">
   <div class="resolution">{{currentResolution}}</div>
   <p-button icon="pi pi-times" styleClass="p-button-rounded" (click)="closeVideo()"></p-button>
 </div>
